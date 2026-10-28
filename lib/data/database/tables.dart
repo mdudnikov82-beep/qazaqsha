@@ -82,8 +82,21 @@ class UserStats extends Table {
   IntColumn get themeMode =>
       intEnum<AppThemeMode>().withDefault(const Constant(0))();
 
+  /// Time spent in lessons, reviews and exams.
+  IntColumn get studySeconds => integer().withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Best result of a section exam. [passedAt] is set once it was passed.
+class ExamProgress extends Table {
+  TextColumn get sectionId => text()();
+  IntColumn get bestScore => integer()();
+  DateTimeColumn get passedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {sectionId};
 }
 
 /// A finished lesson. Lesson = a chunk of a category's words.

@@ -7,7 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/data/providers.dart';
 import 'package:qazaqsha/data/repositories/dictionary_repository.dart';
+import 'package:qazaqsha/data/repositories/lesson_repository.dart';
+import 'package:qazaqsha/features/lessons/sections.dart';
 import 'package:qazaqsha/features/quiz/answer_check.dart';
+import 'package:qazaqsha/features/quiz/quiz_engine.dart';
 import 'package:qazaqsha/features/quiz/quiz_views.dart';
 import 'package:qazaqsha/main.dart';
 
@@ -106,6 +109,8 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
   } else if (find.text('Соедините пары').evaluate().isNotEmpty) {
     prompt = 'pairs';
     for (final MapEntry(key: ru, value: kk) in a.ruToKk.entries) {
+      // Exams know a whole section's words; only some are on screen.
+      if (find.text(ru).evaluate().isEmpty) continue;
       await tester.tap(find.text(ru));
       await tester.pump();
       await tester.tap(find.text(kk));
@@ -227,6 +232,65 @@ void main() {
       )..where((w) => w.id.equals(wrong.single.wordId))).getSingle(),
     );
     expect(word!.ru, missed);
+
+    await _closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('a section exam can be passed and opens the next section', (
+    tester,
+  ) async {
+    final db = await _startApp(tester);
+    final basics = courseSections.first;
+    final dictionary = DictionaryRepository(db);
+    final lessons = LessonRepository(db, dictionary);
+
+    // Mark every lesson of the first section as done.
+    await tester.runAsync(() async {
+      for (final c in await dictionary.categories()) {
+        if (!basics.categoryIds.contains(c.category.id)) continue;
+        for (var i = 0; i < lessonCountFor(c.wordCount); i++) {
+          await lessons.completeLesson(
+            categoryId: c.category.id,
+            lessonIndex: i,
+            score: 100,
+            now: DateTime(2026, 10, 28),
+          );
+        }
+      }
+    });
+    await _advanceUntil(
+      tester,
+      () => find.text('Сдать экзамен').evaluate().isNotEmpty,
+    );
+    final answers = _Answers(
+      (await tester.runAsync(
+        () => dictionary.wordsInCategories(basics.categoryIds),
+      ))!,
+      (await tester.runAsync(
+        () => dictionary.sentencesInCategories(basics.categoryIds),
+      ))!,
+    );
+
+    await tester.tap(find.text('Сдать экзамен'));
+    await _settle(tester);
+    expect(find.text('Новое слово'), findsNothing);
+
+    var steps = 0;
+    while (find.text('Емтихан тапсырылды!').evaluate().isEmpty) {
+      expect(++steps, lessThanOrEqualTo(15), reason: 'exam has 15 tasks');
+      await _answerRight(tester, answers);
+    }
+
+    // 8 choices ×10 + 4 typed ×15 + pairs 20 + 2 sentences ×20
+    // + exam bonus 50 + no-mistakes bonus 10.
+    expect(find.text('+260'), findsOneWidget);
+    expect(find.textContaining('Первый экзамен'), findsOneWidget);
+
+    await tester.tap(find.text('Готово'));
+    await _settle(tester);
+    // The next section's first topic is now the one to continue with.
+    expect(find.text('Тағам'), findsOneWidget);
+    expect(find.textContaining('урок 1 из 5'), findsOneWidget);
 
     await _closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

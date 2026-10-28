@@ -15,12 +15,22 @@ class StatsRepository {
   Stream<UserStat> watch() => _row.watchSingle();
   Future<UserStat> get() => _row.getSingle();
 
-  /// Adds the session's XP and answers, and moves the streak forward.
+  /// Adds time from a session that was left before the end.
+  Future<void> addStudyTime(int seconds) async {
+    if (seconds <= 0) return;
+    final s = await get();
+    await (_db.update(_db.userStats)..where((r) => r.id.equals(1))).write(
+      UserStatsCompanion(studySeconds: Value(s.studySeconds + seconds)),
+    );
+  }
+
+  /// Adds the session's XP, answers and time, and moves the streak forward.
   Future<UserStat> recordSession({
     required int xp,
     required int correct,
     required int total,
     required DateTime now,
+    int studySeconds = 0,
   }) async {
     final s = await get();
     final daily = todayXp(
@@ -44,6 +54,7 @@ class StatsRepository {
         quizzesCompleted: Value(s.quizzesCompleted + 1),
         answersCorrect: Value(s.answersCorrect + correct),
         answersTotal: Value(s.answersTotal + total),
+        studySeconds: Value(s.studySeconds + studySeconds),
       ),
     );
     return get();

@@ -5,10 +5,13 @@ const lessonBonusXp = 20;
 const perfectBonusXp = 10;
 
 /// Progress through one quiz: score, XP and per-word results.
-/// A wrongly answered question is asked once more at the end.
+/// A wrongly answered question is asked once more at the end, unless
+/// [retryMistakes] is off (exams count each answer exactly once).
 class QuizSession {
-  QuizSession(List<Question> questions) : _queue = [...questions];
+  QuizSession(List<Question> questions, {this.retryMistakes = true})
+    : _queue = [...questions];
 
+  final bool retryMistakes;
   final List<Question> _queue;
   final Set<Question> _requeued = {};
   int _index = 0;
@@ -41,7 +44,7 @@ class QuizSession {
       correctAnswers++;
       // A retry earns half: it still counts, but not like a first try.
       xp += _requeued.contains(q) ? xpFor(q) ~/ 2 : xpFor(q);
-    } else if (!_requeued.contains(q)) {
+    } else if (retryMistakes && !_requeued.contains(q)) {
       _requeued.add(q);
       _queue.add(q);
     }

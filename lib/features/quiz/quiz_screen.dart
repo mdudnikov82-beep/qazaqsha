@@ -6,27 +6,38 @@ import '../../app/theme.dart';
 import '../../core/widgets/common.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/stats_repository.dart';
 import '../gamification/achievements.dart';
+import '../lessons/sections.dart';
 import 'answer_check.dart';
 import 'questions.dart';
 import 'quiz_engine.dart';
 import 'quiz_session.dart';
 import 'quiz_views.dart';
 
-/// A lesson (when [categoryId] is set) or a review of due words.
+/// A lesson, a review of due words, or a section exam.
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen.lesson({
     super.key,
     required String this.categoryId,
     required int this.lessonIndex,
-  });
+  }) : sectionId = null;
 
-  const QuizScreen.review({super.key}) : categoryId = null, lessonIndex = null;
+  const QuizScreen.review({super.key})
+    : categoryId = null,
+      lessonIndex = null,
+      sectionId = null;
+
+  const QuizScreen.exam({super.key, required String this.sectionId})
+    : categoryId = null,
+      lessonIndex = null;
 
   final String? categoryId;
   final int? lessonIndex;
+  final String? sectionId;
 
   bool get isLesson => categoryId != null;
+  bool get isExam => sectionId != null;
 
   @override
   ConsumerState<QuizScreen> createState() => _QuizScreenState();
@@ -34,21 +45,51 @@ class QuizScreen extends ConsumerStatefulWidget {
 
 enum _Feedback { none, right, wrong, almost }
 
-class _Result {
-  const _Result(this.xp, this.score, this.newAchievements);
+enum _Kind { lesson, review, exam }
 
+class _Result {
+  const _Result(
+    this.kind,
+    this.xp,
+    this.score,
+    this.newAchievements, {
+    this.examPassed = false,
+  });
+
+  final _Kind kind;
   final int xp;
   final int score;
   final List<Achievement> newAchievements;
+  final bool examPassed;
 }
 
-class _QuizScreenState extends ConsumerState<QuizScreen> {
+/// Longest time one session can add to the study total.
+const _maxSessionTime = Duration(hours: 1);
+
+class _QuizScreenState extends ConsumerState<QuizScreen>
+    with WidgetsBindingObserver {
   final _engine = QuizEngine();
   final _typed = TextEditingController();
   QuizSession? _session;
   Object? _error;
   _Result? _result;
   bool _saving = false;
+
+  /// Runs only while the app is in the foreground.
+  final _clock = Stopwatch();
+
+  /// Read up front: `ref` can't be used any more in [dispose].
+  late final StatsRepository _statsRepo = ref.read(statsRepositoryProvider);
+
+  int get _studySeconds => _clock.elapsed > _maxSessionTime
+      ? _maxSessionTime.inSeconds
+      : _clock.elapsed.inSeconds;
+
+  _Kind get _kind => widget.isExam
+      ? _Kind.exam
+      : widget.isLesson
+      ? _Kind.lesson
+      : _Kind.review;
 
   _Feedback _feedback = _Feedback.none;
   int? _picked;
@@ -61,12 +102,29 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _statsRepo; // Resolve now, while ref is usable.
     _typed.addListener(() => setState(() {}));
+    _clock.start();
     _load();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_result == null) _clock.start();
+    } else {
+      _clock.stop();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Time of a session left before the end still counts.
+    if (_result == null && !_saving) {
+      _statsRepo.addStudyTime(_studySeconds);
+    }
     _typed.dispose();
     super.dispose();
   }
@@ -93,13 +151,25 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 LearningStatus.fresh,
           ),
         );
+      } else if (widget.isExam) {
+        final section = sectionById(widget.sectionId!)!;
+        final dictionary = ref.read(dictionaryRepositoryProvider);
+        questions = _engine.buildExam(
+          sectionWords: await dictionary.wordsInCategories(section.categoryIds),
+          sentences: await dictionary.sentencesInCategories(
+            section.categoryIds,
+          ),
+          pool: pool,
+        );
       } else {
         final due = await ref
             .read(progressRepositoryProvider)
             .dueWords(DateTime.now());
         questions = _engine.buildReview(words: due, pool: pool);
       }
-      setState(() => _session = QuizSession(questions));
+      setState(
+        () => _session = QuizSession(questions, retryMistakes: !widget.isExam),
+      );
     } catch (e) {
       setState(() => _error = e);
     }
@@ -170,29 +240,40 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final s = _session!;
     if (_saving) return;
     setState(() => _saving = true);
+    _clock.stop();
     final now = DateTime.now();
-    var xp = s.xp;
-    if (widget.isLesson) xp += lessonBonusXp;
-    if (s.perfect) xp += perfectBonusXp;
-
+    final lessons = ref.read(lessonRepositoryProvider);
     final progress = ref.read(progressRepositoryProvider);
     final stats = ref.read(statsRepositoryProvider);
-    await progress.applySession(s.wordResults, now);
+
+    var xp = s.xp;
+    var examPassed = false;
     if (widget.isLesson) {
-      await ref
-          .read(lessonRepositoryProvider)
-          .completeLesson(
-            categoryId: widget.categoryId!,
-            lessonIndex: widget.lessonIndex!,
-            score: s.scorePercent,
-            now: now,
-          );
+      xp += lessonBonusXp;
+      await lessons.completeLesson(
+        categoryId: widget.categoryId!,
+        lessonIndex: widget.lessonIndex!,
+        score: s.scorePercent,
+        now: now,
+      );
     }
+    if (widget.isExam) {
+      examPassed = await lessons.recordExam(
+        sectionId: widget.sectionId!,
+        score: s.scorePercent,
+        now: now,
+      );
+      if (examPassed) xp += examPassBonusXp;
+    }
+    if (s.perfect) xp += perfectBonusXp;
+
+    await progress.applySession(s.wordResults, now);
     final after = await stats.recordSession(
       xp: xp,
       correct: s.correctAnswers,
       total: s.totalAnswers,
       now: now,
+      studySeconds: _studySeconds,
     );
     final unlocked = await stats.unlockEarned(
       AchievementFacts(
@@ -201,11 +282,20 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         learnedWords: await progress.learnedCount(),
         totalXp: after.xp,
         lastSessionPerfect: s.perfect,
+        examsPassed: await lessons.examsPassed(),
       ),
       now,
     );
     if (mounted) {
-      setState(() => _result = _Result(xp, s.scorePercent, unlocked));
+      setState(
+        () => _result = _Result(
+          _kind,
+          xp,
+          s.scorePercent,
+          unlocked,
+          examPassed: examPassed,
+        ),
+      );
     }
   }
 
@@ -217,11 +307,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (s == null) return LoadingScaffold(error: _error);
     if (s.length == 0) return _EmptyReview(onClose: _close);
     if (_result != null) {
-      return _ResultView(
-        result: _result!,
-        isLesson: widget.isLesson,
-        onClose: _close,
-      );
+      return _ResultView(result: _result!, onClose: _close);
     }
     if (s.isFinished) return const LoadingScaffold();
 
@@ -300,6 +386,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               matchMistakes: _matchMistakes?.length ?? 0,
               onCheck: q is SentenceQuestion ? _checkSentence : _checkTyped,
               onNext: _next,
+              retriesMistakes: s.retryMistakes,
             ),
           ],
         ),
@@ -317,6 +404,7 @@ class _BottomPanel extends StatelessWidget {
     required this.matchMistakes,
     required this.onCheck,
     required this.onNext,
+    required this.retriesMistakes,
   });
 
   final Question question;
@@ -326,6 +414,7 @@ class _BottomPanel extends StatelessWidget {
   final int matchMistakes;
   final VoidCallback onCheck;
   final VoidCallback onNext;
+  final bool retriesMistakes;
 
   String get _answer => switch (question) {
     ChoiceQuestion(:final answer, :final word, :final fromRussian) =>
@@ -379,7 +468,12 @@ class _BottomPanel extends StatelessWidget {
         'Пары собраны',
         'Ошибок: $matchMistakes. Эти слова попадут в повторение.',
       ),
-      _ => ('Пока неверно', 'Правильно: $_answer. Вопрос повторится в конце.'),
+      _ => (
+        'Пока неверно',
+        retriesMistakes
+            ? 'Правильно: $_answer. Вопрос повторится в конце.'
+            : 'Правильно: $_answer.',
+      ),
     };
     final fg = right ? c.okText : c.badText;
 
@@ -450,34 +544,47 @@ class _BottomPanel extends StatelessWidget {
 }
 
 class _ResultView extends StatelessWidget {
-  const _ResultView({
-    required this.result,
-    required this.isLesson,
-    required this.onClose,
-  });
+  const _ResultView({required this.result, required this.onClose});
 
   final _Result result;
-  final bool isLesson;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final failedExam = result.kind == _Kind.exam && !result.examPassed;
+    final (title, subtitle) = switch (result.kind) {
+      _Kind.lesson => ('Сабақ аяқталды!', 'Урок пройден'),
+      _Kind.review => ('Қайталау аяқталды!', 'Повторение завершено'),
+      _Kind.exam when result.examPassed => (
+        'Емтихан тапсырылды!',
+        'Экзамен сдан — следующий раздел открыт',
+      ),
+      _Kind.exam => (
+        'Тағы бір рет!',
+        'Для сдачи нужно $examPassScore% правильных ответов. '
+            'Повторите слова раздела и попробуйте снова.',
+      ),
+    };
     return Scaffold(
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
             const SizedBox(height: 24),
-            Icon(Icons.emoji_events_rounded, size: 96, color: AppColors.gold),
+            Icon(
+              failedExam ? Icons.refresh_rounded : Icons.emoji_events_rounded,
+              size: 96,
+              color: failedExam ? c.goldText : AppColors.gold,
+            ),
             const SizedBox(height: 12),
             Text(
-              isLesson ? 'Сабақ аяқталды!' : 'Қайталау аяқталды!',
+              title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             Text(
-              isLesson ? 'Урок пройден' : 'Повторение завершено',
+              subtitle,
               textAlign: TextAlign.center,
               style: TextStyle(color: c.muted, fontSize: 16),
             ),
@@ -496,7 +603,7 @@ class _ResultView extends StatelessWidget {
                   child: _ResultStat(
                     value: '${result.score}%',
                     label: 'правильно',
-                    color: result.score >= 80 ? c.ok : c.goldText,
+                    color: result.score >= examPassScore ? c.ok : c.goldText,
                   ),
                 ),
               ],

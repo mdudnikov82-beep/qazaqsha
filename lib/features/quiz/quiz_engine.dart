@@ -12,6 +12,13 @@ const _minLessonSize = 3;
 const sentencesPerLesson = 2;
 const extraTiles = 2;
 
+/// Section exam make-up: 8 choices + 4 typing + 1 pairs (5 words)
+/// + 2 sentences = 15 tasks.
+const examChoices = 8;
+const examTyping = 4;
+const examPairs = 5;
+const examSentences = 2;
+
 List<List<T>> splitIntoLessons<T>(List<T> words) {
   final lessons = <List<T>>[
     for (var i = 0; i < words.length; i += lessonSize)
@@ -83,6 +90,36 @@ class QuizEngine {
       if (taken.add(normalizeAnswer(c))) extra.add(c);
     }
     return SentenceQuestion(sentence: s, tiles: _shuffled([...own, ...extra]));
+  }
+
+  /// A section exam: choices in both directions, typing, one pairs task and
+  /// sentences, each on different words where possible. No intro cards.
+  List<Question> buildExam({
+    required List<Word> sectionWords,
+    required List<Sentence> sentences,
+    required List<Word> pool,
+  }) {
+    final words = _shuffled(sectionWords);
+    final used = <int>{};
+    List<Word> take(Iterable<Word> from, int n) {
+      final picked = from.where((w) => !used.contains(w.id)).take(n).toList();
+      used.addAll(picked.map((w) => w.id));
+      return picked;
+    }
+
+    final choices = take(words, examChoices);
+    final typing = take(words.where((w) => isTypeable(w.kk)), examTyping);
+    final pairs = take(words, examPairs);
+    return [
+      ..._shuffled([
+        for (final w in choices)
+          _choice(w, pool, fromRussian: _random.nextBool()),
+        ...typing.map(TypeQuestion.new),
+        if (pairs.length >= 3) MatchQuestion(pairs),
+      ]),
+      for (final s in _shuffled(sentences).take(examSentences))
+        _sentence(s, sentences, pool),
+    ];
   }
 
   /// One choice and, when possible, one typing task per due word.

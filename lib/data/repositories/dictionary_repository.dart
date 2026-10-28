@@ -47,6 +47,15 @@ class DictionaryRepository {
     _db.sentences,
   )..where((s) => s.categoryId.equals(categoryId))).get();
 
+  Future<List<Word>> wordsInCategories(List<String> categoryIds) => (_db.select(
+    _db.words,
+  )..where((w) => w.categoryId.isIn(categoryIds))).get();
+
+  Future<List<Sentence>> sentencesInCategories(List<String> categoryIds) =>
+      (_db.select(
+        _db.sentences,
+      )..where((s) => s.categoryId.isIn(categoryIds))).get();
+
   /// Finds words whose Russian or Kazakh text contains [query].
   Future<List<Word>> search(String query, {int limit = 50}) {
     final q = normalizeForSearch(query);

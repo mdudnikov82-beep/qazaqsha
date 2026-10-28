@@ -26,6 +26,7 @@ Future<String> _loadSentencesFromAssets() =>
     UserStats,
     UnlockedAchievements,
     LessonProgress,
+    ExamProgress,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -42,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +66,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         // The table exists since v1 but was empty until v3.
         await _seedSentences();
+      }
+      if (from < 4) {
+        await m.addColumn(userStats, userStats.studySeconds);
+        await m.createTable(examProgress);
       }
     },
     beforeOpen: (details) async {

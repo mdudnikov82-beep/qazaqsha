@@ -43,6 +43,11 @@ GoRouter createRouter() => GoRouter(
       ),
     ),
     GoRoute(
+      path: '/exam/:sectionId',
+      builder: (context, state) =>
+          QuizScreen.exam(sectionId: state.pathParameters['sectionId']!),
+    ),
+    GoRoute(
       path: '/practice/review',
       builder: (context, state) => const QuizScreen.review(),
     ),

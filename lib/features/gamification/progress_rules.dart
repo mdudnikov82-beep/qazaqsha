@@ -57,6 +57,15 @@ int visibleStreak({
   return daysBetween(lastActive, now) > 1 ? 0 : current;
 }
 
+/// Study time for people: «0 мин», «12 мин», «1 ч 5 мин», «3 ч».
+String formatStudyTime(int seconds) {
+  final minutes = seconds ~/ 60;
+  if (minutes < 60) return '$minutes мин';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  return m == 0 ? '$h ч' : '$h ч $m мин';
+}
+
 /// Today's XP, given the stored counter and the day it belongs to.
 int todayXp({
   required int storedDailyXp,

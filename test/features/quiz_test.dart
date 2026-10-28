@@ -139,6 +139,40 @@ void main() {
       );
       expect(plain.whereType<SentenceQuestion>(), isEmpty);
     });
+
+    test('an exam covers the section without repeating a word', () {
+      final section = [
+        for (var i = 0; i < 30; i++) _w(100 + i, 'слово$i', 'сөз$i', 'sec'),
+      ];
+      const sentences = [
+        Sentence(
+          id: 1,
+          categoryId: 'sec',
+          ru: 'Я пью чай.',
+          kk: 'Мен шай ішемін.',
+        ),
+        Sentence(id: 2, categoryId: 'sec', ru: 'Мама дома.', kk: 'Анам үйде.'),
+        Sentence(id: 3, categoryId: 'sec', ru: 'Снег белый.', kk: 'Қар ақ.'),
+      ];
+      final exam = engine.buildExam(
+        sectionWords: section,
+        sentences: sentences,
+        pool: [...pool, ...section],
+      );
+      expect(exam.whereType<IntroCard>(), isEmpty);
+      expect(exam.whereType<ChoiceQuestion>(), hasLength(examChoices));
+      expect(exam.whereType<TypeQuestion>(), hasLength(examTyping));
+      expect(
+        exam.whereType<MatchQuestion>().single.pairs,
+        hasLength(examPairs),
+      );
+      expect(exam.whereType<SentenceQuestion>(), hasLength(examSentences));
+      expect(exam, hasLength(15));
+
+      final wordIds = [for (final q in exam) ...q.words.map((w) => w.id)];
+      expect(wordIds.toSet(), hasLength(wordIds.length));
+      expect(wordIds.every((id) => id >= 100), isTrue);
+    });
   });
 
   group('session', () {
@@ -169,6 +203,15 @@ void main() {
       expect(s.xp, 10 + 15 ~/ 2);
       expect(s.perfect, isFalse);
       expect(s.wordResults, {3: true, 4: false});
+    });
+
+    test('in an exam a wrong answer is final', () {
+      final b = TypeQuestion(pool[3]);
+      final s = QuizSession([b], retryMistakes: false);
+      s.answer(correct: false);
+      s.next();
+      expect(s.isFinished, isTrue);
+      expect(s.scorePercent, 0);
     });
 
     test('match mistakes only mark the mismatched words', () {

@@ -44,6 +44,14 @@ void main() {
       expect(visibleStreak(current: 3, lastActive: mon, now: thu), 0);
       expect(visibleStreak(current: 3, lastActive: mon, now: tue), 3);
     });
+    test('study time reads naturally', () {
+      expect(formatStudyTime(0), '0 мин');
+      expect(formatStudyTime(59), '0 мин');
+      expect(formatStudyTime(12 * 60 + 30), '12 мин');
+      expect(formatStudyTime(60 * 60), '1 ч');
+      expect(formatStudyTime(65 * 60), '1 ч 5 мин');
+    });
+
     test('daily XP resets on a new day', () {
       expect(todayXp(storedDailyXp: 40, storedDay: tue, now: tue), 40);
       expect(todayXp(storedDailyXp: 40, storedDay: mon, now: tue), 0);

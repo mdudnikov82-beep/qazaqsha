@@ -8,6 +8,7 @@ class AchievementFacts {
     required this.learnedWords,
     required this.totalXp,
     required this.lastSessionPerfect,
+    this.examsPassed = 0,
   });
 
   final int quizzesCompleted;
@@ -15,6 +16,7 @@ class AchievementFacts {
   final int learnedWords;
   final int totalXp;
   final bool lastSessionPerfect;
+  final int examsPassed;
 }
 
 class Achievement {
@@ -75,6 +77,20 @@ final achievements = <Achievement>[
     description: 'Выучить 100 слов',
     icon: Icons.auto_stories_rounded,
     isEarned: (f) => f.learnedWords >= 100,
+  ),
+  Achievement(
+    id: 'exam_1',
+    title: 'Первый экзамен',
+    description: 'Сдать экзамен за раздел',
+    icon: Icons.workspace_premium_rounded,
+    isEarned: (f) => f.examsPassed >= 1,
+  ),
+  Achievement(
+    id: 'all_exams',
+    title: 'Выпускник',
+    description: 'Сдать экзамены всех разделов',
+    icon: Icons.school_rounded,
+    isEarned: (f) => f.examsPassed >= 4,
   ),
   Achievement(
     id: 'xp_1000',

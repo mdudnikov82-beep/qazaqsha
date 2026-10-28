@@ -48,8 +48,8 @@ final progressMapProvider = StreamProvider<Map<int, WordProgressData>>(
   (ref) => ref.watch(progressRepositoryProvider).watchAll(),
 );
 
-final topicsProvider = StreamProvider<List<TopicState>>(
-  (ref) => ref.watch(lessonRepositoryProvider).watchTopics(),
+final courseProvider = StreamProvider<CourseState>(
+  (ref) => ref.watch(lessonRepositoryProvider).watchCourse(),
 );
 
 final unlockedAchievementsProvider = StreamProvider<Set<String>>(

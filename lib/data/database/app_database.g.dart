@@ -1762,6 +1762,18 @@ class $UserStatsTable extends UserStats
         requiredDuringInsert: false,
         defaultValue: const Constant(0),
       ).withConverter<AppThemeMode>($UserStatsTable.$converterthemeMode);
+  static const VerificationMeta _studySecondsMeta = const VerificationMeta(
+    'studySeconds',
+  );
+  @override
+  late final GeneratedColumn<int> studySeconds = GeneratedColumn<int>(
+    'study_seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1775,6 +1787,7 @@ class $UserStatsTable extends UserStats
     answersCorrect,
     answersTotal,
     themeMode,
+    studySeconds,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1860,6 +1873,15 @@ class $UserStatsTable extends UserStats
         ),
       );
     }
+    if (data.containsKey('study_seconds')) {
+      context.handle(
+        _studySecondsMeta,
+        studySeconds.isAcceptableOrUnknown(
+          data['study_seconds']!,
+          _studySecondsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1915,6 +1937,10 @@ class $UserStatsTable extends UserStats
           data['${effectivePrefix}theme_mode'],
         )!,
       ),
+      studySeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}study_seconds'],
+      )!,
     );
   }
 
@@ -1941,6 +1967,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
   final int answersCorrect;
   final int answersTotal;
   final AppThemeMode themeMode;
+
+  /// Time spent in lessons, reviews and exams.
+  final int studySeconds;
   const UserStat({
     required this.id,
     required this.xp,
@@ -1953,6 +1982,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.answersCorrect,
     required this.answersTotal,
     required this.themeMode,
+    required this.studySeconds,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1976,6 +2006,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
         $UserStatsTable.$converterthemeMode.toSql(themeMode),
       );
     }
+    map['study_seconds'] = Variable<int>(studySeconds);
     return map;
   }
 
@@ -1996,6 +2027,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       answersCorrect: Value(answersCorrect),
       answersTotal: Value(answersTotal),
       themeMode: Value(themeMode),
+      studySeconds: Value(studySeconds),
     );
   }
 
@@ -2018,6 +2050,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       themeMode: $UserStatsTable.$converterthemeMode.fromJson(
         serializer.fromJson<int>(json['themeMode']),
       ),
+      studySeconds: serializer.fromJson<int>(json['studySeconds']),
     );
   }
   @override
@@ -2037,6 +2070,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       'themeMode': serializer.toJson<int>(
         $UserStatsTable.$converterthemeMode.toJson(themeMode),
       ),
+      'studySeconds': serializer.toJson<int>(studySeconds),
     };
   }
 
@@ -2052,6 +2086,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     int? answersCorrect,
     int? answersTotal,
     AppThemeMode? themeMode,
+    int? studySeconds,
   }) => UserStat(
     id: id ?? this.id,
     xp: xp ?? this.xp,
@@ -2066,6 +2101,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     answersCorrect: answersCorrect ?? this.answersCorrect,
     answersTotal: answersTotal ?? this.answersTotal,
     themeMode: themeMode ?? this.themeMode,
+    studySeconds: studySeconds ?? this.studySeconds,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
     return UserStat(
@@ -2094,6 +2130,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ? data.answersTotal.value
           : this.answersTotal,
       themeMode: data.themeMode.present ? data.themeMode.value : this.themeMode,
+      studySeconds: data.studySeconds.present
+          ? data.studySeconds.value
+          : this.studySeconds,
     );
   }
 
@@ -2110,7 +2149,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('quizzesCompleted: $quizzesCompleted, ')
           ..write('answersCorrect: $answersCorrect, ')
           ..write('answersTotal: $answersTotal, ')
-          ..write('themeMode: $themeMode')
+          ..write('themeMode: $themeMode, ')
+          ..write('studySeconds: $studySeconds')
           ..write(')'))
         .toString();
   }
@@ -2128,6 +2168,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     answersCorrect,
     answersTotal,
     themeMode,
+    studySeconds,
   );
   @override
   bool operator ==(Object other) =>
@@ -2143,7 +2184,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.quizzesCompleted == this.quizzesCompleted &&
           other.answersCorrect == this.answersCorrect &&
           other.answersTotal == this.answersTotal &&
-          other.themeMode == this.themeMode);
+          other.themeMode == this.themeMode &&
+          other.studySeconds == this.studySeconds);
 }
 
 class UserStatsCompanion extends UpdateCompanion<UserStat> {
@@ -2158,6 +2200,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<int> answersCorrect;
   final Value<int> answersTotal;
   final Value<AppThemeMode> themeMode;
+  final Value<int> studySeconds;
   const UserStatsCompanion({
     this.id = const Value.absent(),
     this.xp = const Value.absent(),
@@ -2170,6 +2213,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.answersCorrect = const Value.absent(),
     this.answersTotal = const Value.absent(),
     this.themeMode = const Value.absent(),
+    this.studySeconds = const Value.absent(),
   });
   UserStatsCompanion.insert({
     this.id = const Value.absent(),
@@ -2183,6 +2227,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.answersCorrect = const Value.absent(),
     this.answersTotal = const Value.absent(),
     this.themeMode = const Value.absent(),
+    this.studySeconds = const Value.absent(),
   });
   static Insertable<UserStat> custom({
     Expression<int>? id,
@@ -2196,6 +2241,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? answersCorrect,
     Expression<int>? answersTotal,
     Expression<int>? themeMode,
+    Expression<int>? studySeconds,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2209,6 +2255,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (answersCorrect != null) 'answers_correct': answersCorrect,
       if (answersTotal != null) 'answers_total': answersTotal,
       if (themeMode != null) 'theme_mode': themeMode,
+      if (studySeconds != null) 'study_seconds': studySeconds,
     });
   }
 
@@ -2224,6 +2271,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<int>? answersCorrect,
     Value<int>? answersTotal,
     Value<AppThemeMode>? themeMode,
+    Value<int>? studySeconds,
   }) {
     return UserStatsCompanion(
       id: id ?? this.id,
@@ -2237,6 +2285,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       answersCorrect: answersCorrect ?? this.answersCorrect,
       answersTotal: answersTotal ?? this.answersTotal,
       themeMode: themeMode ?? this.themeMode,
+      studySeconds: studySeconds ?? this.studySeconds,
     );
   }
 
@@ -2278,6 +2327,9 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
         $UserStatsTable.$converterthemeMode.toSql(themeMode.value),
       );
     }
+    if (studySeconds.present) {
+      map['study_seconds'] = Variable<int>(studySeconds.value);
+    }
     return map;
   }
 
@@ -2294,7 +2346,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('quizzesCompleted: $quizzesCompleted, ')
           ..write('answersCorrect: $answersCorrect, ')
           ..write('answersTotal: $answersTotal, ')
-          ..write('themeMode: $themeMode')
+          ..write('themeMode: $themeMode, ')
+          ..write('studySeconds: $studySeconds')
           ..write(')'))
         .toString();
   }
@@ -2856,6 +2909,277 @@ class LessonProgressCompanion extends UpdateCompanion<LessonProgressData> {
   }
 }
 
+class $ExamProgressTable extends ExamProgress
+    with TableInfo<$ExamProgressTable, ExamProgressData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExamProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sectionIdMeta = const VerificationMeta(
+    'sectionId',
+  );
+  @override
+  late final GeneratedColumn<String> sectionId = GeneratedColumn<String>(
+    'section_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bestScoreMeta = const VerificationMeta(
+    'bestScore',
+  );
+  @override
+  late final GeneratedColumn<int> bestScore = GeneratedColumn<int>(
+    'best_score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _passedAtMeta = const VerificationMeta(
+    'passedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> passedAt = GeneratedColumn<DateTime>(
+    'passed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [sectionId, bestScore, passedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exam_progress';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExamProgressData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('section_id')) {
+      context.handle(
+        _sectionIdMeta,
+        sectionId.isAcceptableOrUnknown(data['section_id']!, _sectionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sectionIdMeta);
+    }
+    if (data.containsKey('best_score')) {
+      context.handle(
+        _bestScoreMeta,
+        bestScore.isAcceptableOrUnknown(data['best_score']!, _bestScoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bestScoreMeta);
+    }
+    if (data.containsKey('passed_at')) {
+      context.handle(
+        _passedAtMeta,
+        passedAt.isAcceptableOrUnknown(data['passed_at']!, _passedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sectionId};
+  @override
+  ExamProgressData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExamProgressData(
+      sectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}section_id'],
+      )!,
+      bestScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}best_score'],
+      )!,
+      passedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}passed_at'],
+      ),
+    );
+  }
+
+  @override
+  $ExamProgressTable createAlias(String alias) {
+    return $ExamProgressTable(attachedDatabase, alias);
+  }
+}
+
+class ExamProgressData extends DataClass
+    implements Insertable<ExamProgressData> {
+  final String sectionId;
+  final int bestScore;
+  final DateTime? passedAt;
+  const ExamProgressData({
+    required this.sectionId,
+    required this.bestScore,
+    this.passedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['section_id'] = Variable<String>(sectionId);
+    map['best_score'] = Variable<int>(bestScore);
+    if (!nullToAbsent || passedAt != null) {
+      map['passed_at'] = Variable<DateTime>(passedAt);
+    }
+    return map;
+  }
+
+  ExamProgressCompanion toCompanion(bool nullToAbsent) {
+    return ExamProgressCompanion(
+      sectionId: Value(sectionId),
+      bestScore: Value(bestScore),
+      passedAt: passedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(passedAt),
+    );
+  }
+
+  factory ExamProgressData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExamProgressData(
+      sectionId: serializer.fromJson<String>(json['sectionId']),
+      bestScore: serializer.fromJson<int>(json['bestScore']),
+      passedAt: serializer.fromJson<DateTime?>(json['passedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sectionId': serializer.toJson<String>(sectionId),
+      'bestScore': serializer.toJson<int>(bestScore),
+      'passedAt': serializer.toJson<DateTime?>(passedAt),
+    };
+  }
+
+  ExamProgressData copyWith({
+    String? sectionId,
+    int? bestScore,
+    Value<DateTime?> passedAt = const Value.absent(),
+  }) => ExamProgressData(
+    sectionId: sectionId ?? this.sectionId,
+    bestScore: bestScore ?? this.bestScore,
+    passedAt: passedAt.present ? passedAt.value : this.passedAt,
+  );
+  ExamProgressData copyWithCompanion(ExamProgressCompanion data) {
+    return ExamProgressData(
+      sectionId: data.sectionId.present ? data.sectionId.value : this.sectionId,
+      bestScore: data.bestScore.present ? data.bestScore.value : this.bestScore,
+      passedAt: data.passedAt.present ? data.passedAt.value : this.passedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExamProgressData(')
+          ..write('sectionId: $sectionId, ')
+          ..write('bestScore: $bestScore, ')
+          ..write('passedAt: $passedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(sectionId, bestScore, passedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExamProgressData &&
+          other.sectionId == this.sectionId &&
+          other.bestScore == this.bestScore &&
+          other.passedAt == this.passedAt);
+}
+
+class ExamProgressCompanion extends UpdateCompanion<ExamProgressData> {
+  final Value<String> sectionId;
+  final Value<int> bestScore;
+  final Value<DateTime?> passedAt;
+  final Value<int> rowid;
+  const ExamProgressCompanion({
+    this.sectionId = const Value.absent(),
+    this.bestScore = const Value.absent(),
+    this.passedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExamProgressCompanion.insert({
+    required String sectionId,
+    required int bestScore,
+    this.passedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : sectionId = Value(sectionId),
+       bestScore = Value(bestScore);
+  static Insertable<ExamProgressData> custom({
+    Expression<String>? sectionId,
+    Expression<int>? bestScore,
+    Expression<DateTime>? passedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (sectionId != null) 'section_id': sectionId,
+      if (bestScore != null) 'best_score': bestScore,
+      if (passedAt != null) 'passed_at': passedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExamProgressCompanion copyWith({
+    Value<String>? sectionId,
+    Value<int>? bestScore,
+    Value<DateTime?>? passedAt,
+    Value<int>? rowid,
+  }) {
+    return ExamProgressCompanion(
+      sectionId: sectionId ?? this.sectionId,
+      bestScore: bestScore ?? this.bestScore,
+      passedAt: passedAt ?? this.passedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sectionId.present) {
+      map['section_id'] = Variable<String>(sectionId.value);
+    }
+    if (bestScore.present) {
+      map['best_score'] = Variable<int>(bestScore.value);
+    }
+    if (passedAt.present) {
+      map['passed_at'] = Variable<DateTime>(passedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExamProgressCompanion(')
+          ..write('sectionId: $sectionId, ')
+          ..write('bestScore: $bestScore, ')
+          ..write('passedAt: $passedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2867,6 +3191,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $UnlockedAchievementsTable unlockedAchievements =
       $UnlockedAchievementsTable(this);
   late final $LessonProgressTable lessonProgress = $LessonProgressTable(this);
+  late final $ExamProgressTable examProgress = $ExamProgressTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2879,6 +3204,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     userStats,
     unlockedAchievements,
     lessonProgress,
+    examProgress,
   ];
 }
 
@@ -4492,6 +4818,7 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<int> answersCorrect,
   Value<int> answersTotal,
   Value<AppThemeMode> themeMode,
+  Value<int> studySeconds,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> id,
@@ -4505,6 +4832,7 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> answersCorrect,
   Value<int> answersTotal,
   Value<AppThemeMode> themeMode,
+  Value<int> studySeconds,
 });
 
 class $$UserStatsTableFilterComposer
@@ -4571,6 +4899,11 @@ class $$UserStatsTableFilterComposer
     column: $table.themeMode,
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
+
+  ColumnFilters<int> get studySeconds => $composableBuilder(
+    column: $table.studySeconds,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$UserStatsTableOrderingComposer
@@ -4636,6 +4969,11 @@ class $$UserStatsTableOrderingComposer
     column: $table.themeMode,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get studySeconds => $composableBuilder(
+    column: $table.studySeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserStatsTableAnnotationComposer
@@ -4693,6 +5031,11 @@ class $$UserStatsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<AppThemeMode, int> get themeMode =>
       $composableBuilder(column: $table.themeMode, builder: (column) => column);
+
+  GeneratedColumn<int> get studySeconds => $composableBuilder(
+    column: $table.studySeconds,
+    builder: (column) => column,
+  );
 }
 
 class $$UserStatsTableTableManager
@@ -4734,6 +5077,7 @@ class $$UserStatsTableTableManager
                 Value<int> answersCorrect = const Value.absent(),
                 Value<int> answersTotal = const Value.absent(),
                 Value<AppThemeMode> themeMode = const Value.absent(),
+                Value<int> studySeconds = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
                 xp: xp,
@@ -4746,6 +5090,7 @@ class $$UserStatsTableTableManager
                 answersCorrect: answersCorrect,
                 answersTotal: answersTotal,
                 themeMode: themeMode,
+                studySeconds: studySeconds,
               ),
           createCompanionCallback:
               ({
@@ -4760,6 +5105,7 @@ class $$UserStatsTableTableManager
                 Value<int> answersCorrect = const Value.absent(),
                 Value<int> answersTotal = const Value.absent(),
                 Value<AppThemeMode> themeMode = const Value.absent(),
+                Value<int> studySeconds = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
                 xp: xp,
@@ -4772,6 +5118,7 @@ class $$UserStatsTableTableManager
                 answersCorrect: answersCorrect,
                 answersTotal: answersTotal,
                 themeMode: themeMode,
+                studySeconds: studySeconds,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5287,6 +5634,177 @@ typedef $$LessonProgressTableProcessedTableManager =
       LessonProgressData,
       PrefetchHooks Function({bool categoryId})
     >;
+typedef $$ExamProgressTableCreateCompanionBuilder =
+    ExamProgressCompanion Function({
+      required String sectionId,
+      required int bestScore,
+      Value<DateTime?> passedAt,
+      Value<int> rowid,
+    });
+typedef $$ExamProgressTableUpdateCompanionBuilder =
+    ExamProgressCompanion Function({
+      Value<String> sectionId,
+      Value<int> bestScore,
+      Value<DateTime?> passedAt,
+      Value<int> rowid,
+    });
+
+class $$ExamProgressTableFilterComposer
+    extends Composer<_$AppDatabase, $ExamProgressTable> {
+  $$ExamProgressTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get sectionId => $composableBuilder(
+    column: $table.sectionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bestScore => $composableBuilder(
+    column: $table.bestScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get passedAt => $composableBuilder(
+    column: $table.passedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExamProgressTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExamProgressTable> {
+  $$ExamProgressTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get sectionId => $composableBuilder(
+    column: $table.sectionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bestScore => $composableBuilder(
+    column: $table.bestScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get passedAt => $composableBuilder(
+    column: $table.passedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExamProgressTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExamProgressTable> {
+  $$ExamProgressTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get sectionId =>
+      $composableBuilder(column: $table.sectionId, builder: (column) => column);
+
+  GeneratedColumn<int> get bestScore =>
+      $composableBuilder(column: $table.bestScore, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get passedAt =>
+      $composableBuilder(column: $table.passedAt, builder: (column) => column);
+}
+
+class $$ExamProgressTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExamProgressTable,
+          ExamProgressData,
+          $$ExamProgressTableFilterComposer,
+          $$ExamProgressTableOrderingComposer,
+          $$ExamProgressTableAnnotationComposer,
+          $$ExamProgressTableCreateCompanionBuilder,
+          $$ExamProgressTableUpdateCompanionBuilder,
+          (
+            ExamProgressData,
+            BaseReferences<_$AppDatabase, $ExamProgressTable, ExamProgressData>,
+          ),
+          ExamProgressData,
+          PrefetchHooks Function()
+        > {
+  $$ExamProgressTableTableManager(_$AppDatabase db, $ExamProgressTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExamProgressTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExamProgressTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExamProgressTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> sectionId = const Value.absent(),
+                Value<int> bestScore = const Value.absent(),
+                Value<DateTime?> passedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExamProgressCompanion(
+                sectionId: sectionId,
+                bestScore: bestScore,
+                passedAt: passedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String sectionId,
+                required int bestScore,
+                Value<DateTime?> passedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExamProgressCompanion.insert(
+                sectionId: sectionId,
+                bestScore: bestScore,
+                passedAt: passedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ExamProgressTable, ExamProgressData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ExamProgressTable,
+                    ExamProgressData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExamProgressTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExamProgressTable,
+      ExamProgressData,
+      $$ExamProgressTableFilterComposer,
+      $$ExamProgressTableOrderingComposer,
+      $$ExamProgressTableAnnotationComposer,
+      $$ExamProgressTableCreateCompanionBuilder,
+      $$ExamProgressTableUpdateCompanionBuilder,
+      (
+        ExamProgressData,
+        BaseReferences<_$AppDatabase, $ExamProgressTable, ExamProgressData>,
+      ),
+      ExamProgressData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5305,4 +5823,6 @@ class $AppDatabaseManager {
       $$UnlockedAchievementsTableTableManager(_db, _db.unlockedAchievements);
   $$LessonProgressTableTableManager get lessonProgress =>
       $$LessonProgressTableTableManager(_db, _db.lessonProgress);
+  $$ExamProgressTableTableManager get examProgress =>
+      $$ExamProgressTableTableManager(_db, _db.examProgress);
 }

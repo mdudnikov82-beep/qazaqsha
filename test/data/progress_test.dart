@@ -73,27 +73,93 @@ void main() {
     expect(await stats.unlockEarned(facts, now), isEmpty);
   });
 
-  test('topics unlock in order, lessons one by one', () async {
-    var topics = await lessons.watchTopics().first;
-    expect(topics.first.unlocked, isTrue);
-    expect(topics[1].unlocked, isFalse);
-    expect(topics.first.lessonCount, 5);
-
-    for (var i = 0; i < 5; i++) {
+  Future<void> finishTopic(String categoryId, int lessonCount) async {
+    for (var i = 0; i < lessonCount; i++) {
       await lessons.completeLesson(
-        categoryId: 'greetings',
+        categoryId: categoryId,
         lessonIndex: i,
         score: 90,
         now: now,
       );
     }
-    topics = await lessons.watchTopics().first;
-    expect(topics.first.completed, isTrue);
-    expect(topics[1].unlocked, isTrue);
-    expect(topics[1].nextLesson, 0);
-    expect(topics[2].unlocked, isFalse);
+  }
+
+  test('topics unlock in order, lessons one by one', () async {
+    var course = await lessons.watchCourse().first;
+    final topics = course.sections.first.topics;
+    expect(topics.first.unlocked, isTrue);
+    expect(topics[1].unlocked, isFalse);
+    expect(topics.first.lessonCount, 5);
+    expect(course.sections.map((s) => s.topics.length), [6, 8, 4, 5]);
+    expect(course.next, isA<NextLesson>());
+
+    await finishTopic('greetings', 5);
+    course = await lessons.watchCourse().first;
+    final after = course.sections.first.topics;
+    expect(after.first.completed, isTrue);
+    expect(after[1].unlocked, isTrue);
+    expect(after[1].nextLesson, 0);
+    expect(after[2].unlocked, isFalse);
+    expect(course.lessonsDone, 5);
 
     final words = await lessons.lessonWords('greetings', 0);
     expect(words.map((w) => w.kk).first, 'сәлеметсіз бе');
+  });
+
+  test(
+    'a section exam opens after its lessons and gates the next section',
+    () async {
+      var course = await lessons.watchCourse().first;
+      final basics = course.sections.first;
+      for (final t in basics.topics) {
+        await finishTopic(t.category.id, t.lessonCount);
+      }
+
+      course = await lessons.watchCourse().first;
+      expect(course.sections[0].examUnlocked, isTrue);
+      expect(course.sections[1].unlocked, isFalse);
+      expect(course.sections[1].topics.first.unlocked, isFalse);
+      expect(course.next, isA<NextExam>());
+
+      // 70% is not enough; the best score is still kept.
+      expect(
+        await lessons.recordExam(sectionId: 'basics', score: 70, now: now),
+        isFalse,
+      );
+      course = await lessons.watchCourse().first;
+      expect(course.sections[0].examBestScore, 70);
+      expect(course.sections[1].unlocked, isFalse);
+      expect(await lessons.examsPassed(), 0);
+
+      expect(
+        await lessons.recordExam(sectionId: 'basics', score: 85, now: now),
+        isTrue,
+      );
+      course = await lessons.watchCourse().first;
+      expect(course.sections[0].examPassed, isTrue);
+      expect(course.sections[1].unlocked, isTrue);
+      expect(course.sections[1].topics.first.unlocked, isTrue);
+      expect(course.next, isA<NextLesson>());
+      expect(await lessons.examsPassed(), 1);
+
+      // A later, worse attempt doesn't take the pass away.
+      await lessons.recordExam(sectionId: 'basics', score: 40, now: now);
+      course = await lessons.watchCourse().first;
+      expect(course.sections[0].examPassed, isTrue);
+      expect(course.sections[0].examBestScore, 85);
+    },
+  );
+
+  test('study time adds up from finished and abandoned sessions', () async {
+    await stats.recordSession(
+      xp: 10,
+      correct: 1,
+      total: 1,
+      now: now,
+      studySeconds: 300,
+    );
+    await stats.addStudyTime(45);
+    await stats.addStudyTime(0);
+    expect((await stats.get()).studySeconds, 345);
   });
 }

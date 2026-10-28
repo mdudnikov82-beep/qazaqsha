@@ -294,4 +294,42 @@ void main() {
 
     await _closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('own words can be pasted, added and practised', (tester) async {
+    final db = await _startApp(tester);
+
+    await tester.tap(find.text('Словарь'));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Добавить свои слова'));
+    await _settle(tester);
+
+    // Russian-first line on purpose: the app should flip it.
+    await tester.enterText(
+      find.widgetWithText(TextField, 'кітап — книга\nқалам — ручка'),
+      'тиін — белка\nящерица — кесіртке\nрахмет — спасибо',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Показать слова'));
+    await _settle(tester);
+    expect(find.text('Новые слова: 3'), findsOneWidget);
+    // The Russian-first line was flipped: Kazakh word first.
+    expect(
+      find.textContaining('кесіртке — ящерица', findRichText: true),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Добавить 3 в «Мои слова»'));
+    // The word list reloads from the database right after saving.
+    await _advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
+    // «рахмет» is already in the built-in dictionary.
+    expect(find.text('Добавлено: 2, уже были в словаре: 1'), findsOneWidget);
+    expect(find.text('тиін'), findsOneWidget);
+    expect(find.text('кесіртке'), findsOneWidget);
+
+    await tester.tap(find.text('Тренировать'));
+    await _settle(tester);
+    expect(find.text('Новое слово'), findsOneWidget);
+
+    await _closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

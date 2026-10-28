@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'database/app_database.dart';
+import 'repositories/custom_words_repository.dart';
 import 'repositories/dictionary_repository.dart';
 import 'repositories/lesson_repository.dart';
 import 'repositories/progress_repository.dart';
@@ -22,6 +23,10 @@ final progressRepositoryProvider = Provider<ProgressRepository>(
 
 final statsRepositoryProvider = Provider<StatsRepository>(
   (ref) => StatsRepository(ref.watch(appDatabaseProvider)),
+);
+
+final customWordsRepositoryProvider = Provider<CustomWordsRepository>(
+  (ref) => CustomWordsRepository(ref.watch(appDatabaseProvider)),
 );
 
 final lessonRepositoryProvider = Provider<LessonRepository>(

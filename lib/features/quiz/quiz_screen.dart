@@ -21,20 +21,31 @@ class QuizScreen extends ConsumerStatefulWidget {
     super.key,
     required String this.categoryId,
     required int this.lessonIndex,
-  }) : sectionId = null;
+  }) : sectionId = null,
+       isCustom = false;
 
   const QuizScreen.review({super.key})
     : categoryId = null,
       lessonIndex = null,
-      sectionId = null;
+      sectionId = null,
+      isCustom = false;
 
   const QuizScreen.exam({super.key, required String this.sectionId})
     : categoryId = null,
-      lessonIndex = null;
+      lessonIndex = null,
+      isCustom = false;
+
+  /// Practice of the user's own words.
+  const QuizScreen.custom({super.key})
+    : categoryId = null,
+      lessonIndex = null,
+      sectionId = null,
+      isCustom = true;
 
   final String? categoryId;
   final int? lessonIndex;
   final String? sectionId;
+  final bool isCustom;
 
   bool get isLesson => categoryId != null;
   bool get isExam => sectionId != null;
@@ -45,7 +56,10 @@ class QuizScreen extends ConsumerStatefulWidget {
 
 enum _Feedback { none, right, wrong, almost }
 
-enum _Kind { lesson, review, exam }
+enum _Kind { lesson, review, exam, custom }
+
+/// Words per practice of the user's own words.
+const _customPracticeSize = 6;
 
 class _Result {
   const _Result(
@@ -89,6 +103,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       ? _Kind.exam
       : widget.isLesson
       ? _Kind.lesson
+      : widget.isCustom
+      ? _Kind.custom
       : _Kind.review;
 
   _Feedback _feedback = _Feedback.none;
@@ -150,6 +166,21 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                 (progress[w.id]?.status ?? LearningStatus.fresh) ==
                 LearningStatus.fresh,
           ),
+        );
+      } else if (widget.isCustom) {
+        final progress = await ref.read(progressMapProvider.future);
+        // Fresh words first, then the weakest (lowest repetition box).
+        final words = [...await ref.read(customWordsRepositoryProvider).words()]
+          ..sort(
+            (a, b) => (progress[a.id]?.box ?? -1).compareTo(
+              progress[b.id]?.box ?? -1,
+            ),
+          );
+        final picked = words.take(_customPracticeSize).toList();
+        questions = _engine.buildLesson(
+          lessonWords: picked,
+          pool: pool,
+          withIntro: picked.any((w) => progress[w.id] == null),
         );
       } else if (widget.isExam) {
         final section = sectionById(widget.sectionId!)!;
@@ -556,6 +587,7 @@ class _ResultView extends StatelessWidget {
     final (title, subtitle) = switch (result.kind) {
       _Kind.lesson => ('Сабақ аяқталды!', 'Урок пройден'),
       _Kind.review => ('Қайталау аяқталды!', 'Повторение завершено'),
+      _Kind.custom => ('Жаттығу аяқталды!', 'Тренировка своих слов завершена'),
       _Kind.exam when result.examPassed => (
         'Емтихан тапсырылды!',
         'Экзамен сдан — следующий раздел открыт',

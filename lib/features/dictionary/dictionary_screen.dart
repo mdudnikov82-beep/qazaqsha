@@ -7,6 +7,7 @@ import '../../core/widgets/common.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/seed.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/custom_words_repository.dart';
 import 'word_tile.dart';
 
 enum _Filter { all, favorites, studying }
@@ -56,6 +57,11 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
       appBar: AppBar(
         title: const Text('Сөздік'),
         actions: [
+          IconButton(
+            tooltip: 'Добавить свои слова',
+            onPressed: () => context.push('/import'),
+            icon: const Icon(Icons.playlist_add_rounded),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 20),
             child: Center(
@@ -188,17 +194,53 @@ class CategoryWordsScreen extends ConsumerWidget {
       return LoadingScaffold(error: words.error ?? categories.error);
     }
     final progress = ref.watch(progressMapProvider).value ?? const {};
+    final isCustom = categoryId == customCategoryId;
     final cat = categories.value!
-        .firstWhere((c) => c.category.id == categoryId)
-        .category;
-    final list = words.value!.where((w) => w.categoryId == categoryId);
+        .where((c) => c.category.id == categoryId)
+        .firstOrNull
+        ?.category;
+    final list = words.value!.where((w) => w.categoryId == categoryId).toList();
+    final c = context.colors;
     return Scaffold(
-      appBar: AppBar(title: Text(cat.titleKk)),
+      appBar: AppBar(title: Text(cat?.titleKk ?? 'Менің сөздерім')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         children: [
-          Text(cat.titleRu, style: TextStyle(color: context.colors.muted)),
+          Text(cat?.titleRu ?? 'Мои слова', style: TextStyle(color: c.muted)),
           const SizedBox(height: 12),
+          if (isCustom) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: list.isEmpty
+                        ? null
+                        : () => context.push('/practice/custom'),
+                    icon: const Icon(Icons.fitness_center_rounded),
+                    label: const Text('Тренировать'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                    ),
+                    onPressed: () => context.push('/import'),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Добавить'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (list.isEmpty)
+              Text(
+                'Пока пусто. Добавьте слова вручную или пришлите их '
+                'Telegram-боту.',
+                style: TextStyle(color: c.muted),
+              ),
+          ],
           for (final w in list) WordTile(word: w, progress: progress[w.id]),
         ],
       ),

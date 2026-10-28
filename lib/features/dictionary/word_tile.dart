@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/custom_words_repository.dart';
 
 String statusLabel(WordProgressData? p) => switch (p?.status) {
   null || LearningStatus.fresh => 'Новое',
@@ -28,7 +29,7 @@ class WordTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => _showDetails(context),
+          onTap: () => _showDetails(context, ref),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
             child: Row(
@@ -69,14 +70,14 @@ class WordTile extends ConsumerWidget {
     );
   }
 
-  void _showDetails(BuildContext context) {
+  void _showDetails(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final p = progress;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: c.surface,
       showDragHandle: true,
-      builder: (_) => SafeArea(
+      builder: (sheet) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           child: Column(
@@ -101,6 +102,24 @@ class WordTile extends ConsumerWidget {
                 'ошибок ${p?.wrongCount ?? 0}',
                 style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
               ),
+              if (word.categoryId == customCategoryId) ...[
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: c.badText,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () async {
+                    Navigator.of(sheet).pop();
+                    await ref
+                        .read(customWordsRepositoryProvider)
+                        .delete(word.id);
+                    ref.invalidate(allWordsProvider);
+                  },
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: const Text('Удалить из «Мои слова»'),
+                ),
+              ],
             ],
           ),
         ),

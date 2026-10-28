@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/custom_words/import_screen.dart';
 import '../features/dictionary/dictionary_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
@@ -50,6 +51,17 @@ GoRouter createRouter() => GoRouter(
     GoRoute(
       path: '/practice/review',
       builder: (context, state) => const QuizScreen.review(),
+    ),
+    GoRoute(
+      path: '/practice/custom',
+      builder: (context, state) => const QuizScreen.custom(),
+    ),
+    // Also the target of import links: …/#/import?w=CODE (web) and
+    // qazaqsha://app/import?w=CODE (Android).
+    GoRoute(
+      path: '/import',
+      builder: (context, state) =>
+          ImportWordsScreen(code: state.uri.queryParameters['w']),
     ),
   ],
 );

@@ -27,6 +27,7 @@ const _categoryIcons = <String, IconData>{
   'help': Icons.help_rounded,
   'link': Icons.link_rounded,
   'music_note': Icons.music_note_rounded,
+  'bookmark': Icons.bookmark_rounded,
 };
 
 IconData categoryIcon(String name) =>

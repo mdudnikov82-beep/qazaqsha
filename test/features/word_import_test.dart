@@ -9,6 +9,15 @@ void main() {
   ];
 
   group('codes and links', () {
+    test('the code matches the Telegram bot byte for byte', () {
+      // Same vector as SHARED_CODE in bot/test_qazaqsha_bot.py.
+      const shared =
+          'eyJ2IjoxLCJ3IjpbWyLQutGW0YLQsNC_Iiwi0LrQvdC40LPQsCJdLFsi0LbSr9GA0LXQuiIs'
+          'ItGB0LXRgNC00YbQtSJdLFsi0LDRgtCwLdCw0L3QsCIsItGA0L7QtNC40YLQtdC70LgiXV19';
+      expect(encodeWords(words), shared);
+      expect(decodeWords(shared), words);
+    });
+
     test('a code round-trips Kazakh and Russian text', () {
       final code = encodeWords(words);
       expect(code, matches(RegExp(r'^[A-Za-z0-9_-]+$')), reason: 'URL-safe');

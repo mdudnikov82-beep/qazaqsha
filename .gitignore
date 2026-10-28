@@ -49,3 +49,6 @@ app.*.map.json
 
 # Raw phone screenshots (status bar shows personal notifications)
 /store/screenshots/raw/
+
+# Telegram bot token
+/bot/.env

@@ -5,7 +5,13 @@
 всё работает офлайн.
 
 *A Kazakh learning app for Russian speakers: topic lessons, word and sentence
-quizzes, spaced repetition and gamification. Works fully offline.*
+quizzes, spaced repetition and gamification.*
+
+**▶ Открыть в браузере: https://mdudnikov82-beep.github.io/qazaqsha/**
+
+На телефоне откройте ссылку и выберите «Добавить на главный экран» —
+приложение появится с иконкой, как обычное. Прогресс хранится в браузере
+на вашем устройстве.
 
 ## Возможности
 

@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
+import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
+import '../../core/widgets/ornament.dart';
+import '../../core/widgets/confetti.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/stats_repository.dart';
@@ -68,6 +71,7 @@ class _Result {
     this.score,
     this.newAchievements, {
     this.examPassed = false,
+    this.seconds = 0,
   });
 
   final _Kind kind;
@@ -75,6 +79,7 @@ class _Result {
   final int score;
   final List<Achievement> newAchievements;
   final bool examPassed;
+  final int seconds;
 }
 
 /// Longest time one session can add to the study total.
@@ -210,10 +215,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
   // --- answering ---------------------------------------------------------
 
+  /// Right answers in a row; shown in the header and praised.
+  int _combo = 0;
+
+  void _react(bool correct) {
+    correct ? Haptics.success() : Haptics.error();
+    _combo = correct ? _combo + 1 : 0;
+  }
+
   void _pick(int i) {
     final q = _session!.current as ChoiceQuestion;
     final correct = i == q.correctIndex;
     _session!.answer(correct: correct);
+    _react(correct);
     setState(() {
       _picked = i;
       _feedback = correct ? _Feedback.right : _Feedback.wrong;
@@ -225,6 +239,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     if (_typed.text.trim().isEmpty || _verdict != null) return;
     final verdict = checkTyped(_typed.text, q.word.kk);
     _session!.answer(correct: verdict == TypedVerdict.correct);
+    _react(verdict == TypedVerdict.correct);
     setState(() {
       _verdict = verdict;
       _feedback = switch (verdict) {
@@ -242,11 +257,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       for (final i in _built) q.tiles[i],
     ], q.sentence.kk);
     _session!.answer(correct: correct);
+    _react(correct);
     setState(() => _feedback = correct ? _Feedback.right : _Feedback.wrong);
   }
 
   void _matched(Set<int> mistakes) {
     _session!.answer(correct: mistakes.isEmpty, mistakeWordIds: mistakes);
+    _react(mistakes.isEmpty);
     setState(() {
       _matchMistakes = mistakes;
       _feedback = mistakes.isEmpty ? _Feedback.right : _Feedback.wrong;
@@ -325,6 +342,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           s.scorePercent,
           unlocked,
           examPassed: examPassed,
+          seconds: _studySeconds,
         ),
       );
     }
@@ -359,20 +377,41 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: ProgressBar(
-                      value: s.progress,
-                      height: 14,
-                      semanticsLabel: 'Прогресс урока',
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(end: s.progress),
+                      duration: reduceMotion(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 450),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, v, _) => ProgressBar(
+                        value: v,
+                        height: 14,
+                        semanticsLabel: 'Прогресс урока',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Text(
-                    '${s.position + 1}/${s.length}',
-                    style: TextStyle(
-                      color: c.muted,
-                      fontWeight: FontWeight.w900,
+                  if (_combo >= 2)
+                    ReactionBox(
+                      reaction: Reaction.pop,
+                      trigger: _combo,
+                      child: Pill(
+                        icon: Icons.local_fire_department_rounded,
+                        iconColor: c.flame,
+                        text: '$_combo',
+                        background: c.goldSoft,
+                        foreground: c.ink,
+                        semanticsLabel: 'Правильных подряд: $_combo',
+                      ),
+                    )
+                  else
+                    Text(
+                      '${s.position + 1}/${s.length}',
+                      style: TextStyle(
+                        color: c.muted,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -401,6 +440,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                     question: q,
                     built: _built,
                     locked: _feedback != _Feedback.none,
+                    reaction: switch (_feedback) {
+                      _Feedback.none => Reaction.none,
+                      _Feedback.right => Reaction.pop,
+                      _ => Reaction.shake,
+                    },
                     onAdd: (i) => setState(() => _built.add(i)),
                     onRemove: (pos) => setState(() => _built.removeAt(pos)),
                   ),
@@ -418,6 +462,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
               onCheck: q is SentenceQuestion ? _checkSentence : _checkTyped,
               onNext: _next,
               retriesMistakes: s.retryMistakes,
+              combo: _combo,
             ),
           ],
         ),
@@ -436,6 +481,7 @@ class _BottomPanel extends StatelessWidget {
     required this.onCheck,
     required this.onNext,
     required this.retriesMistakes,
+    required this.combo,
   });
 
   final Question question;
@@ -446,6 +492,7 @@ class _BottomPanel extends StatelessWidget {
   final VoidCallback onCheck;
   final VoidCallback onNext;
   final bool retriesMistakes;
+  final int combo;
 
   String get _answer => switch (question) {
     ChoiceQuestion(:final answer, :final word, :final fromRussian) =>
@@ -507,68 +554,95 @@ class _BottomPanel extends StatelessWidget {
       ),
     };
     final fg = right ? c.okText : c.badText;
+    // Kazakh praise for a run of right answers.
+    final praise = !right || combo < 3
+        ? null
+        : combo >= 5
+        ? 'Керемет! $combo подряд'
+        : 'Жарайсың! $combo подряд';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: right ? c.okSoft : c.badSoft,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                right ? Icons.check_circle_rounded : Icons.info_rounded,
-                color: fg,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: fg,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
+    return SlideUp(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: right ? c.okSoft : c.badSoft,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  right ? Icons.check_circle_rounded : Icons.info_rounded,
+                  color: fg,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
+                if (right)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '+$xp XP',
+                      style: TextStyle(color: fg, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+              ],
+            ),
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                details,
+                style: TextStyle(color: fg, fontWeight: FontWeight.w700),
               ),
-              if (right)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+            ],
+            if (praise != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department_rounded,
+                    color: c.flame,
+                    size: 18,
                   ),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '+$xp XP',
+                  const SizedBox(width: 4),
+                  Text(
+                    praise,
                     style: TextStyle(color: fg, fontWeight: FontWeight.w900),
                   ),
-                ),
+                ],
+              ),
             ],
-          ),
-          if (details.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              details,
-              style: TextStyle(color: fg, fontWeight: FontWeight.w700),
+            const SizedBox(height: 14),
+            FilledButton(
+              autofocus: true,
+              style: FilledButton.styleFrom(
+                backgroundColor: right
+                    ? AppColors.okButton
+                    : AppColors.badButton,
+              ),
+              onPressed: onNext,
+              child: Text(right ? 'Далее' : 'Понятно'),
             ),
           ],
-          const SizedBox(height: 14),
-          FilledButton(
-            autofocus: true,
-            style: FilledButton.styleFrom(
-              backgroundColor: right ? AppColors.okButton : AppColors.badButton,
-            ),
-            onPressed: onNext,
-            child: Text(right ? 'Далее' : 'Понятно'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -598,76 +672,273 @@ class _ResultView extends StatelessWidget {
             'Повторите слова раздела и попробуйте снова.',
       ),
     };
+    final minutes = result.seconds ~/ 60;
+    final seconds = (result.seconds % 60).toString().padLeft(2, '0');
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 24),
-            Icon(
-              failedExam ? Icons.refresh_rounded : Icons.emoji_events_rounded,
-              size: 96,
-              color: failedExam ? c.goldText : AppColors.gold,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: c.muted, fontSize: 16),
-            ),
-            const SizedBox(height: 28),
-            Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
               children: [
-                Expanded(
-                  child: _ResultStat(
-                    value: '+${result.xp}',
-                    label: 'XP',
-                    color: c.accent,
+                Center(
+                  child: SizedBox(
+                    width: 168,
+                    height: 168,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        OrnamentRing(
+                          size: 168,
+                          color: AppColors.gold.withValues(alpha: 0.55),
+                        ),
+                        _PopIn(
+                          child: Container(
+                            width: 112,
+                            height: 112,
+                            decoration: BoxDecoration(
+                              color: failedExam ? c.goldSoft : AppColors.gold,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: failedExam
+                                      ? c.line
+                                      : const Color(0xFFC99700),
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              failedExam
+                                  ? Icons.refresh_rounded
+                                  : Icons.emoji_events_rounded,
+                              size: 58,
+                              color: failedExam ? c.goldText : AppColors.onGold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(height: 14),
+                RiseIn(
+                  delay: const Duration(milliseconds: 250),
+                  child: Column(
+                    children: [
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      Text(
+                        subtitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: c.muted, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                RiseIn(
+                  delay: const Duration(milliseconds: 400),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ResultStat(
+                          // Counts up to the earned XP.
+                          value: TweenAnimationBuilder<int>(
+                            tween: IntTween(begin: 0, end: result.xp),
+                            duration: reduceMotion(context)
+                                ? Duration.zero
+                                : const Duration(milliseconds: 800),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, v, _) => Text('+$v'),
+                          ),
+                          label: 'XP',
+                          color: c.goldText,
+                          border: AppColors.gold,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ResultStat(
+                          value: Text('${result.score}%'),
+                          label: 'точность',
+                          color: result.score >= examPassScore
+                              ? c.ok
+                              : c.goldText,
+                          border: result.score >= examPassScore
+                              ? c.ok
+                              : AppColors.gold,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ResultStat(
+                          value: Text('$minutes:$seconds'),
+                          label: 'время',
+                          color: c.accent,
+                          border: c.sky,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (final (i, a) in result.newAchievements.indexed) ...[
+                  const SizedBox(height: 12),
+                  RiseIn(
+                    delay: Duration(milliseconds: 600 + 120 * i),
+                    child: _AchievementBanner(achievement: a),
+                  ),
+                ],
+                const SizedBox(height: 32),
+                FilledButton(onPressed: onClose, child: const Text('Готово')),
+              ],
+            ),
+          ),
+          if (!failedExam)
+            Positioned.fill(
+              child: Confetti(
+                colors: [
+                  AppColors.gold,
+                  c.sky,
+                  AppColors.primary,
+                  c.flame,
+                  c.ok,
+                  const Color(0xFFB3366A),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Grows in with a little overshoot, once.
+class _PopIn extends StatelessWidget {
+  const _PopIn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reduceMotion(context)) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.elasticOut,
+      child: child,
+      builder: (context, t, child) =>
+          Transform.scale(scale: 0.3 + 0.7 * t, child: child),
+    );
+  }
+}
+
+class _AchievementBanner extends StatefulWidget {
+  const _AchievementBanner({required this.achievement});
+
+  final Achievement achievement;
+
+  @override
+  State<_AchievementBanner> createState() => _AchievementBannerState();
+}
+
+class _AchievementBannerState extends State<_AchievementBanner>
+    with SingleTickerProviderStateMixin {
+  // A light sweeping across the card now and then.
+  late final _shine = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2800),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    reduceMotion(context) ? _shine.stop() : _shine.repeat();
+  }
+
+  @override
+  void dispose() {
+    _shine.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final a = widget.achievement;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.goldSoft,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          if (_shine.isAnimating)
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _shine,
+                builder: (context, _) => FractionalTranslation(
+                  // Sweeps during the first 60% of each cycle, then rests.
+                  translation: Offset(-1.2 + (_shine.value / 0.6) * 6, 0),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: 0.2,
+                    child: Transform(
+                      transform: Matrix4.skewX(-0.35),
+                      child: ColoredBox(
+                        color: Colors.white.withValues(alpha: 0.35),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.gold,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(a.icon, color: AppColors.onGold, size: 28),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: _ResultStat(
-                    value: '${result.score}%',
-                    label: 'правильно',
-                    color: result.score >= examPassScore ? c.ok : c.goldText,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'НОВОЕ ДОСТИЖЕНИЕ',
+                        style: TextStyle(
+                          color: c.goldText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        a.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(a.description, style: TextStyle(color: c.muted)),
+                    ],
                   ),
                 ),
               ],
             ),
-            for (final a in result.newAchievements) ...[
-              const SizedBox(height: 12),
-              SurfaceCard(
-                color: c.goldSoft,
-                child: Row(
-                  children: [
-                    Icon(a.icon, color: c.goldText, size: 32),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Новое достижение: ${a.title}',
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
-                          Text(a.description),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 32),
-            FilledButton(onPressed: onClose, child: const Text('Готово')),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -678,26 +949,41 @@ class _ResultStat extends StatelessWidget {
     required this.value,
     required this.label,
     required this.color,
+    required this.border,
   });
 
-  final String value;
+  final Widget value;
   final String label;
   final Color color;
+  final Color border;
 
   @override
   Widget build(BuildContext context) {
-    return SurfaceCard(
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border, width: 2),
+      ),
       child: Column(
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: DefaultTextStyle.merge(
+              style: TextStyle(
+                color: color,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+              ),
+              child: value,
             ),
           ),
-          Text(label, style: TextStyle(color: context.colors.muted)),
+          Text(
+            label,
+            style: TextStyle(color: c.muted, fontWeight: FontWeight.w800),
+          ),
         ],
       ),
     );

@@ -1,20 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
-import 'package:qazaqsha/data/providers.dart';
 import 'package:qazaqsha/data/repositories/dictionary_repository.dart';
 import 'package:qazaqsha/data/repositories/lesson_repository.dart';
 import 'package:qazaqsha/features/lessons/sections.dart';
 import 'package:qazaqsha/features/quiz/answer_check.dart';
 import 'package:qazaqsha/features/quiz/quiz_engine.dart';
 import 'package:qazaqsha/features/quiz/quiz_views.dart';
-import 'package:qazaqsha/main.dart';
 
-import 'helpers.dart';
+import 'app_harness.dart';
 
 /// Answers for the first greetings lesson, read from the real database.
 class _Answers {
@@ -26,47 +20,6 @@ class _Answers {
   final Map<String, String> ruToKk;
   final Map<String, String> kkToRu;
   final Map<String, String> sentenceKk;
-}
-
-Future<AppDatabase> _startApp(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(420, 2000);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-  // rootBundle caches loaded assets as futures bound to the test that loaded
-  // them; a later test awaiting one would wait forever. Seed from files
-  // instead, and drop the cache so nothing leaks into the next test.
-  addTearDown(rootBundle.clear);
-
-  final db = testDatabase();
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
-      child: const QazaqshaApp(),
-    ),
-  );
-  // Opening the database needs both real file I/O and fake-async
-  // microtasks; blocking on either alone can deadlock.
-  await _advanceUntil(tester, () => find.text('Сәлем!').evaluate().isNotEmpty);
-  return db;
-}
-
-/// Alternates real time and fake time until [done] or about 10 seconds pass.
-Future<void> _advanceUntil(WidgetTester tester, bool Function() done) async {
-  for (var i = 0; i < 100 && !done(); i++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
-    );
-    await tester.pump(const Duration(milliseconds: 50));
-  }
-  expect(done(), isTrue, reason: 'timed out waiting for the app');
-}
-
-/// The database lives in the fake-async zone: close it there.
-Future<void> _closeApp(WidgetTester tester, AppDatabase db) async {
-  await tester.pumpWidget(const SizedBox());
-  var closed = false;
-  unawaited(db.close().then((_) => closed = true));
-  await _advanceUntil(tester, () => closed);
 }
 
 Future<_Answers> _answers(WidgetTester tester, AppDatabase db) async {
@@ -81,19 +34,11 @@ Future<_Answers> _answers(WidgetTester tester, AppDatabase db) async {
 String _prompt(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(promptKey)).data!;
 
-Future<void> _settle(WidgetTester tester) async {
-  // Database work resolves over a few frames. Fixed-length pumps instead of
-  // pumpAndSettle: a loading spinner never "settles" and would hang the test.
-  for (var i = 0; i < 10; i++) {
-    await tester.pump(const Duration(milliseconds: 100));
-  }
-}
-
 /// Answers whatever task is on screen correctly. Returns the prompt.
 Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
   if (find.text('Новое слово').evaluate().isNotEmpty) {
     await tester.tap(find.text('Дальше'));
-    await _settle(tester);
+    await settle(tester);
     return null;
   }
 
@@ -133,10 +78,10 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
   } else {
     fail('Unknown screen');
   }
-  await _settle(tester);
+  await settle(tester);
   expect(find.text('Дұрыс! Правильно'), findsOneWidget, reason: prompt);
   await tester.tap(find.text('Далее'));
-  await _settle(tester);
+  await settle(tester);
   return prompt;
 }
 
@@ -147,11 +92,11 @@ void main() {
   testWidgets('a lesson can be finished with all answers right', (
     tester,
   ) async {
-    final db = await _startApp(tester);
+    final db = await startApp(tester);
     final answers = await _answers(tester, db);
 
     await tester.tap(find.text('Начать урок'));
-    await _settle(tester);
+    await settle(tester);
 
     var steps = 0;
     while (find.text('Сабақ аяқталды!').evaluate().isEmpty) {
@@ -170,20 +115,20 @@ void main() {
     expect((stats.xp, stats.streakDays, stats.quizzesCompleted), (205, 1, 1));
 
     await tester.tap(find.text('Готово'));
-    await _settle(tester);
+    await settle(tester);
     // Back home, the next lesson of the topic is offered.
     expect(find.textContaining('урок 2 из 5'), findsOneWidget);
     expect(find.text('205'), findsOneWidget);
 
-    await _closeApp(tester, db);
+    await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   testWidgets('a wrong answer is asked again and costs XP', (tester) async {
-    final db = await _startApp(tester);
+    final db = await startApp(tester);
     final answers = await _answers(tester, db);
 
     await tester.tap(find.text('Начать урок'));
-    await _settle(tester);
+    await settle(tester);
     while (find.text('Новое слово').evaluate().isNotEmpty) {
       await _answerRight(tester, answers);
     }
@@ -195,18 +140,25 @@ void main() {
     final wrongOption = tester
         .widgetList<Text>(
           find.descendant(
-            of: find.byType(GridView),
+            of: find.byType(InkWell),
             matching: find.byType(Text),
           ),
         )
         .map((t) => t.data!)
-        .firstWhere((text) => text != right);
+        // The prompt card is tappable too: skip its label and the prompt.
+        .firstWhere(
+          (text) =>
+              text != right &&
+              text != missed &&
+              text != 'по-русски' &&
+              text != 'по-казахски',
+        );
     await tester.tap(find.text(wrongOption));
-    await _settle(tester);
+    await settle(tester);
     expect(find.text('Пока неверно'), findsOneWidget);
     expect(find.textContaining('Вопрос повторится в конце'), findsOneWidget);
     await tester.tap(find.text('Понятно'));
-    await _settle(tester);
+    await settle(tester);
 
     final prompts = <String?>[];
     var steps = 0;
@@ -233,13 +185,13 @@ void main() {
     );
     expect(word!.ru, missed);
 
-    await _closeApp(tester, db);
+    await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   testWidgets('a section exam can be passed and opens the next section', (
     tester,
   ) async {
-    final db = await _startApp(tester);
+    final db = await startApp(tester);
     final basics = courseSections.first;
     final dictionary = DictionaryRepository(db);
     final lessons = LessonRepository(db, dictionary);
@@ -258,7 +210,7 @@ void main() {
         }
       }
     });
-    await _advanceUntil(
+    await advanceUntil(
       tester,
       () => find.text('Сдать экзамен').evaluate().isNotEmpty,
     );
@@ -272,7 +224,7 @@ void main() {
     );
 
     await tester.tap(find.text('Сдать экзамен'));
-    await _settle(tester);
+    await settle(tester);
     expect(find.text('Новое слово'), findsNothing);
 
     var steps = 0;
@@ -287,21 +239,21 @@ void main() {
     expect(find.textContaining('Первый экзамен'), findsOneWidget);
 
     await tester.tap(find.text('Готово'));
-    await _settle(tester);
+    await settle(tester);
     // The next section's first topic is now the one to continue with.
     expect(find.text('Тағам'), findsOneWidget);
     expect(find.textContaining('урок 1 из 5'), findsOneWidget);
 
-    await _closeApp(tester, db);
+    await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   testWidgets('own words can be pasted, added and practised', (tester) async {
-    final db = await _startApp(tester);
+    final db = await startApp(tester);
 
     await tester.tap(find.text('Словарь'));
-    await _settle(tester);
+    await settle(tester);
     await tester.tap(find.byTooltip('Добавить свои слова'));
-    await _settle(tester);
+    await settle(tester);
 
     // Russian-first line on purpose: the app should flip it.
     await tester.enterText(
@@ -310,7 +262,7 @@ void main() {
     );
     await tester.pump();
     await tester.tap(find.text('Показать слова'));
-    await _settle(tester);
+    await settle(tester);
     expect(find.text('Новые слова: 3'), findsOneWidget);
     // The Russian-first line was flipped: Kazakh word first.
     expect(
@@ -320,16 +272,16 @@ void main() {
 
     await tester.tap(find.text('Добавить 3 в «Мои слова»'));
     // The word list reloads from the database right after saving.
-    await _advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
+    await advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
     // «рахмет» is already in the built-in dictionary.
     expect(find.text('Добавлено: 2, уже были в словаре: 1'), findsOneWidget);
     expect(find.text('тиін'), findsOneWidget);
     expect(find.text('кесіртке'), findsOneWidget);
 
     await tester.tap(find.text('Тренировать'));
-    await _settle(tester);
+    await settle(tester);
     expect(find.text('Новое слово'), findsOneWidget);
 
-    await _closeApp(tester, db);
+    await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 }

@@ -5,15 +5,36 @@ import '../features/custom_words/import_screen.dart';
 import '../features/dictionary/dictionary_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/review/review_screen.dart';
 
 /// A fresh router per app instance, so navigation state never leaks between
 /// app restarts (or tests).
-GoRouter createRouter() => GoRouter(
+///
+/// [onboardingDone] is null while the database loads; [refresh] fires when
+/// it changes, so the welcome redirect is re-evaluated.
+GoRouter createRouter({
+  required bool? Function() onboardingDone,
+  required Listenable refresh,
+}) => GoRouter(
   initialLocation: '/home',
+  refreshListenable: refresh,
+  redirect: (context, state) {
+    final done = onboardingDone();
+    final here = state.matchedLocation;
+    if (done == null) return null;
+    // Import links from the bot work even before the welcome is done.
+    if (!done && here != '/welcome' && here != '/import') return '/welcome';
+    if (done && here == '/welcome') return '/home';
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: '/welcome',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => _MainShell(shell: shell),
       branches: [

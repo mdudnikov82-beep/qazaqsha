@@ -65,6 +65,14 @@ class StatsRepository {
         UserStatsCompanion(themeMode: Value(mode)),
       );
 
+  Future<void> completeOnboarding({required int dailyGoalXp}) =>
+      (_db.update(_db.userStats)..where((r) => r.id.equals(1))).write(
+        UserStatsCompanion(
+          onboardingDone: const Value(true),
+          dailyGoalXp: Value(dailyGoalXp),
+        ),
+      );
+
   Future<void> setDailyGoal(int xp) =>
       (_db.update(_db.userStats)..where((r) => r.id.equals(1))).write(
         UserStatsCompanion(dailyGoalXp: Value(xp)),

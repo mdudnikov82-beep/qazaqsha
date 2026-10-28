@@ -43,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -70,6 +70,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.addColumn(userStats, userStats.studySeconds);
         await m.createTable(examProgress);
+      }
+      if (from < 5) {
+        await m.addColumn(userStats, userStats.onboardingDone);
+        // People upgrading already know the app: don't greet them again.
+        await customStatement('UPDATE user_stats SET onboarding_done = 1');
       }
     },
     beforeOpen: (details) async {

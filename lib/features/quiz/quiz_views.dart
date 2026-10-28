@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../core/kazakh_letters.dart';
+import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
 import '../../data/database/app_database.dart';
 import 'answer_check.dart';
@@ -131,9 +132,90 @@ class ChoiceView extends StatelessWidget {
   final int? picked;
   final ValueChanged<int> onPick;
 
+  Widget _option(BuildContext context, int i, String text) {
+    final c = context.colors;
+    final q = question;
+    final answered = picked != null;
+    final isAnswer = i == q.correctIndex;
+    final gotIt = answered && picked == q.correctIndex;
+    var bg = c.surface, border = c.line, fg = c.ink;
+    IconData? icon;
+    var reaction = Reaction.none;
+    if (answered && isAnswer) {
+      (bg, border, fg, icon) = (c.okSoft, c.ok, c.okText, Icons.check_rounded);
+      if (gotIt) reaction = Reaction.pop;
+    } else if (answered && i == picked) {
+      (bg, border, fg, icon) = (
+        c.badSoft,
+        c.bad,
+        c.badText,
+        Icons.close_rounded,
+      );
+      reaction = Reaction.shake;
+    }
+    return ReactionBox(
+      reaction: reaction,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: 72,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              // A darker edge underneath makes the tile look pressable.
+              boxShadow: [BoxShadow(color: border, offset: const Offset(0, 4))],
+            ),
+            child: Material(
+              color: bg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(color: border, width: 2),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: answered ? null : () => onPick(i),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, color: fg, size: 20),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          text,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: fg,
+                            fontSize: text.length > 14 ? 16 : 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (gotIt && isAnswer)
+            Positioned(
+              top: -6,
+              child: FlyingXp(xp: xpFor(q), color: c.okText),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     final q = question;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,74 +226,22 @@ class ChoiceView extends StatelessWidget {
           text: q.prompt,
         ),
         const SizedBox(height: 24),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 2.1,
-          children: [
-            for (final (i, text) in q.options.indexed)
-              () {
-                final answered = picked != null;
-                final isAnswer = i == q.correctIndex;
-                var bg = c.surface, border = c.line, fg = c.ink;
-                IconData? icon;
-                if (answered && isAnswer) {
-                  (bg, border, fg, icon) = (
-                    c.okSoft,
-                    c.ok,
-                    c.okText,
-                    Icons.check_rounded,
-                  );
-                } else if (answered && i == picked) {
-                  (bg, border, fg, icon) = (
-                    c.badSoft,
-                    c.bad,
-                    c.badText,
-                    Icons.close_rounded,
-                  );
-                }
-                return Material(
-                  color: bg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: border, width: 2),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: answered ? null : () => onPick(i),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (icon != null) ...[
-                            Icon(icon, color: fg, size: 20),
-                            const SizedBox(width: 6),
-                          ],
-                          Flexible(
-                            child: Text(
-                              text,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: fg,
-                                fontSize: text.length > 14 ? 16 : 20,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }(),
-          ],
-        ),
+        // Rows instead of a grid: a grid clips the flying «+XP».
+        for (var row = 0; row < q.options.length; row += 2) ...[
+          if (row > 0) const SizedBox(height: 14),
+          Row(
+            children: [
+              for (var i = row; i < row + 2; i++) ...[
+                if (i > row) const SizedBox(width: 12),
+                Expanded(
+                  child: i < q.options.length
+                      ? _option(context, i, q.options[i])
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -261,24 +291,31 @@ class TypeView extends StatelessWidget {
           text: question.word.ru,
         ),
         const SizedBox(height: 20),
-        TextField(
-          controller: controller,
-          enabled: !done,
-          autocorrect: false,
-          enableSuggestions: false,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => onSubmit(),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-          decoration: InputDecoration(
-            labelText: 'Ваш ответ',
-            hintText: 'Введите слово',
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: borderColor, width: 2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: borderColor, width: 2),
+        ReactionBox(
+          reaction: switch (verdict) {
+            null => Reaction.none,
+            TypedVerdict.correct => Reaction.pop,
+            _ => Reaction.shake,
+          },
+          child: TextField(
+            controller: controller,
+            enabled: !done,
+            autocorrect: false,
+            enableSuggestions: false,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => onSubmit(),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            decoration: InputDecoration(
+              labelText: 'Ваш ответ',
+              hintText: 'Введите слово',
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: borderColor, width: 2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: borderColor, width: 2),
+              ),
             ),
           ),
         ),
@@ -330,6 +367,7 @@ class SentenceView extends StatelessWidget {
     required this.locked,
     required this.onAdd,
     required this.onRemove,
+    this.reaction = Reaction.none,
   });
 
   final SentenceQuestion question;
@@ -337,6 +375,9 @@ class SentenceView extends StatelessWidget {
   /// Indices into [SentenceQuestion.tiles], in the order they were placed.
   final List<int> built;
   final bool locked;
+
+  /// Pop or shake of the built answer once it is checked.
+  final Reaction reaction;
   final ValueChanged<int> onAdd;
 
   /// Receives the position inside [built] to take back.
@@ -355,27 +396,30 @@ class SentenceView extends StatelessWidget {
           text: question.sentence.ru,
         ),
         const SizedBox(height: 20),
-        Semantics(
-          label: 'Ваш ответ',
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 120),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: c.line, width: 2),
-                top: BorderSide(color: c.line, width: 2),
+        ReactionBox(
+          reaction: reaction,
+          child: Semantics(
+            label: 'Ваш ответ',
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 120),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: c.line, width: 2),
+                  top: BorderSide(color: c.line, width: 2),
+                ),
               ),
-            ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final (pos, i) in built.indexed)
-                  _WordTile(
-                    text: tiles[i],
-                    onTap: locked ? null : () => onRemove(pos),
-                  ),
-              ],
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final (pos, i) in built.indexed)
+                    _WordTile(
+                      text: tiles[i],
+                      onTap: locked ? null : () => onRemove(pos),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -566,29 +610,36 @@ class _MatchTile extends StatelessWidget {
         : (c.surface, c.line, c.ink);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: bg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: border, width: 2),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: matched ? null : onTap,
-          child: SizedBox(
-            height: 56,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  text,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: fg,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+      child: ReactionBox(
+        reaction: wrong
+            ? Reaction.shake
+            : matched
+            ? Reaction.pop
+            : Reaction.none,
+        child: Material(
+          color: bg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: border, width: 2),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: matched ? null : onTap,
+            child: SizedBox(
+              height: 56,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),

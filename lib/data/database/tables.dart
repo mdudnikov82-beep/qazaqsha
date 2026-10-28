@@ -85,6 +85,10 @@ class UserStats extends Table {
   /// Time spent in lessons, reviews and exams.
   IntColumn get studySeconds => integer().withDefault(const Constant(0))();
 
+  /// The welcome flow was finished or skipped.
+  BoolColumn get onboardingDone =>
+      boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

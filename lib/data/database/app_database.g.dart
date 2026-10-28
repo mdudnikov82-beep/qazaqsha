@@ -1774,6 +1774,21 @@ class $UserStatsTable extends UserStats
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _onboardingDoneMeta = const VerificationMeta(
+    'onboardingDone',
+  );
+  @override
+  late final GeneratedColumn<bool> onboardingDone = GeneratedColumn<bool>(
+    'onboarding_done',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("onboarding_done" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1788,6 +1803,7 @@ class $UserStatsTable extends UserStats
     answersTotal,
     themeMode,
     studySeconds,
+    onboardingDone,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1882,6 +1898,15 @@ class $UserStatsTable extends UserStats
         ),
       );
     }
+    if (data.containsKey('onboarding_done')) {
+      context.handle(
+        _onboardingDoneMeta,
+        onboardingDone.isAcceptableOrUnknown(
+          data['onboarding_done']!,
+          _onboardingDoneMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1941,6 +1966,10 @@ class $UserStatsTable extends UserStats
         DriftSqlType.int,
         data['${effectivePrefix}study_seconds'],
       )!,
+      onboardingDone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}onboarding_done'],
+      )!,
     );
   }
 
@@ -1970,6 +1999,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
 
   /// Time spent in lessons, reviews and exams.
   final int studySeconds;
+
+  /// The welcome flow was finished or skipped.
+  final bool onboardingDone;
   const UserStat({
     required this.id,
     required this.xp,
@@ -1983,6 +2015,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.answersTotal,
     required this.themeMode,
     required this.studySeconds,
+    required this.onboardingDone,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2007,6 +2040,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       );
     }
     map['study_seconds'] = Variable<int>(studySeconds);
+    map['onboarding_done'] = Variable<bool>(onboardingDone);
     return map;
   }
 
@@ -2028,6 +2062,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       answersTotal: Value(answersTotal),
       themeMode: Value(themeMode),
       studySeconds: Value(studySeconds),
+      onboardingDone: Value(onboardingDone),
     );
   }
 
@@ -2051,6 +2086,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
         serializer.fromJson<int>(json['themeMode']),
       ),
       studySeconds: serializer.fromJson<int>(json['studySeconds']),
+      onboardingDone: serializer.fromJson<bool>(json['onboardingDone']),
     );
   }
   @override
@@ -2071,6 +2107,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
         $UserStatsTable.$converterthemeMode.toJson(themeMode),
       ),
       'studySeconds': serializer.toJson<int>(studySeconds),
+      'onboardingDone': serializer.toJson<bool>(onboardingDone),
     };
   }
 
@@ -2087,6 +2124,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     int? answersTotal,
     AppThemeMode? themeMode,
     int? studySeconds,
+    bool? onboardingDone,
   }) => UserStat(
     id: id ?? this.id,
     xp: xp ?? this.xp,
@@ -2102,6 +2140,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     answersTotal: answersTotal ?? this.answersTotal,
     themeMode: themeMode ?? this.themeMode,
     studySeconds: studySeconds ?? this.studySeconds,
+    onboardingDone: onboardingDone ?? this.onboardingDone,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
     return UserStat(
@@ -2133,6 +2172,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       studySeconds: data.studySeconds.present
           ? data.studySeconds.value
           : this.studySeconds,
+      onboardingDone: data.onboardingDone.present
+          ? data.onboardingDone.value
+          : this.onboardingDone,
     );
   }
 
@@ -2150,7 +2192,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('answersCorrect: $answersCorrect, ')
           ..write('answersTotal: $answersTotal, ')
           ..write('themeMode: $themeMode, ')
-          ..write('studySeconds: $studySeconds')
+          ..write('studySeconds: $studySeconds, ')
+          ..write('onboardingDone: $onboardingDone')
           ..write(')'))
         .toString();
   }
@@ -2169,6 +2212,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     answersTotal,
     themeMode,
     studySeconds,
+    onboardingDone,
   );
   @override
   bool operator ==(Object other) =>
@@ -2185,7 +2229,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.answersCorrect == this.answersCorrect &&
           other.answersTotal == this.answersTotal &&
           other.themeMode == this.themeMode &&
-          other.studySeconds == this.studySeconds);
+          other.studySeconds == this.studySeconds &&
+          other.onboardingDone == this.onboardingDone);
 }
 
 class UserStatsCompanion extends UpdateCompanion<UserStat> {
@@ -2201,6 +2246,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<int> answersTotal;
   final Value<AppThemeMode> themeMode;
   final Value<int> studySeconds;
+  final Value<bool> onboardingDone;
   const UserStatsCompanion({
     this.id = const Value.absent(),
     this.xp = const Value.absent(),
@@ -2214,6 +2260,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.answersTotal = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.studySeconds = const Value.absent(),
+    this.onboardingDone = const Value.absent(),
   });
   UserStatsCompanion.insert({
     this.id = const Value.absent(),
@@ -2228,6 +2275,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.answersTotal = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.studySeconds = const Value.absent(),
+    this.onboardingDone = const Value.absent(),
   });
   static Insertable<UserStat> custom({
     Expression<int>? id,
@@ -2242,6 +2290,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? answersTotal,
     Expression<int>? themeMode,
     Expression<int>? studySeconds,
+    Expression<bool>? onboardingDone,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2256,6 +2305,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (answersTotal != null) 'answers_total': answersTotal,
       if (themeMode != null) 'theme_mode': themeMode,
       if (studySeconds != null) 'study_seconds': studySeconds,
+      if (onboardingDone != null) 'onboarding_done': onboardingDone,
     });
   }
 
@@ -2272,6 +2322,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<int>? answersTotal,
     Value<AppThemeMode>? themeMode,
     Value<int>? studySeconds,
+    Value<bool>? onboardingDone,
   }) {
     return UserStatsCompanion(
       id: id ?? this.id,
@@ -2286,6 +2337,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       answersTotal: answersTotal ?? this.answersTotal,
       themeMode: themeMode ?? this.themeMode,
       studySeconds: studySeconds ?? this.studySeconds,
+      onboardingDone: onboardingDone ?? this.onboardingDone,
     );
   }
 
@@ -2330,6 +2382,9 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (studySeconds.present) {
       map['study_seconds'] = Variable<int>(studySeconds.value);
     }
+    if (onboardingDone.present) {
+      map['onboarding_done'] = Variable<bool>(onboardingDone.value);
+    }
     return map;
   }
 
@@ -2347,7 +2402,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('answersCorrect: $answersCorrect, ')
           ..write('answersTotal: $answersTotal, ')
           ..write('themeMode: $themeMode, ')
-          ..write('studySeconds: $studySeconds')
+          ..write('studySeconds: $studySeconds, ')
+          ..write('onboardingDone: $onboardingDone')
           ..write(')'))
         .toString();
   }
@@ -4819,6 +4875,7 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<int> answersTotal,
   Value<AppThemeMode> themeMode,
   Value<int> studySeconds,
+  Value<bool> onboardingDone,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> id,
@@ -4833,6 +4890,7 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> answersTotal,
   Value<AppThemeMode> themeMode,
   Value<int> studySeconds,
+  Value<bool> onboardingDone,
 });
 
 class $$UserStatsTableFilterComposer
@@ -4902,6 +4960,11 @@ class $$UserStatsTableFilterComposer
 
   ColumnFilters<int> get studySeconds => $composableBuilder(
     column: $table.studySeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get onboardingDone => $composableBuilder(
+    column: $table.onboardingDone,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4974,6 +5037,11 @@ class $$UserStatsTableOrderingComposer
     column: $table.studySeconds,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get onboardingDone => $composableBuilder(
+    column: $table.onboardingDone,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserStatsTableAnnotationComposer
@@ -5036,6 +5104,11 @@ class $$UserStatsTableAnnotationComposer
     column: $table.studySeconds,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get onboardingDone => $composableBuilder(
+    column: $table.onboardingDone,
+    builder: (column) => column,
+  );
 }
 
 class $$UserStatsTableTableManager
@@ -5078,6 +5151,7 @@ class $$UserStatsTableTableManager
                 Value<int> answersTotal = const Value.absent(),
                 Value<AppThemeMode> themeMode = const Value.absent(),
                 Value<int> studySeconds = const Value.absent(),
+                Value<bool> onboardingDone = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
                 xp: xp,
@@ -5091,6 +5165,7 @@ class $$UserStatsTableTableManager
                 answersTotal: answersTotal,
                 themeMode: themeMode,
                 studySeconds: studySeconds,
+                onboardingDone: onboardingDone,
               ),
           createCompanionCallback:
               ({
@@ -5106,6 +5181,7 @@ class $$UserStatsTableTableManager
                 Value<int> answersTotal = const Value.absent(),
                 Value<AppThemeMode> themeMode = const Value.absent(),
                 Value<int> studySeconds = const Value.absent(),
+                Value<bool> onboardingDone = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
                 xp: xp,
@@ -5119,6 +5195,7 @@ class $$UserStatsTableTableManager
                 answersTotal: answersTotal,
                 themeMode: themeMode,
                 studySeconds: studySeconds,
+                onboardingDone: onboardingDone,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -18,11 +18,27 @@ class QazaqshaApp extends ConsumerStatefulWidget {
 }
 
 class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
-  late final GoRouter _router = createRouter();
+  /// Bumped when "onboarding done" changes, to re-run the router redirect.
+  final _onboardingChanged = ValueNotifier(0);
+
+  late final GoRouter _router = createRouter(
+    onboardingDone: () => ref.read(statsProvider).value?.onboardingDone,
+    refresh: _onboardingChanged,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(
+      statsProvider.select((s) => s.value?.onboardingDone),
+      (_, _) => _onboardingChanged.value++,
+    );
+  }
 
   @override
   void dispose() {
     _router.dispose();
+    _onboardingChanged.dispose();
     super.dispose();
   }
 

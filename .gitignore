@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Raw phone screenshots (status bar shows personal notifications)
+/store/screenshots/raw/

@@ -94,9 +94,9 @@ class ProfileScreen extends ConsumerWidget {
             crossAxisCount: 4,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
+            mainAxisSpacing: 4,
             crossAxisSpacing: 10,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.8,
             children: [
               for (final a in achievements)
                 _Badge(achievement: a, unlocked: unlocked.contains(a.id)),

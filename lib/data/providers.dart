@@ -60,3 +60,22 @@ final courseProvider = StreamProvider<CourseState>(
 final unlockedAchievementsProvider = StreamProvider<Set<String>>(
   (ref) => ref.watch(statsRepositoryProvider).watchUnlocked(),
 );
+
+/// The theme choice. Switching updates the UI at once and saves in the
+/// background, instead of waiting for the database round trip.
+class ThemeModeNotifier extends Notifier<AppThemeMode> {
+  @override
+  AppThemeMode build() =>
+      // Only the theme field: other stats changes (XP…) don't rebuild this.
+      ref.watch(statsProvider.select((s) => s.value?.themeMode)) ??
+      AppThemeMode.system;
+
+  Future<void> set(AppThemeMode mode) async {
+    state = mode;
+    await ref.read(statsRepositoryProvider).setThemeMode(mode);
+  }
+}
+
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, AppThemeMode>(
+  ThemeModeNotifier.new,
+);

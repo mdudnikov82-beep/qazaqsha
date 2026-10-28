@@ -28,14 +28,17 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
 
   @override
   Widget build(BuildContext context) {
-    final mode = ref.watch(statsProvider).value?.themeMode;
+    final mode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'Qazaqsha',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       // AppThemeMode is declared in the same order as ThemeMode.
-      themeMode: mode == null ? ThemeMode.system : ThemeMode.values[mode.index],
+      themeMode: ThemeMode.values[mode.index],
+      // Switch instantly: cross-fading every color of the theme makes the
+      // tap feel laggy, especially on slower phones.
+      themeAnimationStyle: AnimationStyle.noAnimation,
       routerConfig: _router,
     );
   }

@@ -40,6 +40,26 @@ void main() {
     expect(find.text('Тема оформления'), findsOneWidget);
     expect(find.text('Тёмная'), findsOneWidget);
 
+    // Theme switches within a single frame, without waiting for the database.
+    Brightness brightness() =>
+        Theme.of(tester.element(find.text('Тема оформления'))).brightness;
+    await tester.tap(find.text('Тёмная'));
+    await tester.pump();
+    expect(brightness(), Brightness.dark);
+    await tester.tap(find.text('Светлая'));
+    await tester.pump();
+    expect(brightness(), Brightness.light);
+    await tester.tap(find.text('Тёмная'));
+    await tester.pump();
+    expect(brightness(), Brightness.dark);
+
+    // …and the choice is saved.
+    await tester.pumpAndSettle();
+    final saved = await tester.runAsync(
+      () => db.select(db.userStats).getSingle(),
+    );
+    expect(saved!.themeMode, AppThemeMode.dark);
+
     // The database lives in the test's fake-async zone, so it must be closed
     // there too: start closing, then let both fake and real time advance.
     await tester.pumpWidget(const SizedBox());

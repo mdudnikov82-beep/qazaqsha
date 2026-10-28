@@ -129,8 +129,10 @@ class ProfileScreen extends ConsumerWidget {
               ButtonSegment(value: AppThemeMode.light, label: Text('Светлая')),
               ButtonSegment(value: AppThemeMode.dark, label: Text('Тёмная')),
             ],
-            selected: {s.themeMode},
-            onSelectionChanged: (v) => repo.setThemeMode(v.first),
+            // From the theme notifier, not the database: highlights at once.
+            selected: {ref.watch(themeModeProvider)},
+            onSelectionChanged: (v) =>
+                ref.read(themeModeProvider.notifier).set(v.first),
           ),
         ],
       ),

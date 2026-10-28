@@ -7,6 +7,12 @@ import '../../data/database/app_database.dart';
 import 'answer_check.dart';
 import 'questions.dart';
 
+/// The question's text (word or sentence to translate), for tests.
+const promptKey = Key('quiz-prompt');
+
+/// The bank of unused tiles in a "build the sentence" task, for tests.
+const tileBankKey = Key('quiz-tile-bank');
+
 class _Prompt extends StatelessWidget {
   const _Prompt({required this.task, required this.label, required this.text});
 
@@ -41,6 +47,7 @@ class _Prompt extends StatelessWidget {
               ),
               Text(
                 text,
+                key: promptKey,
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -374,6 +381,7 @@ class SentenceView extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Wrap(
+          key: tileBankKey,
           alignment: WrapAlignment.center,
           spacing: 8,
           runSpacing: 10,

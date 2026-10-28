@@ -8,7 +8,9 @@ import '../features/profile/profile_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/review/review_screen.dart';
 
-final appRouter = GoRouter(
+/// A fresh router per app instance, so navigation state never leaks between
+/// app restarts (or tests).
+GoRouter createRouter() => GoRouter(
   initialLocation: '/home',
   routes: [
     StatefulShellRoute.indexedStack(

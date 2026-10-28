@@ -1,17 +1,106 @@
-# qazaqsha
+# Qazaqsha
 
-Изучение казахского языка
+Приложение для изучения казахского языка для русскоговорящих. Уроки по темам,
+квизы со словами и предложениями, интервальное повторение и геймификация —
+всё работает офлайн.
 
-## Getting Started
+*A Kazakh learning app for Russian speakers: topic lessons, word and sentence
+quizzes, spaced repetition and gamification. Works fully offline.*
 
-This project is a starting point for a Flutter application.
+## Возможности
 
-A few resources to get you started if this is your first Flutter project:
+- **Словарь на 500 слов** в 23 темах — от приветствий и семьи до глаголов и
+  культуры. Поиск на обоих языках (без учёта регистра и разницы «е/ё»),
+  избранное, прогресс по каждой теме.
+- **75 примеров предложений** для заданий «Соберите предложение».
+- **Уроки** по 5 слов. Темы открываются по порядку на карте уроков.
+- **Пять видов заданий:**
+  - карточка нового слова;
+  - выбор перевода (русский → казахский и обратно);
+  - ввод слова с панелью казахских букв **ә ғ қ ң ө ұ ү һ і**;
+  - поиск пар;
+  - сборка предложения из слов.
+- **Ошибки** возвращаются в конце урока. Ответ «журек» вместо «жүрек» засчитывается
+  как «почти» — с подсказкой про казахские буквы.
+- **Интервальное повторение** (система Лейтнера): слово возвращается через
+  1, 3, 7, 16 и 35 дней; ошибка — и оно повторяется сразу.
+- **Геймификация:** очки опыта и уровни, цель дня, серия дней подряд, 7 достижений.
+- **Светлая и тёмная темы** в цветах флага Казахстана; режим «Авто» следует
+  настройке телефона.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Технологии
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| | |
+|---|---|
+| Язык и фреймворк | Dart, [Flutter](https://flutter.dev) (Android, iOS, Web) |
+| База данных | SQLite через [drift](https://drift.simonbinder.eu) — словарь и прогресс хранятся на устройстве |
+| Состояние | [Riverpod](https://riverpod.dev) |
+| Навигация | [go_router](https://pub.dev/packages/go_router) |
+| Шрифт | [Nunito](https://fonts.google.com/specimen/Nunito) (встроен в приложение) |
+
+## Запуск
+
+Нужен [Flutter](https://docs.flutter.dev/get-started/install) 3.47 или новее.
+
+```bash
+git clone https://github.com/mdudnikov82-beep/qazaqsha.git
+cd qazaqsha
+flutter pub get
+
+flutter run -d chrome     # в браузере
+flutter run               # на подключённом Android-телефоне
+```
+
+Для сборки под Android нужны Android SDK и NDK 28.2 — Gradle подскажет,
+чего не хватает.
+
+## Тесты
+
+```bash
+flutter test
+```
+
+Тесты покрывают правила игры (уровни, серию дней, интервальное повторение,
+проверку ответов), генератор квизов, работу с базой данных, а также проходят
+урок целиком через интерфейс — с правильными ответами и с ошибкой.
+
+После изменения таблиц базы данных перегенерируйте код:
+
+```bash
+dart run build_runner build
+```
+
+## Структура проекта
+
+```
+lib/
+├─ app/            тема (светлая и тёмная палитры), навигация
+├─ core/           общие виджеты, казахские буквы
+├─ data/
+│  ├─ database/    таблицы, миграции, загрузка словаря
+│  └─ repositories/ словарь, прогресс, статистика, уроки
+└─ features/
+   ├─ home/        главная: цель дня, «продолжить урок», слово дня
+   ├─ lessons/     карта тем и уроков
+   ├─ quiz/        генератор заданий, урок, повторение, проверка ответов
+   ├─ dictionary/  словарь и поиск
+   ├─ review/      интервальное повторение
+   ├─ profile/     уровень, статистика, достижения, настройки
+   └─ gamification/ правила XP, уровней, серии дней; достижения
+assets/data/
+├─ dictionary.json  500 слов: [русский, казахский, пояснение]
+└─ sentences.json   75 предложений: [тема, русский, казахский]
+```
+
+## Словарь
+
+Слова и предложения лежат в `assets/data/` в простом JSON и легко
+дополняются. Переводы составлены вручную; если вы нашли ошибку — откройте
+issue или пришлите pull request.
+
+## Лицензия
+
+Код — [MIT](LICENSE).
+
+Шрифт Nunito в `assets/fonts/` распространяется по лицензии
+[SIL Open Font License 1.1](assets/fonts/OFL.txt).

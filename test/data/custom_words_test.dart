@@ -59,7 +59,7 @@ void main() {
   test('own words never enter the course ladder', () async {
     await custom.addWords(const [ImportedWord('тиін', 'белка')]);
     final course = await LessonRepository(db, dictionary).watchCourse().first;
-    expect(course.topics, hasLength(46));
+    expect(course.topics, hasLength(64));
     expect(
       course.topics.map((t) => t.category.id),
       isNot(contains(customCategoryId)),

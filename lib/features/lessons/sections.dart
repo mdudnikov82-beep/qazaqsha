@@ -108,6 +108,40 @@ const courseSections = [
       'ideas',
     ],
   ),
+  CourseSection(
+    id: 'world',
+    title: 'Мир вокруг',
+    titleKk: 'Айнала әлем',
+    color: Color(0xFF9C4221),
+    categoryIds: [
+      'weather2',
+      'water',
+      'materials',
+      'tools',
+      'body2',
+      'cooking',
+      'clothes2',
+      'furniture',
+      'relatives',
+      'city2',
+    ],
+  ),
+  CourseSection(
+    id: 'career',
+    title: 'Учёба и карьера',
+    titleKk: 'Білім және мансап',
+    color: Color(0xFF4A5A9C),
+    categoryIds: [
+      'university',
+      'economy',
+      'arts',
+      'music',
+      'verbs3',
+      'adjectives3',
+      'adverbs2',
+      'phrases2',
+    ],
+  ),
 ];
 
 /// Share of right answers needed to pass a section exam, in percent.

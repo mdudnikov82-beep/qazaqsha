@@ -30,19 +30,72 @@ void main() {
     final tue = DateTime(2026, 10, 27, 8);
     final thu = DateTime(2026, 10, 29, 8);
 
+    StreakStep step(
+      int current,
+      DateTime? last,
+      DateTime now, {
+      int freezes = 0,
+    }) => advanceStreak(
+      current: current,
+      lastActive: last,
+      now: now,
+      freezes: freezes,
+    );
+    final wed = DateTime(2026, 10, 28, 9);
+    final sun = DateTime(2026, 11, 1, 9);
+
     test('first activity starts a streak', () {
-      expect(nextStreak(current: 0, lastActive: null, now: mon), 1);
+      expect(step(0, null, mon).streak, 1);
     });
     test('next calendar day extends it, even under 24 hours later', () {
-      expect(nextStreak(current: 3, lastActive: mon, now: tue), 4);
+      expect(step(3, mon, tue).streak, 4);
     });
     test('same day keeps it', () {
-      expect(nextStreak(current: 3, lastActive: tue, now: tue), 3);
+      expect(step(3, tue, tue).streak, 3);
     });
-    test('a skipped day resets it', () {
-      expect(nextStreak(current: 3, lastActive: mon, now: thu), 1);
-      expect(visibleStreak(current: 3, lastActive: mon, now: thu), 0);
+    test('without freezes a skipped day resets it, but it can be won back', () {
+      final s = step(3, mon, wed);
+      expect((s.streak, s.repairable), (1, 3));
+      // Two missed days: no way back, start over.
+      expect(step(3, mon, thu).repairable, 0);
+      expect(visibleStreak(current: 3, lastActive: mon, now: wed), 0);
       expect(visibleStreak(current: 3, lastActive: mon, now: tue), 3);
+    });
+    test('a freeze covers a missed day and is used up', () {
+      final s = step(5, mon, wed, freezes: 1);
+      expect((s.streak, s.freezes), (6, 0));
+      expect(s.frozenDays, [DateTime.utc(2026, 10, 27)]);
+      expect(
+        visibleStreak(current: 5, lastActive: mon, now: wed, freezes: 1),
+        5,
+      );
+      expect(
+        streakLapsed(current: 5, lastActive: mon, now: wed, freezes: 1),
+        isFalse,
+      );
+      expect(
+        streakLapsed(current: 5, lastActive: mon, now: thu, freezes: 1),
+        isTrue,
+      );
+    });
+    test('two freezes cover two days; not enough freezes, no cover', () {
+      expect(step(5, mon, thu, freezes: 2).streak, 6);
+      expect(step(5, mon, sun, freezes: 2).streak, 1);
+    });
+    test('every 7 days earn a freeze, at most 2', () {
+      expect(step(6, mon, tue).freezes, 1);
+      expect(step(13, mon, tue, freezes: 1).freezes, 2);
+      expect(step(20, mon, tue, freezes: 2).freezes, 2);
+      expect(step(7, mon, tue).freezes, 0);
+    });
+    test('winning back joins the old streak, the missed day and today', () {
+      final s = repairStreak(brokenStreak: 6, currentStreak: 1, freezes: 0);
+      expect(s.streak, 8);
+      expect(s.freezes, 1); // passed 7 on the way
+    });
+    test('weeks start on Monday', () {
+      expect(weekStart(thu), DateTime.utc(2026, 10, 26));
+      expect(weekStart(sun), DateTime.utc(2026, 10, 26));
     });
     test('study time reads naturally', () {
       expect(formatStudyTime(0), '0 мин');

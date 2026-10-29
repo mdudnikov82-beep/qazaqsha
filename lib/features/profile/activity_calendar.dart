@@ -130,7 +130,10 @@ class ActivityCalendar extends StatelessWidget {
     if (day.isAfter(today)) return SizedBox.square(dimension: size);
     final data = byDay[day];
     final level = _level(data);
-    final what = data == null || level == 0
+    final frozen = level == 0 && (data?.frozen ?? false);
+    final what = frozen
+        ? 'серию сохранила заморозка'
+        : data == null || level == 0
         ? 'без занятий'
         : '${data.xp} XP, ${data.sessions} '
               '${plural(data.sessions, 'занятие', 'занятия', 'занятий')}';
@@ -141,7 +144,7 @@ class ActivityCalendar extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: cellColor(c, level),
+          color: frozen ? c.sky.withValues(alpha: 0.35) : cellColor(c, level),
           borderRadius: BorderRadius.circular(size / 4),
           border: day == today
               ? Border.all(color: AppColors.gold, width: 2)

@@ -99,6 +99,17 @@ class UserStats extends Table {
   BoolColumn get reminderEnabled =>
       boolean().withDefault(const Constant(false))();
 
+  /// Earned streak protections (see progress_rules.dart).
+  IntColumn get streakFreezes => integer().withDefault(const Constant(0))();
+
+  /// A streak that broke after one missed day, and the day it can still be
+  /// won back on.
+  IntColumn get repairStreak => integer().withDefault(const Constant(0))();
+  DateTimeColumn get repairDay => dateTime().nullable()();
+
+  /// Days a week with study that make the week «done».
+  IntColumn get weeklyGoalDays => integer().withDefault(const Constant(5))();
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   IntColumn get reminderMinutes =>
       integer().withDefault(const Constant(19 * 60))();
@@ -114,6 +125,9 @@ class DailyActivity extends Table {
   IntColumn get xp => integer().withDefault(const Constant(0))();
   IntColumn get seconds => integer().withDefault(const Constant(0))();
   IntColumn get sessions => integer().withDefault(const Constant(0))();
+
+  /// A missed day covered by a streak freeze (or won back).
+  BoolColumn get frozen => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {day};

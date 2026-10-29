@@ -47,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -98,6 +98,17 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 8) {
         await m.createTable(grammarProgress);
+      }
+      if (from < 9) {
+        await m.addColumn(userStats, userStats.streakFreezes);
+        await m.addColumn(userStats, userStats.repairStreak);
+        await m.addColumn(userStats, userStats.repairDay);
+        await m.addColumn(userStats, userStats.weeklyGoalDays);
+        await m.addColumn(dailyActivity, dailyActivity.frozen);
+        // A thank-you for streaks already going.
+        await customStatement(
+          'UPDATE user_stats SET streak_freezes = MIN(2, streak_days / 7)',
+        );
       }
     },
     beforeOpen: (details) async {

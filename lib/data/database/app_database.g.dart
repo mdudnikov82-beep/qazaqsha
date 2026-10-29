@@ -1842,6 +1842,53 @@ class $UserStatsTable extends UserStats
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _streakFreezesMeta = const VerificationMeta(
+    'streakFreezes',
+  );
+  @override
+  late final GeneratedColumn<int> streakFreezes = GeneratedColumn<int>(
+    'streak_freezes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _repairStreakMeta = const VerificationMeta(
+    'repairStreak',
+  );
+  @override
+  late final GeneratedColumn<int> repairStreak = GeneratedColumn<int>(
+    'repair_streak',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _repairDayMeta = const VerificationMeta(
+    'repairDay',
+  );
+  @override
+  late final GeneratedColumn<DateTime> repairDay = GeneratedColumn<DateTime>(
+    'repair_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _weeklyGoalDaysMeta = const VerificationMeta(
+    'weeklyGoalDays',
+  );
+  @override
+  late final GeneratedColumn<int> weeklyGoalDays = GeneratedColumn<int>(
+    'weekly_goal_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
   static const VerificationMeta _reminderMinutesMeta = const VerificationMeta(
     'reminderMinutes',
   );
@@ -1873,6 +1920,10 @@ class $UserStatsTable extends UserStats
     userName,
     hapticsEnabled,
     reminderEnabled,
+    streakFreezes,
+    repairStreak,
+    repairDay,
+    weeklyGoalDays,
     reminderMinutes,
   ];
   @override
@@ -2007,6 +2058,39 @@ class $UserStatsTable extends UserStats
         ),
       );
     }
+    if (data.containsKey('streak_freezes')) {
+      context.handle(
+        _streakFreezesMeta,
+        streakFreezes.isAcceptableOrUnknown(
+          data['streak_freezes']!,
+          _streakFreezesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repair_streak')) {
+      context.handle(
+        _repairStreakMeta,
+        repairStreak.isAcceptableOrUnknown(
+          data['repair_streak']!,
+          _repairStreakMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repair_day')) {
+      context.handle(
+        _repairDayMeta,
+        repairDay.isAcceptableOrUnknown(data['repair_day']!, _repairDayMeta),
+      );
+    }
+    if (data.containsKey('weekly_goal_days')) {
+      context.handle(
+        _weeklyGoalDaysMeta,
+        weeklyGoalDays.isAcceptableOrUnknown(
+          data['weekly_goal_days']!,
+          _weeklyGoalDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('reminder_minutes')) {
       context.handle(
         _reminderMinutesMeta,
@@ -2095,6 +2179,22 @@ class $UserStatsTable extends UserStats
         DriftSqlType.bool,
         data['${effectivePrefix}reminder_enabled'],
       )!,
+      streakFreezes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}streak_freezes'],
+      )!,
+      repairStreak: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}repair_streak'],
+      )!,
+      repairDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}repair_day'],
+      ),
+      weeklyGoalDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}weekly_goal_days'],
+      )!,
       reminderMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}reminder_minutes'],
@@ -2140,6 +2240,17 @@ class UserStat extends DataClass implements Insertable<UserStat> {
   final bool hapticsEnabled;
   final bool reminderEnabled;
 
+  /// Earned streak protections (see progress_rules.dart).
+  final int streakFreezes;
+
+  /// A streak that broke after one missed day, and the day it can still be
+  /// won back on.
+  final int repairStreak;
+  final DateTime? repairDay;
+
+  /// Days a week with study that make the week «done».
+  final int weeklyGoalDays;
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   final int reminderMinutes;
   const UserStat({
@@ -2160,6 +2271,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     this.userName,
     required this.hapticsEnabled,
     required this.reminderEnabled,
+    required this.streakFreezes,
+    required this.repairStreak,
+    this.repairDay,
+    required this.weeklyGoalDays,
     required this.reminderMinutes,
   });
   @override
@@ -2192,6 +2307,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     }
     map['haptics_enabled'] = Variable<bool>(hapticsEnabled);
     map['reminder_enabled'] = Variable<bool>(reminderEnabled);
+    map['streak_freezes'] = Variable<int>(streakFreezes);
+    map['repair_streak'] = Variable<int>(repairStreak);
+    if (!nullToAbsent || repairDay != null) {
+      map['repair_day'] = Variable<DateTime>(repairDay);
+    }
+    map['weekly_goal_days'] = Variable<int>(weeklyGoalDays);
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     return map;
   }
@@ -2221,6 +2342,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           : Value(userName),
       hapticsEnabled: Value(hapticsEnabled),
       reminderEnabled: Value(reminderEnabled),
+      streakFreezes: Value(streakFreezes),
+      repairStreak: Value(repairStreak),
+      repairDay: repairDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repairDay),
+      weeklyGoalDays: Value(weeklyGoalDays),
       reminderMinutes: Value(reminderMinutes),
     );
   }
@@ -2250,6 +2377,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       userName: serializer.fromJson<String?>(json['userName']),
       hapticsEnabled: serializer.fromJson<bool>(json['hapticsEnabled']),
       reminderEnabled: serializer.fromJson<bool>(json['reminderEnabled']),
+      streakFreezes: serializer.fromJson<int>(json['streakFreezes']),
+      repairStreak: serializer.fromJson<int>(json['repairStreak']),
+      repairDay: serializer.fromJson<DateTime?>(json['repairDay']),
+      weeklyGoalDays: serializer.fromJson<int>(json['weeklyGoalDays']),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
     );
   }
@@ -2276,6 +2407,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       'userName': serializer.toJson<String?>(userName),
       'hapticsEnabled': serializer.toJson<bool>(hapticsEnabled),
       'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
+      'streakFreezes': serializer.toJson<int>(streakFreezes),
+      'repairStreak': serializer.toJson<int>(repairStreak),
+      'repairDay': serializer.toJson<DateTime?>(repairDay),
+      'weeklyGoalDays': serializer.toJson<int>(weeklyGoalDays),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
     };
   }
@@ -2298,6 +2433,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     Value<String?> userName = const Value.absent(),
     bool? hapticsEnabled,
     bool? reminderEnabled,
+    int? streakFreezes,
+    int? repairStreak,
+    Value<DateTime?> repairDay = const Value.absent(),
+    int? weeklyGoalDays,
     int? reminderMinutes,
   }) => UserStat(
     id: id ?? this.id,
@@ -2319,6 +2458,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     userName: userName.present ? userName.value : this.userName,
     hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
     reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+    streakFreezes: streakFreezes ?? this.streakFreezes,
+    repairStreak: repairStreak ?? this.repairStreak,
+    repairDay: repairDay.present ? repairDay.value : this.repairDay,
+    weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
@@ -2364,6 +2507,16 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       reminderEnabled: data.reminderEnabled.present
           ? data.reminderEnabled.value
           : this.reminderEnabled,
+      streakFreezes: data.streakFreezes.present
+          ? data.streakFreezes.value
+          : this.streakFreezes,
+      repairStreak: data.repairStreak.present
+          ? data.repairStreak.value
+          : this.repairStreak,
+      repairDay: data.repairDay.present ? data.repairDay.value : this.repairDay,
+      weeklyGoalDays: data.weeklyGoalDays.present
+          ? data.weeklyGoalDays.value
+          : this.weeklyGoalDays,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -2390,13 +2543,17 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('userName: $userName, ')
           ..write('hapticsEnabled: $hapticsEnabled, ')
           ..write('reminderEnabled: $reminderEnabled, ')
+          ..write('streakFreezes: $streakFreezes, ')
+          ..write('repairStreak: $repairStreak, ')
+          ..write('repairDay: $repairDay, ')
+          ..write('weeklyGoalDays: $weeklyGoalDays, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     xp,
     streakDays,
@@ -2414,8 +2571,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     userName,
     hapticsEnabled,
     reminderEnabled,
+    streakFreezes,
+    repairStreak,
+    repairDay,
+    weeklyGoalDays,
     reminderMinutes,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2437,6 +2598,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.userName == this.userName &&
           other.hapticsEnabled == this.hapticsEnabled &&
           other.reminderEnabled == this.reminderEnabled &&
+          other.streakFreezes == this.streakFreezes &&
+          other.repairStreak == this.repairStreak &&
+          other.repairDay == this.repairDay &&
+          other.weeklyGoalDays == this.weeklyGoalDays &&
           other.reminderMinutes == this.reminderMinutes);
 }
 
@@ -2458,6 +2623,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<String?> userName;
   final Value<bool> hapticsEnabled;
   final Value<bool> reminderEnabled;
+  final Value<int> streakFreezes;
+  final Value<int> repairStreak;
+  final Value<DateTime?> repairDay;
+  final Value<int> weeklyGoalDays;
   final Value<int> reminderMinutes;
   const UserStatsCompanion({
     this.id = const Value.absent(),
@@ -2477,6 +2646,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.userName = const Value.absent(),
     this.hapticsEnabled = const Value.absent(),
     this.reminderEnabled = const Value.absent(),
+    this.streakFreezes = const Value.absent(),
+    this.repairStreak = const Value.absent(),
+    this.repairDay = const Value.absent(),
+    this.weeklyGoalDays = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   UserStatsCompanion.insert({
@@ -2497,6 +2670,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.userName = const Value.absent(),
     this.hapticsEnabled = const Value.absent(),
     this.reminderEnabled = const Value.absent(),
+    this.streakFreezes = const Value.absent(),
+    this.repairStreak = const Value.absent(),
+    this.repairDay = const Value.absent(),
+    this.weeklyGoalDays = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   static Insertable<UserStat> custom({
@@ -2517,6 +2694,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<String>? userName,
     Expression<bool>? hapticsEnabled,
     Expression<bool>? reminderEnabled,
+    Expression<int>? streakFreezes,
+    Expression<int>? repairStreak,
+    Expression<DateTime>? repairDay,
+    Expression<int>? weeklyGoalDays,
     Expression<int>? reminderMinutes,
   }) {
     return RawValuesInsertable({
@@ -2537,6 +2718,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (userName != null) 'user_name': userName,
       if (hapticsEnabled != null) 'haptics_enabled': hapticsEnabled,
       if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
+      if (streakFreezes != null) 'streak_freezes': streakFreezes,
+      if (repairStreak != null) 'repair_streak': repairStreak,
+      if (repairDay != null) 'repair_day': repairDay,
+      if (weeklyGoalDays != null) 'weekly_goal_days': weeklyGoalDays,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
     });
   }
@@ -2559,6 +2744,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<String?>? userName,
     Value<bool>? hapticsEnabled,
     Value<bool>? reminderEnabled,
+    Value<int>? streakFreezes,
+    Value<int>? repairStreak,
+    Value<DateTime?>? repairDay,
+    Value<int>? weeklyGoalDays,
     Value<int>? reminderMinutes,
   }) {
     return UserStatsCompanion(
@@ -2579,6 +2768,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       userName: userName ?? this.userName,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      streakFreezes: streakFreezes ?? this.streakFreezes,
+      repairStreak: repairStreak ?? this.repairStreak,
+      repairDay: repairDay ?? this.repairDay,
+      weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
   }
@@ -2639,6 +2832,18 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (reminderEnabled.present) {
       map['reminder_enabled'] = Variable<bool>(reminderEnabled.value);
     }
+    if (streakFreezes.present) {
+      map['streak_freezes'] = Variable<int>(streakFreezes.value);
+    }
+    if (repairStreak.present) {
+      map['repair_streak'] = Variable<int>(repairStreak.value);
+    }
+    if (repairDay.present) {
+      map['repair_day'] = Variable<DateTime>(repairDay.value);
+    }
+    if (weeklyGoalDays.present) {
+      map['weekly_goal_days'] = Variable<int>(weeklyGoalDays.value);
+    }
     if (reminderMinutes.present) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
     }
@@ -2665,6 +2870,10 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('userName: $userName, ')
           ..write('hapticsEnabled: $hapticsEnabled, ')
           ..write('reminderEnabled: $reminderEnabled, ')
+          ..write('streakFreezes: $streakFreezes, ')
+          ..write('repairStreak: $repairStreak, ')
+          ..write('repairDay: $repairDay, ')
+          ..write('weeklyGoalDays: $weeklyGoalDays, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -3547,8 +3756,21 @@ class $DailyActivityTable extends DailyActivity
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _frozenMeta = const VerificationMeta('frozen');
   @override
-  List<GeneratedColumn> get $columns => [day, xp, seconds, sessions];
+  late final GeneratedColumn<bool> frozen = GeneratedColumn<bool>(
+    'frozen',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("frozen" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [day, xp, seconds, sessions, frozen];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3584,6 +3806,12 @@ class $DailyActivityTable extends DailyActivity
         sessions.isAcceptableOrUnknown(data['sessions']!, _sessionsMeta),
       );
     }
+    if (data.containsKey('frozen')) {
+      context.handle(
+        _frozenMeta,
+        frozen.isAcceptableOrUnknown(data['frozen']!, _frozenMeta),
+      );
+    }
     return context;
   }
 
@@ -3609,6 +3837,10 @@ class $DailyActivityTable extends DailyActivity
         DriftSqlType.int,
         data['${effectivePrefix}sessions'],
       )!,
+      frozen: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}frozen'],
+      )!,
     );
   }
 
@@ -3625,11 +3857,15 @@ class DailyActivityData extends DataClass
   final int xp;
   final int seconds;
   final int sessions;
+
+  /// A missed day covered by a streak freeze (or won back).
+  final bool frozen;
   const DailyActivityData({
     required this.day,
     required this.xp,
     required this.seconds,
     required this.sessions,
+    required this.frozen,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3638,6 +3874,7 @@ class DailyActivityData extends DataClass
     map['xp'] = Variable<int>(xp);
     map['seconds'] = Variable<int>(seconds);
     map['sessions'] = Variable<int>(sessions);
+    map['frozen'] = Variable<bool>(frozen);
     return map;
   }
 
@@ -3647,6 +3884,7 @@ class DailyActivityData extends DataClass
       xp: Value(xp),
       seconds: Value(seconds),
       sessions: Value(sessions),
+      frozen: Value(frozen),
     );
   }
 
@@ -3660,6 +3898,7 @@ class DailyActivityData extends DataClass
       xp: serializer.fromJson<int>(json['xp']),
       seconds: serializer.fromJson<int>(json['seconds']),
       sessions: serializer.fromJson<int>(json['sessions']),
+      frozen: serializer.fromJson<bool>(json['frozen']),
     );
   }
   @override
@@ -3670,6 +3909,7 @@ class DailyActivityData extends DataClass
       'xp': serializer.toJson<int>(xp),
       'seconds': serializer.toJson<int>(seconds),
       'sessions': serializer.toJson<int>(sessions),
+      'frozen': serializer.toJson<bool>(frozen),
     };
   }
 
@@ -3678,11 +3918,13 @@ class DailyActivityData extends DataClass
     int? xp,
     int? seconds,
     int? sessions,
+    bool? frozen,
   }) => DailyActivityData(
     day: day ?? this.day,
     xp: xp ?? this.xp,
     seconds: seconds ?? this.seconds,
     sessions: sessions ?? this.sessions,
+    frozen: frozen ?? this.frozen,
   );
   DailyActivityData copyWithCompanion(DailyActivityCompanion data) {
     return DailyActivityData(
@@ -3690,6 +3932,7 @@ class DailyActivityData extends DataClass
       xp: data.xp.present ? data.xp.value : this.xp,
       seconds: data.seconds.present ? data.seconds.value : this.seconds,
       sessions: data.sessions.present ? data.sessions.value : this.sessions,
+      frozen: data.frozen.present ? data.frozen.value : this.frozen,
     );
   }
 
@@ -3699,13 +3942,14 @@ class DailyActivityData extends DataClass
           ..write('day: $day, ')
           ..write('xp: $xp, ')
           ..write('seconds: $seconds, ')
-          ..write('sessions: $sessions')
+          ..write('sessions: $sessions, ')
+          ..write('frozen: $frozen')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(day, xp, seconds, sessions);
+  int get hashCode => Object.hash(day, xp, seconds, sessions, frozen);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3713,7 +3957,8 @@ class DailyActivityData extends DataClass
           other.day == this.day &&
           other.xp == this.xp &&
           other.seconds == this.seconds &&
-          other.sessions == this.sessions);
+          other.sessions == this.sessions &&
+          other.frozen == this.frozen);
 }
 
 class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
@@ -3721,12 +3966,14 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
   final Value<int> xp;
   final Value<int> seconds;
   final Value<int> sessions;
+  final Value<bool> frozen;
   final Value<int> rowid;
   const DailyActivityCompanion({
     this.day = const Value.absent(),
     this.xp = const Value.absent(),
     this.seconds = const Value.absent(),
     this.sessions = const Value.absent(),
+    this.frozen = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DailyActivityCompanion.insert({
@@ -3734,6 +3981,7 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
     this.xp = const Value.absent(),
     this.seconds = const Value.absent(),
     this.sessions = const Value.absent(),
+    this.frozen = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : day = Value(day);
   static Insertable<DailyActivityData> custom({
@@ -3741,6 +3989,7 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
     Expression<int>? xp,
     Expression<int>? seconds,
     Expression<int>? sessions,
+    Expression<bool>? frozen,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3748,6 +3997,7 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
       if (xp != null) 'xp': xp,
       if (seconds != null) 'seconds': seconds,
       if (sessions != null) 'sessions': sessions,
+      if (frozen != null) 'frozen': frozen,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3757,6 +4007,7 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
     Value<int>? xp,
     Value<int>? seconds,
     Value<int>? sessions,
+    Value<bool>? frozen,
     Value<int>? rowid,
   }) {
     return DailyActivityCompanion(
@@ -3764,6 +4015,7 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
       xp: xp ?? this.xp,
       seconds: seconds ?? this.seconds,
       sessions: sessions ?? this.sessions,
+      frozen: frozen ?? this.frozen,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3783,6 +4035,9 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
     if (sessions.present) {
       map['sessions'] = Variable<int>(sessions.value);
     }
+    if (frozen.present) {
+      map['frozen'] = Variable<bool>(frozen.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3796,6 +4051,7 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
           ..write('xp: $xp, ')
           ..write('seconds: $seconds, ')
           ..write('sessions: $sessions, ')
+          ..write('frozen: $frozen, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5725,6 +5981,10 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<String?> userName,
   Value<bool> hapticsEnabled,
   Value<bool> reminderEnabled,
+  Value<int> streakFreezes,
+  Value<int> repairStreak,
+  Value<DateTime?> repairDay,
+  Value<int> weeklyGoalDays,
   Value<int> reminderMinutes,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
@@ -5745,6 +6005,10 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<String?> userName,
   Value<bool> hapticsEnabled,
   Value<bool> reminderEnabled,
+  Value<int> streakFreezes,
+  Value<int> repairStreak,
+  Value<DateTime?> repairDay,
+  Value<int> weeklyGoalDays,
   Value<int> reminderMinutes,
 });
 
@@ -5840,6 +6104,26 @@ class $$UserStatsTableFilterComposer
 
   ColumnFilters<bool> get reminderEnabled => $composableBuilder(
     column: $table.reminderEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get streakFreezes => $composableBuilder(
+    column: $table.streakFreezes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get repairStreak => $composableBuilder(
+    column: $table.repairStreak,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get repairDay => $composableBuilder(
+    column: $table.repairDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get weeklyGoalDays => $composableBuilder(
+    column: $table.weeklyGoalDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5943,6 +6227,26 @@ class $$UserStatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get streakFreezes => $composableBuilder(
+    column: $table.streakFreezes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get repairStreak => $composableBuilder(
+    column: $table.repairStreak,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get repairDay => $composableBuilder(
+    column: $table.repairDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get weeklyGoalDays => $composableBuilder(
+    column: $table.weeklyGoalDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => ColumnOrderings(column),
@@ -6033,6 +6337,24 @@ class $$UserStatsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get streakFreezes => $composableBuilder(
+    column: $table.streakFreezes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get repairStreak => $composableBuilder(
+    column: $table.repairStreak,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get repairDay =>
+      $composableBuilder(column: $table.repairDay, builder: (column) => column);
+
+  GeneratedColumn<int> get weeklyGoalDays => $composableBuilder(
+    column: $table.weeklyGoalDays,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => column,
@@ -6084,6 +6406,10 @@ class $$UserStatsTableTableManager
                 Value<String?> userName = const Value.absent(),
                 Value<bool> hapticsEnabled = const Value.absent(),
                 Value<bool> reminderEnabled = const Value.absent(),
+                Value<int> streakFreezes = const Value.absent(),
+                Value<int> repairStreak = const Value.absent(),
+                Value<DateTime?> repairDay = const Value.absent(),
+                Value<int> weeklyGoalDays = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
@@ -6103,6 +6429,10 @@ class $$UserStatsTableTableManager
                 userName: userName,
                 hapticsEnabled: hapticsEnabled,
                 reminderEnabled: reminderEnabled,
+                streakFreezes: streakFreezes,
+                repairStreak: repairStreak,
+                repairDay: repairDay,
+                weeklyGoalDays: weeklyGoalDays,
                 reminderMinutes: reminderMinutes,
               ),
           createCompanionCallback:
@@ -6124,6 +6454,10 @@ class $$UserStatsTableTableManager
                 Value<String?> userName = const Value.absent(),
                 Value<bool> hapticsEnabled = const Value.absent(),
                 Value<bool> reminderEnabled = const Value.absent(),
+                Value<int> streakFreezes = const Value.absent(),
+                Value<int> repairStreak = const Value.absent(),
+                Value<DateTime?> repairDay = const Value.absent(),
+                Value<int> weeklyGoalDays = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
@@ -6143,6 +6477,10 @@ class $$UserStatsTableTableManager
                 userName: userName,
                 hapticsEnabled: hapticsEnabled,
                 reminderEnabled: reminderEnabled,
+                streakFreezes: streakFreezes,
+                repairStreak: repairStreak,
+                repairDay: repairDay,
+                weeklyGoalDays: weeklyGoalDays,
                 reminderMinutes: reminderMinutes,
               ),
           withReferenceMapper: (p0) => p0
@@ -6836,6 +7174,7 @@ typedef $$DailyActivityTableCreateCompanionBuilder =
       Value<int> xp,
       Value<int> seconds,
       Value<int> sessions,
+      Value<bool> frozen,
       Value<int> rowid,
     });
 typedef $$DailyActivityTableUpdateCompanionBuilder =
@@ -6844,6 +7183,7 @@ typedef $$DailyActivityTableUpdateCompanionBuilder =
       Value<int> xp,
       Value<int> seconds,
       Value<int> sessions,
+      Value<bool> frozen,
       Value<int> rowid,
     });
 
@@ -6873,6 +7213,11 @@ class $$DailyActivityTableFilterComposer
 
   ColumnFilters<int> get sessions => $composableBuilder(
     column: $table.sessions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get frozen => $composableBuilder(
+    column: $table.frozen,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6905,6 +7250,11 @@ class $$DailyActivityTableOrderingComposer
     column: $table.sessions,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get frozen => $composableBuilder(
+    column: $table.frozen,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DailyActivityTableAnnotationComposer
@@ -6927,6 +7277,9 @@ class $$DailyActivityTableAnnotationComposer
 
   GeneratedColumn<int> get sessions =>
       $composableBuilder(column: $table.sessions, builder: (column) => column);
+
+  GeneratedColumn<bool> get frozen =>
+      $composableBuilder(column: $table.frozen, builder: (column) => column);
 }
 
 class $$DailyActivityTableTableManager
@@ -6968,12 +7321,14 @@ class $$DailyActivityTableTableManager
                 Value<int> xp = const Value.absent(),
                 Value<int> seconds = const Value.absent(),
                 Value<int> sessions = const Value.absent(),
+                Value<bool> frozen = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyActivityCompanion(
                 day: day,
                 xp: xp,
                 seconds: seconds,
                 sessions: sessions,
+                frozen: frozen,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -6982,12 +7337,14 @@ class $$DailyActivityTableTableManager
                 Value<int> xp = const Value.absent(),
                 Value<int> seconds = const Value.absent(),
                 Value<int> sessions = const Value.absent(),
+                Value<bool> frozen = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyActivityCompanion.insert(
                 day: day,
                 xp: xp,
                 seconds: seconds,
                 sessions: sessions,
+                frozen: frozen,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

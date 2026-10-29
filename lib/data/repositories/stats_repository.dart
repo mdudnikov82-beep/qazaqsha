@@ -61,22 +61,44 @@ class StatsRepository {
     int studySeconds = 0,
   }) async {
     final s = await get();
-    final streak = nextStreak(
+    var step = advanceStreak(
       current: s.streakDays,
       lastActive: s.lastActiveDate,
       now: now,
+      freezes: s.streakFreezes,
     );
+    final today = dayOf(now);
+    // A streak broken by one missed day can be won back today.
+    var repairStreakDays = s.repairDay != null && dayOf(s.repairDay!) == today
+        ? s.repairStreak
+        : 0;
+    if (step.repairable > 0) repairStreakDays = step.repairable;
     final daily = todayXp(
       storedDailyXp: s.dailyXp,
       storedDay: s.dailyXpDate,
       now: now,
     );
+    final frozen = [...step.frozenDays];
+    if (repairStreakDays > 0 &&
+        daily + xp >= repairGoalFactor * s.dailyGoalXp) {
+      step = repairStreak(
+        brokenStreak: repairStreakDays,
+        currentStreak: step.streak,
+        freezes: step.freezes,
+      );
+      repairStreakDays = 0;
+      frozen.add(today.subtract(const Duration(days: 1)));
+    }
+    final streak = step.streak;
     await (_db.update(_db.userStats)..where((r) => r.id.equals(1))).write(
       UserStatsCompanion(
         xp: Value(s.xp + xp),
         dailyXp: Value(daily + xp),
         dailyXpDate: Value(now),
         streakDays: Value(streak),
+        streakFreezes: Value(step.freezes),
+        repairStreak: Value(repairStreakDays),
+        repairDay: Value(repairStreakDays > 0 ? now : null),
         bestStreak: Value(streak > s.bestStreak ? streak : s.bestStreak),
         lastActiveDate: Value(now),
         quizzesCompleted: Value(s.quizzesCompleted + 1),
@@ -86,6 +108,14 @@ class StatsRepository {
       ),
     );
     await _addActivity(now, xp: xp, seconds: studySeconds, sessions: 1);
+    for (final day in frozen) {
+      await _db.customInsert(
+        'INSERT INTO daily_activity (day, frozen) VALUES (?, 1) '
+        'ON CONFLICT(day) DO UPDATE SET frozen = 1',
+        variables: [Variable.withDateTime(day)],
+        updates: {_db.dailyActivity},
+      );
+    }
     return get();
   }
 
@@ -104,6 +134,9 @@ class StatsRepository {
 
   Future<void> setDailyGoal(int xp) =>
       _write(UserStatsCompanion(dailyGoalXp: Value(xp)));
+
+  Future<void> setWeeklyGoal(int days) =>
+      _write(UserStatsCompanion(weeklyGoalDays: Value(days)));
 
   /// Blank or whitespace clears the name.
   Future<void> setUserName(String name) {

@@ -46,6 +46,8 @@ class BackupRepository {
         'total': s.answersTotal,
         'sec': s.studySeconds,
         'name': s.userName,
+        'freezes': s.streakFreezes,
+        'week': s.weeklyGoalDays,
       },
       // Kept for backups read by 1.2.0, which knew one set only.
       'custom': [
@@ -96,7 +98,7 @@ class BackupRepository {
       ],
       'days': [
         for (final d in await _db.select(_db.dailyActivity).get())
-          [ms(d.day), d.xp, d.seconds, d.sessions],
+          [ms(d.day), d.xp, d.seconds, d.sessions, d.frozen ? 1 : 0],
       ],
     };
     final json = utf8.encode(jsonEncode({'v': 1, ...data}));
@@ -231,6 +233,7 @@ class BackupRepository {
                 xp: Value(r[1] as int),
                 seconds: Value(r[2] as int),
                 sessions: Value(r[3] as int),
+                frozen: Value(r.length > 4 && r[4] == 1),
               ),
             );
           }
@@ -250,6 +253,8 @@ class BackupRepository {
             answersTotal: Value(s['total'] as int),
             studySeconds: Value(s['sec'] as int),
             userName: Value(s['name'] as String?),
+            streakFreezes: Value(s['freezes'] as int? ?? 0),
+            weeklyGoalDays: Value(s['week'] as int? ?? 5),
             onboardingDone: const Value(true),
           ),
         );
@@ -275,6 +280,9 @@ class BackupRepository {
         answersCorrect: Value(0),
         answersTotal: Value(0),
         studySeconds: Value(0),
+        streakFreezes: Value(0),
+        repairStreak: Value(0),
+        repairDay: Value(null),
       ),
     );
   });

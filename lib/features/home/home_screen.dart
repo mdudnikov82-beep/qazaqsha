@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../dictionary/word_of_day.dart';
+import '../profile/activity_calendar.dart' show activityWeeks;
+import 'week_card.dart';
 import '../dictionary/word_sheet.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
@@ -56,7 +58,10 @@ class HomeScreen extends ConsumerWidget {
       current: s.streakDays,
       lastActive: s.lastActiveDate,
       now: now,
+      freezes: s.streakFreezes,
     );
+    final activity =
+        ref.watch(activityProvider(activityWeeks)).value ?? const [];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       // Light status bar icons over the teal header.
@@ -75,6 +80,16 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     RiseIn(
                       child: _GoalCard(daily: daily, goal: s.dailyGoalXp),
+                    ),
+                    const SizedBox(height: 14),
+                    RiseIn(
+                      delay: const Duration(milliseconds: 40),
+                      child: WeekCard(
+                        stats: s,
+                        days: activity,
+                        learnedWords: learned,
+                        now: now,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     RiseIn(

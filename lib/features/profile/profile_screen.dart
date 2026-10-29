@@ -35,6 +35,7 @@ class ProfileScreen extends ConsumerWidget {
       current: s.streakDays,
       lastActive: s.lastActiveDate,
       now: now,
+      freezes: s.streakFreezes,
     );
     final facts = AchievementFacts(
       quizzesCompleted: s.quizzesCompleted,
@@ -653,6 +654,18 @@ class _Settings extends ConsumerWidget {
                   ],
                   selected: {stats.dailyGoalXp},
                   onSelectionChanged: (v) => repo.setDailyGoal(v.first),
+                ),
+                const SizedBox(height: 16),
+                const Text('Цель недели', style: label),
+                const SizedBox(height: 8),
+                SegmentedButton<int>(
+                  segments: const [
+                    ButtonSegment(value: 3, label: Text('3 дня')),
+                    ButtonSegment(value: 5, label: Text('5 дней')),
+                    ButtonSegment(value: 7, label: Text('7 дней')),
+                  ],
+                  selected: {stats.weeklyGoalDays},
+                  onSelectionChanged: (v) => repo.setWeeklyGoal(v.first),
                 ),
                 const SizedBox(height: 16),
                 const Text('Тема оформления', style: label),

@@ -119,6 +119,9 @@ class UserStats extends Table {
   /// Show Kazakh words in Latin letters too (the 2021 alphabet).
   BoolColumn get showLatin => boolean().withDefault(const Constant(false))();
 
+  /// Quiet mode: no streak, XP or weekly-goal pressure on screen.
+  BoolColumn get quietMode => boolean().withDefault(const Constant(false))();
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   IntColumn get reminderMinutes =>
       integer().withDefault(const Constant(19 * 60))();

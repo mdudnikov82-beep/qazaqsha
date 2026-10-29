@@ -107,7 +107,7 @@ class HomeScreen extends ConsumerWidget {
       freezes: s.streakFreezes,
       tasksLeft: left,
     );
-    if (lapsed && !_comebackShown) {
+    if (lapsed && !s.quietMode && !_comebackShown) {
       _comebackShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.push('/comeback');
@@ -125,6 +125,7 @@ class HomeScreen extends ConsumerWidget {
               streak: streak,
               freezes: s.streakFreezes,
               xp: s.xp,
+              quiet: s.quietMode,
               name: s.userName,
               mood: mood,
               message: message,
@@ -153,16 +154,18 @@ class HomeScreen extends ConsumerWidget {
                       rule: nextRule,
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  RiseIn(
-                    delay: const Duration(milliseconds: 120),
-                    child: WeekCard(
-                      stats: s,
-                      days: activity,
-                      learnedWords: learned,
-                      now: now,
+                  if (!s.quietMode) ...[
+                    const SizedBox(height: 14),
+                    RiseIn(
+                      delay: const Duration(milliseconds: 120),
+                      child: WeekCard(
+                        stats: s,
+                        days: activity,
+                        learnedWords: learned,
+                        now: now,
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -230,6 +233,7 @@ class _Header extends StatelessWidget {
     required this.streak,
     required this.freezes,
     required this.xp,
+    required this.quiet,
     required this.name,
     required this.mood,
     required this.message,
@@ -239,6 +243,7 @@ class _Header extends StatelessWidget {
   final int streak;
   final int freezes;
   final int xp;
+  final bool quiet;
   final String? name;
   final BarysMood mood;
   final String message;
@@ -283,31 +288,33 @@ class _Header extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _HeaderPill(
-                      semanticsLabel: 'Серия дней: $streak',
-                      icon: const _Flame(),
-                      text: '$streak',
-                    ),
-                    const SizedBox(width: 6),
-                    _HeaderPill(
-                      semanticsLabel: 'Заморозки серии: $freezes',
-                      icon: const Icon(
-                        Icons.ac_unit_rounded,
-                        color: Color(0xFF9EE7F5),
-                        size: 16,
+                    if (!quiet) ...[
+                      _HeaderPill(
+                        semanticsLabel: 'Серия дней: $streak',
+                        icon: const _Flame(),
+                        text: '$streak',
                       ),
-                      text: '$freezes',
-                    ),
-                    const SizedBox(width: 6),
-                    _HeaderPill(
-                      semanticsLabel: '$xp очков опыта',
-                      icon: const Icon(
-                        Icons.bolt_rounded,
-                        color: Colors.white,
-                        size: 18,
+                      const SizedBox(width: 6),
+                      _HeaderPill(
+                        semanticsLabel: 'Заморозки серии: $freezes',
+                        icon: const Icon(
+                          Icons.ac_unit_rounded,
+                          color: Color(0xFF9EE7F5),
+                          size: 16,
+                        ),
+                        text: '$freezes',
                       ),
-                      text: '$xp',
-                    ),
+                      const SizedBox(width: 6),
+                      _HeaderPill(
+                        semanticsLabel: '$xp очков опыта',
+                        icon: const Icon(
+                          Icons.bolt_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        text: '$xp',
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 14),

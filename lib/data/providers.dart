@@ -64,6 +64,11 @@ final showLatinProvider = Provider<bool>(
   (ref) => ref.watch(statsProvider.select((s) => s.value?.showLatin)) ?? false,
 );
 
+/// Quiet mode: learning without streak and XP counters.
+final quietModeProvider = Provider<bool>(
+  (ref) => ref.watch(statsProvider.select((s) => s.value?.quietMode)) ?? false,
+);
+
 final grammarRepositoryProvider = Provider<GrammarRepository>(
   (ref) => GrammarRepository(ref.watch(appDatabaseProvider)),
 );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/providers.dart';
 import '../../app/theme.dart';
 import '../../core/kazakh_letters.dart';
 import '../../core/motion.dart';
@@ -211,7 +213,11 @@ class ChoiceView extends StatelessWidget {
           if (gotIt && isAnswer)
             Positioned(
               top: -6,
-              child: FlyingXp(xp: xpFor(q), color: c.okText),
+              child: Consumer(
+                builder: (context, ref, _) => ref.watch(quietModeProvider)
+                    ? const SizedBox.shrink()
+                    : FlyingXp(xp: xpFor(q), color: c.okText),
+              ),
             ),
         ],
       ),

@@ -379,7 +379,8 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Верно $_correct из $_total · ${r.score}% · +${r.xp} XP',
+                'Верно $_correct из $_total · ${r.score}%'
+                '${ref.watch(quietModeProvider) ? '' : ' · +${r.xp} XP'}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: c.muted,

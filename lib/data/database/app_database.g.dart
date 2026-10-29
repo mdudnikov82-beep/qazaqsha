@@ -1914,6 +1914,21 @@ class $UserStatsTable extends UserStats
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _quietModeMeta = const VerificationMeta(
+    'quietMode',
+  );
+  @override
+  late final GeneratedColumn<bool> quietMode = GeneratedColumn<bool>(
+    'quiet_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("quiet_mode" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _reminderMinutesMeta = const VerificationMeta(
     'reminderMinutes',
   );
@@ -1951,6 +1966,7 @@ class $UserStatsTable extends UserStats
     weeklyGoalDays,
     palette,
     showLatin,
+    quietMode,
     reminderMinutes,
   ];
   @override
@@ -2124,6 +2140,12 @@ class $UserStatsTable extends UserStats
         showLatin.isAcceptableOrUnknown(data['show_latin']!, _showLatinMeta),
       );
     }
+    if (data.containsKey('quiet_mode')) {
+      context.handle(
+        _quietModeMeta,
+        quietMode.isAcceptableOrUnknown(data['quiet_mode']!, _quietModeMeta),
+      );
+    }
     if (data.containsKey('reminder_minutes')) {
       context.handle(
         _reminderMinutesMeta,
@@ -2238,6 +2260,10 @@ class $UserStatsTable extends UserStats
         DriftSqlType.bool,
         data['${effectivePrefix}show_latin'],
       )!,
+      quietMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}quiet_mode'],
+      )!,
       reminderMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}reminder_minutes'],
@@ -2300,6 +2326,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
   /// Show Kazakh words in Latin letters too (the 2021 alphabet).
   final bool showLatin;
 
+  /// Quiet mode: no streak, XP or weekly-goal pressure on screen.
+  final bool quietMode;
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   final int reminderMinutes;
   const UserStat({
@@ -2326,6 +2355,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.weeklyGoalDays,
     required this.palette,
     required this.showLatin,
+    required this.quietMode,
     required this.reminderMinutes,
   });
   @override
@@ -2370,6 +2400,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       );
     }
     map['show_latin'] = Variable<bool>(showLatin);
+    map['quiet_mode'] = Variable<bool>(quietMode);
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     return map;
   }
@@ -2407,6 +2438,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       weeklyGoalDays: Value(weeklyGoalDays),
       palette: Value(palette),
       showLatin: Value(showLatin),
+      quietMode: Value(quietMode),
       reminderMinutes: Value(reminderMinutes),
     );
   }
@@ -2444,6 +2476,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
         serializer.fromJson<int>(json['palette']),
       ),
       showLatin: serializer.fromJson<bool>(json['showLatin']),
+      quietMode: serializer.fromJson<bool>(json['quietMode']),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
     );
   }
@@ -2478,6 +2511,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
         $UserStatsTable.$converterpalette.toJson(palette),
       ),
       'showLatin': serializer.toJson<bool>(showLatin),
+      'quietMode': serializer.toJson<bool>(quietMode),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
     };
   }
@@ -2506,6 +2540,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     int? weeklyGoalDays,
     AppPalette? palette,
     bool? showLatin,
+    bool? quietMode,
     int? reminderMinutes,
   }) => UserStat(
     id: id ?? this.id,
@@ -2533,6 +2568,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
     palette: palette ?? this.palette,
     showLatin: showLatin ?? this.showLatin,
+    quietMode: quietMode ?? this.quietMode,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
@@ -2590,6 +2626,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           : this.weeklyGoalDays,
       palette: data.palette.present ? data.palette.value : this.palette,
       showLatin: data.showLatin.present ? data.showLatin.value : this.showLatin,
+      quietMode: data.quietMode.present ? data.quietMode.value : this.quietMode,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -2622,6 +2659,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('weeklyGoalDays: $weeklyGoalDays, ')
           ..write('palette: $palette, ')
           ..write('showLatin: $showLatin, ')
+          ..write('quietMode: $quietMode, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -2652,6 +2690,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     weeklyGoalDays,
     palette,
     showLatin,
+    quietMode,
     reminderMinutes,
   ]);
   @override
@@ -2681,6 +2720,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.weeklyGoalDays == this.weeklyGoalDays &&
           other.palette == this.palette &&
           other.showLatin == this.showLatin &&
+          other.quietMode == this.quietMode &&
           other.reminderMinutes == this.reminderMinutes);
 }
 
@@ -2708,6 +2748,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<int> weeklyGoalDays;
   final Value<AppPalette> palette;
   final Value<bool> showLatin;
+  final Value<bool> quietMode;
   final Value<int> reminderMinutes;
   const UserStatsCompanion({
     this.id = const Value.absent(),
@@ -2733,6 +2774,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.weeklyGoalDays = const Value.absent(),
     this.palette = const Value.absent(),
     this.showLatin = const Value.absent(),
+    this.quietMode = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   UserStatsCompanion.insert({
@@ -2759,6 +2801,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.weeklyGoalDays = const Value.absent(),
     this.palette = const Value.absent(),
     this.showLatin = const Value.absent(),
+    this.quietMode = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   static Insertable<UserStat> custom({
@@ -2785,6 +2828,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? weeklyGoalDays,
     Expression<int>? palette,
     Expression<bool>? showLatin,
+    Expression<bool>? quietMode,
     Expression<int>? reminderMinutes,
   }) {
     return RawValuesInsertable({
@@ -2811,6 +2855,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (weeklyGoalDays != null) 'weekly_goal_days': weeklyGoalDays,
       if (palette != null) 'palette': palette,
       if (showLatin != null) 'show_latin': showLatin,
+      if (quietMode != null) 'quiet_mode': quietMode,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
     });
   }
@@ -2839,6 +2884,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<int>? weeklyGoalDays,
     Value<AppPalette>? palette,
     Value<bool>? showLatin,
+    Value<bool>? quietMode,
     Value<int>? reminderMinutes,
   }) {
     return UserStatsCompanion(
@@ -2865,6 +2911,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
       palette: palette ?? this.palette,
       showLatin: showLatin ?? this.showLatin,
+      quietMode: quietMode ?? this.quietMode,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
   }
@@ -2945,6 +2992,9 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (showLatin.present) {
       map['show_latin'] = Variable<bool>(showLatin.value);
     }
+    if (quietMode.present) {
+      map['quiet_mode'] = Variable<bool>(quietMode.value);
+    }
     if (reminderMinutes.present) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
     }
@@ -2977,6 +3027,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('weeklyGoalDays: $weeklyGoalDays, ')
           ..write('palette: $palette, ')
           ..write('showLatin: $showLatin, ')
+          ..write('quietMode: $quietMode, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -6637,6 +6688,7 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<int> weeklyGoalDays,
   Value<AppPalette> palette,
   Value<bool> showLatin,
+  Value<bool> quietMode,
   Value<int> reminderMinutes,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
@@ -6663,6 +6715,7 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> weeklyGoalDays,
   Value<AppPalette> palette,
   Value<bool> showLatin,
+  Value<bool> quietMode,
   Value<int> reminderMinutes,
 });
 
@@ -6789,6 +6842,11 @@ class $$UserStatsTableFilterComposer
 
   ColumnFilters<bool> get showLatin => $composableBuilder(
     column: $table.showLatin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get quietMode => $composableBuilder(
+    column: $table.quietMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6922,6 +6980,11 @@ class $$UserStatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get quietMode => $composableBuilder(
+    column: $table.quietMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => ColumnOrderings(column),
@@ -7036,6 +7099,9 @@ class $$UserStatsTableAnnotationComposer
   GeneratedColumn<bool> get showLatin =>
       $composableBuilder(column: $table.showLatin, builder: (column) => column);
 
+  GeneratedColumn<bool> get quietMode =>
+      $composableBuilder(column: $table.quietMode, builder: (column) => column);
+
   GeneratedColumn<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => column,
@@ -7093,6 +7159,7 @@ class $$UserStatsTableTableManager
                 Value<int> weeklyGoalDays = const Value.absent(),
                 Value<AppPalette> palette = const Value.absent(),
                 Value<bool> showLatin = const Value.absent(),
+                Value<bool> quietMode = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
@@ -7118,6 +7185,7 @@ class $$UserStatsTableTableManager
                 weeklyGoalDays: weeklyGoalDays,
                 palette: palette,
                 showLatin: showLatin,
+                quietMode: quietMode,
                 reminderMinutes: reminderMinutes,
               ),
           createCompanionCallback:
@@ -7145,6 +7213,7 @@ class $$UserStatsTableTableManager
                 Value<int> weeklyGoalDays = const Value.absent(),
                 Value<AppPalette> palette = const Value.absent(),
                 Value<bool> showLatin = const Value.absent(),
+                Value<bool> quietMode = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
@@ -7170,6 +7239,7 @@ class $$UserStatsTableTableManager
                 weeklyGoalDays: weeklyGoalDays,
                 palette: palette,
                 showLatin: showLatin,
+                quietMode: quietMode,
                 reminderMinutes: reminderMinutes,
               ),
           withReferenceMapper: (p0) => p0

@@ -534,7 +534,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   }
 }
 
-class _BottomPanel extends StatelessWidget {
+class _BottomPanel extends ConsumerWidget {
   const _BottomPanel({
     required this.question,
     required this.feedback,
@@ -566,7 +566,8 @@ class _BottomPanel extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quiet = ref.watch(quietModeProvider);
     final c = context.colors;
     final q = question;
 
@@ -652,7 +653,7 @@ class _BottomPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (right)
+                if (right && !quiet)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -711,14 +712,15 @@ class _BottomPanel extends StatelessWidget {
   }
 }
 
-class _ResultView extends StatelessWidget {
+class _ResultView extends ConsumerWidget {
   const _ResultView({required this.result, required this.onClose});
 
   final _Result result;
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quiet = ref.watch(quietModeProvider);
     final c = context.colors;
     final failedExam = result.kind == _Kind.exam && !result.examPassed;
     final (title, subtitle) = switch (result.kind) {
@@ -790,23 +792,25 @@ class _ResultView extends StatelessWidget {
                   delay: const Duration(milliseconds: 400),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: _ResultStat(
-                          // Counts up to the earned XP.
-                          value: TweenAnimationBuilder<int>(
-                            tween: IntTween(begin: 0, end: result.xp),
-                            duration: reduceMotion(context)
-                                ? Duration.zero
-                                : const Duration(milliseconds: 800),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, v, _) => Text('+$v'),
+                      if (!quiet) ...[
+                        Expanded(
+                          child: _ResultStat(
+                            // Counts up to the earned XP.
+                            value: TweenAnimationBuilder<int>(
+                              tween: IntTween(begin: 0, end: result.xp),
+                              duration: reduceMotion(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 800),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, v, _) => Text('+$v'),
+                            ),
+                            label: 'XP',
+                            color: c.goldText,
+                            border: AppColors.gold,
                           ),
-                          label: 'XP',
-                          color: c.goldText,
-                          border: AppColors.gold,
                         ),
-                      ),
-                      const SizedBox(width: 10),
+                        const SizedBox(width: 10),
+                      ],
                       Expanded(
                         child: _ResultStat(
                           value: Text('${result.score}%'),

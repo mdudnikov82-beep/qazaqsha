@@ -731,6 +731,16 @@ class _Settings extends ConsumerWidget {
             onTap: () => context.push('/latin'),
           ),
           SwitchListTile(
+            secondary: Icon(Icons.self_improvement_rounded, color: c.accent),
+            title: const Text('Тихий режим', style: label),
+            subtitle: const Text(
+              'Без серии, очков и недельной цели — просто учёба в своём темпе. '
+              'Прогресс считается как обычно',
+            ),
+            value: stats.quietMode,
+            onChanged: repo.setQuietMode,
+          ),
+          SwitchListTile(
             secondary: Icon(Icons.vibration_rounded, color: c.accent),
             title: const Text('Вибрация', style: label),
             subtitle: const Text('При ответах в упражнениях'),
@@ -747,6 +757,8 @@ class _Settings extends ConsumerWidget {
               subtitle: Text(
                 stats.reminderEnabled
                     ? 'Каждый день в ${clock(stats.reminderMinutes)}'
+                    : stats.quietMode
+                    ? 'Раз в день, мягко напомнить об уроке'
                     : 'Раз в день, чтобы не терять серию',
               ),
               value: stats.reminderEnabled,

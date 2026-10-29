@@ -141,6 +141,9 @@ class StatsRepository {
   Future<void> setShowLatin(bool on) =>
       _write(UserStatsCompanion(showLatin: Value(on)));
 
+  Future<void> setQuietMode(bool on) =>
+      _write(UserStatsCompanion(quietMode: Value(on)));
+
   Future<void> setWeeklyGoal(int days) =>
       _write(UserStatsCompanion(weeklyGoalDays: Value(days)));
 

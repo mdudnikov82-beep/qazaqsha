@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/features/dialogues/dialogues.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
+import 'package:qazaqsha/features/home/week_card.dart';
 
 import 'app_harness.dart';
 
@@ -309,6 +310,37 @@ void main() {
     await tester.enterText(find.byType(TextField), 'волк');
     await settle(tester);
     expect(find.textContaining('qasqyr', findRichText: true), findsOneWidget);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('quiet mode hides streak, XP and the week card', (tester) async {
+    final db = await startApp(tester);
+    final streakPill = find.byIcon(Icons.ac_unit_rounded);
+    expect(streakPill, findsWidgets);
+    expect(find.byType(WeekCard), findsOneWidget);
+
+    await tester.tap(find.text('Профиль'));
+    await settle(tester);
+    await tester.scrollUntilVisible(
+      find.text('Тихий режим'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('Тихий режим'));
+    await settle(tester);
+    await tester.tap(find.text('Тихий режим'));
+    await settle(tester);
+    final saved = await tester.runAsync(
+      () => db.select(db.userStats).getSingle(),
+    );
+    expect(saved!.quietMode, isTrue);
+
+    await tester.tap(find.text('Главная'));
+    await settle(tester);
+    expect(streakPill, findsNothing);
+    expect(find.byType(WeekCard), findsNothing);
+    expect(find.text('Задания дня'), findsOneWidget);
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

@@ -10,11 +10,22 @@ void main() {
   );
   final rules = [for (final g in groups) ...g.rules];
 
-  test('100 verb rules in 10 topics, numbered in order', () {
-    expect(groups, hasLength(10));
-    expect(rules, hasLength(100));
-    expect(rules.map((r) => r.number), List.generate(100, (i) => i + 1));
-    expect(rules.map((r) => r.id).toSet(), hasLength(100));
+  test('200 rules: 100 verbs, 50 nouns, 50 other; numbered per part', () {
+    expect(groups, hasLength(20));
+    expect(rules.map((r) => r.id).toSet(), hasLength(200));
+    for (final (part, count) in [
+      ('verbs', 100),
+      ('nouns', 50),
+      ('other', 50),
+    ]) {
+      final own = rulesOfPart(groups, part);
+      expect(own, hasLength(count), reason: part);
+      expect(own.map((r) => r.number), List.generate(count, (i) => i + 1));
+    }
+    expect(
+      {for (final g in groups) g.part},
+      {for (final p in grammarParts) p.id},
+    );
   });
 
   test('every rule explains, shows examples and has 4 sound tasks', () {

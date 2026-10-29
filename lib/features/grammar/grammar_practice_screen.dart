@@ -257,8 +257,11 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   ) {
     final c = context.colors;
     final passed = r.score >= grammarPassScore;
-    final rules = [for (final g in grammar) ...g.rules];
     final rule = _rule;
+    final part = grammar
+        .firstWhere((g) => rule == null || g.rules.contains(rule))
+        .part;
+    final rules = rulesOfPart(grammar, part);
     final next = rule == null
         ? null
         : rules.skipWhile((x) => x.id != rule.id).skip(1).firstOrNull;

@@ -117,7 +117,7 @@ class HomeScreen extends ConsumerWidget {
                           child: _Shortcut(
                             icon: Icons.rule_rounded,
                             title: 'Правила',
-                            subtitle: '100 о глаголах',
+                            subtitle: '200 правил',
                             fg: c.accent,
                             bg: c.accentSoft,
                             onTap: () => context.go('/rules'),

@@ -11,17 +11,30 @@ import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import 'grammar.dart';
 
-/// The «Правила» tab: verb rules in ten topics, with progress.
-class RulesScreen extends ConsumerWidget {
+/// The «Правила» tab: rules by part of speech and topic, with progress.
+class RulesScreen extends ConsumerStatefulWidget {
   const RulesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RulesScreen> createState() => _RulesScreenState();
+}
+
+class _RulesScreenState extends ConsumerState<RulesScreen> {
+  String _part = grammarParts.first.id;
+
+  @override
+  Widget build(BuildContext context) {
     final grammar = ref.watch(grammarProvider);
     if (grammar.value == null) return LoadingScaffold(error: grammar.error);
-    final groups = grammar.value!;
+    final all = grammar.value!;
+    final groups = [
+      for (final g in all)
+        if (g.part == _part) g,
+    ];
     final done = ref.watch(grammarProgressProvider).value ?? const {};
-    final rules = [for (final g in groups) ...g.rules];
+    final rules = rulesOfPart(all, _part);
+    final total = [for (final g in all) ...g.rules].length;
+    final part = grammarParts.firstWhere((p) => p.id == _part);
     final learned = rules
         .where((r) => (done[r.id]?.bestScore ?? 0) >= grammarPassScore)
         .length;
@@ -37,7 +50,7 @@ class RulesScreen extends ConsumerWidget {
           children: [
             TealHeader(
               title: 'Ережелер',
-              subtitle: 'Правила · глаголы',
+              subtitle: 'Правила · $total',
               bottomPadding: 64,
               actions: [
                 Padding(
@@ -56,8 +69,27 @@ class RulesScreen extends ConsumerWidget {
                     if (next != null)
                       _NextCard(rule: next, started: learned > 0)
                     else
-                      const _AllDoneCard(),
-                    const SizedBox(height: 20),
+                      _AllDoneCard(part: part.title),
+                    // Below the card: the part overlapping the header
+                    // doesn't take taps.
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 44,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          for (final p in grammarParts) ...[
+                            ChoiceChip(
+                              label: Text(p.title),
+                              selected: p.id == _part,
+                              onSelected: (_) => setState(() => _part = p.id),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     for (final (i, g) in groups.indexed) ...[
                       _GroupCard(
                         number: i + 1,
@@ -159,7 +191,9 @@ class _NextCard extends StatelessWidget {
 }
 
 class _AllDoneCard extends StatelessWidget {
-  const _AllDoneCard();
+  const _AllDoneCard({required this.part});
+
+  final String part;
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +207,7 @@ class _AllDoneCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Все 100 правил изучены! Повторяйте темы проверками.',
+              '«$part»: все правила изучены! Повторяйте темы проверками.',
               style: TextStyle(
                 color: c.okText,
                 fontSize: 16,
@@ -317,11 +351,15 @@ class RuleScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final grammar = ref.watch(grammarProvider);
     if (grammar.value == null) return LoadingScaffold(error: grammar.error);
-    final rules = [for (final g in grammar.value!) ...g.rules];
+    final group = grammar.value!
+        .where((g) => g.rules.any((r) => r.id == ruleId))
+        .firstOrNull;
+    if (group == null) {
+      return const LoadingScaffold(error: 'Правило не найдено');
+    }
+    final rules = rulesOfPart(grammar.value!, group.part);
     final i = rules.indexWhere((r) => r.id == ruleId);
-    if (i < 0) return const LoadingScaffold(error: 'Правило не найдено');
     final rule = rules[i];
-    final group = grammar.value!.firstWhere((g) => g.rules.contains(rule));
     final score = ref.watch(grammarProgressProvider).value?[rule.id]?.bestScore;
     final c = context.colors;
 

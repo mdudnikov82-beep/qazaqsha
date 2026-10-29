@@ -38,7 +38,7 @@ class GrammarRule {
 
   final String id;
 
-  /// 1-based, across all groups.
+  /// 1-based, within its part (verbs, nouns…).
   final int number;
   final String title;
   final String text;
@@ -51,15 +51,26 @@ class GrammarRule {
   final List<GrammarTask> tasks;
 }
 
+/// Parts of speech the rules are grouped by.
+const grammarParts = [
+  (id: 'verbs', title: 'Глаголы', titleKk: 'Етістік'),
+  (id: 'nouns', title: 'Существительные', titleKk: 'Зат есім'),
+  (id: 'other', title: 'Другие', titleKk: 'Басқа сөз таптары'),
+];
+
 class GrammarGroup {
   const GrammarGroup({
     required this.id,
+    required this.part,
     required this.title,
     required this.titleKk,
     required this.rules,
   });
 
   final String id;
+
+  /// One of [grammarParts].
+  final String part;
   final String title;
   final String titleKk;
   final List<GrammarRule> rules;
@@ -68,7 +79,7 @@ class GrammarGroup {
 /// Parses assets/data/grammar.json.
 List<GrammarGroup> parseGrammar(String json) {
   final root = jsonDecode(json) as Map<String, dynamic>;
-  var number = 0;
+  final numbers = <String, int>{};
   (String, String) pair(Object? row) {
     final r = row as List;
     return (r[0] as String, r[1] as String);
@@ -78,13 +89,18 @@ List<GrammarGroup> parseGrammar(String json) {
     for (final g in (root['groups'] as List).cast<Map<String, dynamic>>())
       GrammarGroup(
         id: g['id'] as String,
+        part: g['part'] as String? ?? 'verbs',
         title: g['title'] as String,
         titleKk: g['titleKk'] as String,
         rules: [
           for (final r in (g['rules'] as List).cast<Map<String, dynamic>>())
             GrammarRule(
               id: r['id'] as String,
-              number: ++number,
+              number: numbers.update(
+                g['part'] as String? ?? 'verbs',
+                (n) => n + 1,
+                ifAbsent: () => 1,
+              ),
               title: r['title'] as String,
               text: r['text'] as String,
               table: [for (final row in r['table'] as List) pair(row)],
@@ -104,6 +120,12 @@ List<GrammarGroup> parseGrammar(String json) {
       ),
   ];
 }
+
+/// Rules of one part, in order.
+List<GrammarRule> rulesOfPart(List<GrammarGroup> groups, String part) => [
+  for (final g in groups)
+    if (g.part == part) ...g.rules,
+];
 
 /// XP for one right answer, and the bonus for a rule done without mistakes.
 const grammarXpPerAnswer = 5;

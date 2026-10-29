@@ -184,6 +184,13 @@ void main() {
     expect(find.text('1. Начальная форма на -у'), findsOneWidget);
     expect(find.text('Основы глагола'), findsOneWidget);
 
+    // Nouns are a part of their own, numbered from 1.
+    await tester.tap(find.text('Существительные'));
+    await settle(tester);
+    expect(find.text('1. -лар / -лер'), findsOneWidget);
+    await tester.tap(find.text('Глаголы'));
+    await settle(tester);
+
     await tester.tap(find.text('Открыть правило'));
     await settle(tester);
     expect(find.text('Правило 1 из 100'), findsOneWidget);

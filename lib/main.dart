@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'data/providers.dart';
+import 'features/splash/splash_gate.dart';
 
 void main() {
   runApp(const ProviderScope(child: QazaqshaApp()));
@@ -45,6 +46,7 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
   @override
   Widget build(BuildContext context) {
     final mode = ref.watch(themeModeProvider);
+    final ready = ref.watch(statsProvider.select((s) => !s.isLoading));
     return MaterialApp.router(
       title: 'Qazaqsha',
       debugShowCheckedModeBanner: false,
@@ -56,6 +58,7 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
       // tap feel laggy, especially on slower phones.
       themeAnimationStyle: AnimationStyle.noAnimation,
       routerConfig: _router,
+      builder: (context, child) => SplashGate(ready: ready, child: child!),
     );
   }
 }

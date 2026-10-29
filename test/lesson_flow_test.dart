@@ -45,7 +45,9 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
   final String prompt;
   if (find.text('Выберите перевод').evaluate().isNotEmpty) {
     prompt = _prompt(tester);
-    await tester.tap(find.text(a.ruToKk[prompt] ?? a.kkToRu[prompt]!));
+    // Some words are spelled the same in both languages («миллион»):
+    // the option is the one below the prompt.
+    await tester.tap(find.text(a.ruToKk[prompt] ?? a.kkToRu[prompt]!).last);
   } else if (find.text('Напишите по-казахски').evaluate().isNotEmpty) {
     prompt = _prompt(tester);
     await tester.enterText(find.byType(TextField), a.ruToKk[prompt]!);
@@ -56,9 +58,10 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
     for (final MapEntry(key: ru, value: kk) in a.ruToKk.entries) {
       // Exams know a whole section's words; only some are on screen.
       if (find.text(ru).evaluate().isEmpty) continue;
-      await tester.tap(find.text(ru));
+      // Same spelling on both sides: the left column comes first.
+      await tester.tap(find.text(ru).first);
       await tester.pump();
-      await tester.tap(find.text(kk));
+      await tester.tap(find.text(kk).last);
       await tester.pump();
     }
   } else if (find.text('Соберите предложение').evaluate().isNotEmpty) {

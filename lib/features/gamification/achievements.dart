@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../lessons/sections.dart';
+
 /// What achievements are checked against after each session.
 class AchievementFacts {
   const AchievementFacts({
@@ -108,8 +110,8 @@ final achievements = <Achievement>[
     title: 'Выпускник',
     description: 'Сдать экзамены всех разделов',
     icon: Icons.school_rounded,
-    isEarned: (f) => f.examsPassed >= 4,
-    goal: 4,
+    isEarned: (f) => f.examsPassed >= courseSections.length,
+    goal: courseSections.length,
     current: (f) => f.examsPassed,
   ),
   Achievement(

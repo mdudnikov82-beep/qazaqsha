@@ -692,6 +692,8 @@ class _SectionBanner extends StatelessWidget {
                       children: [
                         Text(
                           'РАЗДЕЛ $number · ${s.section.titleKk.toUpperCase()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: fg.withValues(alpha: 0.85),
                             fontSize: 12,
@@ -701,6 +703,8 @@ class _SectionBanner extends StatelessWidget {
                         ),
                         Text(
                           s.section.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: fg,
                             fontSize: 19,

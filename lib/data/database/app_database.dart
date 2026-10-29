@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../../features/gamification/progress_rules.dart';
@@ -45,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -90,6 +91,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(dailyActivity);
         await _backfillActivity();
       }
+      if (from < 7) {
+        // Dictionary v2: 500 → 1500 words in three new course sections.
+        await _addNewSeed();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -118,6 +123,68 @@ class AppDatabase extends _$AppDatabase {
       );
     }
     await batch((b) => b.insertAll(dailyActivity, days.values));
+  }
+
+  /// Adds categories, words and sentences of a newer dictionary that this
+  /// database doesn't have yet. Existing rows (and their ids, which
+  /// progress refers to) are left alone; new words only ever come after
+  /// the old ones in a category, so lessons keep their numbers.
+  @visibleForTesting
+  Future<void> addNewSeed() => _addNewSeed();
+
+  Future<void> _addNewSeed() async {
+    final categories = parseDictionary(await _loadSeed());
+    final haveCategories = {
+      for (final c in await select(this.categories).get()) c.id,
+    };
+    final haveWords = {for (final w in await select(words).get()) (w.ru, w.kk)};
+    final haveSentences = {
+      for (final s in await select(sentences).get()) (s.ru, s.kk),
+    };
+    final newSentences = parseSentences(await _loadSentences());
+    await batch((b) {
+      for (final (ci, c) in categories.indexed) {
+        if (!haveCategories.contains(c.id)) {
+          b.insert(
+            this.categories,
+            CategoriesCompanion.insert(
+              id: c.id,
+              titleRu: c.ru,
+              titleKk: c.kk,
+              icon: c.icon,
+              sortOrder: ci,
+            ),
+          );
+        }
+        for (final (wi, w) in c.words.indexed) {
+          if (haveWords.contains((w.ru, w.kk))) continue;
+          b.insert(
+            words,
+            WordsCompanion.insert(
+              categoryId: c.id,
+              ru: w.ru,
+              kk: w.kk,
+              note: Value(w.note),
+              sortOrder: wi,
+              searchText: normalizeForSearch('${w.ru} ${w.kk}'),
+            ),
+            // Someone may have added the same pair as an own word.
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
+      }
+      for (final s in newSentences) {
+        if (haveSentences.contains((s.ru, s.kk))) continue;
+        b.insert(
+          sentences,
+          SentencesCompanion.insert(
+            categoryId: Value(s.categoryId),
+            ru: s.ru,
+            kk: s.kk,
+          ),
+        );
+      }
+    });
   }
 
   Future<void> _seed() async {

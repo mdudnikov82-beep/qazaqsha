@@ -61,6 +61,53 @@ const courseSections = [
     color: Color(0xFFB3366A),
     categoryIds: ['verbs', 'adjectives', 'pronouns', 'adverbs', 'culture'],
   ),
+  CourseSection(
+    id: 'everyday',
+    title: 'Повседневность',
+    titleKk: 'Күнделікті өмір',
+    color: Color(0xFF1B7F4E),
+    categoryIds: [
+      'phrases',
+      'people',
+      'feelings',
+      'shopping',
+      'groceries',
+      'household',
+      'hobby',
+      'sport',
+    ],
+  ),
+  CourseSection(
+    id: 'travel',
+    title: 'Путешествия',
+    titleKk: 'Саяхат',
+    color: Color(0xFF2A62B0),
+    categoryIds: [
+      'travel',
+      'directions',
+      'services',
+      'measures',
+      'geography',
+      'wildlife',
+    ],
+  ),
+  CourseSection(
+    id: 'society',
+    title: 'Общество',
+    titleKk: 'Қоғам',
+    color: Color(0xFF8A4FA8),
+    categoryIds: [
+      'office',
+      'tech',
+      'media',
+      'state',
+      'science',
+      'verbs2',
+      'adjectives2',
+      'traditions',
+      'ideas',
+    ],
+  ),
 ];
 
 /// Share of right answers needed to pass a section exam, in percent.

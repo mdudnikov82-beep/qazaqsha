@@ -3,11 +3,13 @@ import 'package:go_router/go_router.dart';
 
 import '../features/custom_words/import_screen.dart';
 import '../features/dictionary/dictionary_screen.dart';
+import '../features/dictionary/flashcards_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/quiz/quiz_screen.dart';
+import '../features/review/review_mode.dart';
 import '../features/review/review_screen.dart';
 
 /// A fresh router per app instance, so navigation state never leaks between
@@ -71,7 +73,14 @@ GoRouter createRouter({
     ),
     GoRoute(
       path: '/practice/review',
-      builder: (context, state) => const QuizScreen.review(),
+      builder: (context, state) => QuizScreen.review(
+        reviewMode: ReviewMode.parse(state.uri.queryParameters['mode']),
+      ),
+    ),
+    GoRoute(
+      path: '/flashcards/:source',
+      builder: (context, state) =>
+          FlashcardsScreen(source: state.pathParameters['source']!),
     ),
     GoRoute(
       path: '/practice/custom',

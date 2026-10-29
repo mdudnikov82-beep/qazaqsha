@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:drift/drift.dart';
 
 import '../../features/quiz/srs.dart';
+import '../../features/review/review_mode.dart';
 import '../database/app_database.dart';
 
 class ProgressRepository {
@@ -89,6 +92,34 @@ class ProgressRepository {
     return query.map((r) => r.readTable(_db.words)).get();
   }
 
+  /// Words for a review in [mode]. Due words come oldest first, hard ones
+  /// most-mistaken first, the rest in random order.
+  Future<List<Word>> reviewWords(
+    ReviewMode mode,
+    DateTime now, {
+    int limit = reviewSessionSize,
+    Random? random,
+  }) async {
+    if (mode == ReviewMode.due) return dueWords(now, limit: limit);
+    final p = _db.wordProgress;
+    final rows =
+        await (_db.select(_db.words).join([
+              innerJoin(p, p.wordId.equalsExp(_db.words.id)),
+            ])..where(switch (mode) {
+              ReviewMode.hard => p.wrongCount.isBiggerThanValue(0),
+              ReviewMode.favorites => p.isFavorite.equals(true),
+              _ => p.status.isNotValue(LearningStatus.fresh.index),
+            }))
+            .map((r) => (r.readTable(_db.words), r.readTable(p)))
+            .get();
+    if (mode == ReviewMode.hard) {
+      rows.sort((a, b) => hardness(b.$2).compareTo(hardness(a.$2)));
+    } else {
+      rows.shuffle(random);
+    }
+    return [for (final (w, _) in rows.take(limit)) w];
+  }
+
   Future<int> learnedCount() async {
     final count = _db.wordProgress.wordId.count();
     final row =
@@ -100,4 +131,17 @@ class ProgressRepository {
             .getSingle();
     return row.read(count) ?? 0;
   }
+}
+
+/// How badly a word goes: mistakes weigh more the lower the accuracy.
+double hardness(WordProgressData p) {
+  final total = p.correctCount + p.wrongCount;
+  if (total == 0) return 0;
+  return p.wrongCount * (p.wrongCount / total);
+}
+
+/// Share of right answers for a word, 0–100.
+int accuracyOf(WordProgressData p) {
+  final total = p.correctCount + p.wrongCount;
+  return total == 0 ? 0 : (100 * p.correctCount / total).round();
 }

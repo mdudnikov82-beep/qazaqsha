@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
+import '../dictionary/word_of_day.dart';
+import '../dictionary/word_sheet.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
@@ -49,10 +51,7 @@ class HomeScreen extends ConsumerWidget {
         )
         .length;
     final all = words.value!;
-    final wordOfDay =
-        all[dayOf(now).millisecondsSinceEpoch ~/
-            Duration.millisecondsPerDay %
-            all.length];
+    final today = wordOfDay(all, now);
     final streak = visibleStreak(
       current: s.streakDays,
       lastActive: s.lastActiveDate,
@@ -95,7 +94,10 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 14),
                     RiseIn(
                       delay: const Duration(milliseconds: 240),
-                      child: _WordOfDayCard(word: wordOfDay),
+                      child: WordOfDayCard(
+                        word: today,
+                        onTap: () => showWordSheet(context, today),
+                      ),
                     ),
                     if (due > 0) ...[
                       const SizedBox(height: 14),
@@ -669,77 +671,6 @@ class _StatsRow extends StatelessWidget {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _WordOfDayCard extends StatelessWidget {
-  const _WordOfDayCard({required this.word});
-
-  final Word word;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    // A dark card in the light theme; in the dark theme a gold outline
-    // keeps it apart from the other cards.
-    final bg = dark ? c.surface : const Color(0xFF13232E);
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(22),
-        border: dark
-            ? Border.all(color: AppColors.gold.withValues(alpha: 0.5))
-            : null,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned(
-            right: -18,
-            bottom: -14,
-            child: RamHorns(
-              width: 120,
-              color: AppColors.gold.withValues(alpha: 0.25),
-              strokeWidth: 4,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'КҮННІҢ СӨЗІ · СЛОВО ДНЯ',
-                  style: TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                Text(
-                  word.kk,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  word.ru,
-                  style: const TextStyle(
-                    color: Color(0xFF9DB0BB),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

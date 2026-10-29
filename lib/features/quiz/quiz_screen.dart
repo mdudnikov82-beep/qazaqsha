@@ -11,6 +11,7 @@ import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/stats_repository.dart';
 import '../gamification/achievements.dart';
+import '../review/review_mode.dart';
 import '../lessons/sections.dart';
 import 'answer_check.dart';
 import 'questions.dart';
@@ -25,9 +26,10 @@ class QuizScreen extends ConsumerStatefulWidget {
     required String this.categoryId,
     required int this.lessonIndex,
   }) : sectionId = null,
-       isCustom = false;
+       isCustom = false,
+       reviewMode = ReviewMode.due;
 
-  const QuizScreen.review({super.key})
+  const QuizScreen.review({super.key, this.reviewMode = ReviewMode.due})
     : categoryId = null,
       lessonIndex = null,
       sectionId = null,
@@ -36,19 +38,22 @@ class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen.exam({super.key, required String this.sectionId})
     : categoryId = null,
       lessonIndex = null,
-      isCustom = false;
+      isCustom = false,
+      reviewMode = ReviewMode.due;
 
   /// Practice of the user's own words.
   const QuizScreen.custom({super.key})
     : categoryId = null,
       lessonIndex = null,
       sectionId = null,
-      isCustom = true;
+      isCustom = true,
+      reviewMode = ReviewMode.due;
 
   final String? categoryId;
   final int? lessonIndex;
   final String? sectionId;
   final bool isCustom;
+  final ReviewMode reviewMode;
 
   bool get isLesson => categoryId != null;
   bool get isExam => sectionId != null;
@@ -200,7 +205,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       } else {
         final due = await ref
             .read(progressRepositoryProvider)
-            .dueWords(DateTime.now());
+            .reviewWords(widget.reviewMode, DateTime.now());
         questions = _engine.buildReview(words: due, pool: pool);
       }
       setState(

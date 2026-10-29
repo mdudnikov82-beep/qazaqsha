@@ -56,6 +56,14 @@ final allWordsProvider = FutureProvider<List<Word>>(
   (ref) => ref.watch(dictionaryRepositoryProvider).allWords(),
 );
 
+/// Example sentences of all topics, for the word card.
+final sentencesProvider = FutureProvider<List<Sentence>>(
+  (ref) => ref
+      .watch(appDatabaseProvider)
+      .select(ref.watch(appDatabaseProvider).sentences)
+      .get(),
+);
+
 final categoriesProvider = FutureProvider<List<CategoryWithCount>>(
   (ref) => ref.watch(dictionaryRepositoryProvider).categories(),
 );

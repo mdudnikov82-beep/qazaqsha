@@ -112,4 +112,53 @@ void main() {
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('dictionary: search, word card, А–Я, flashcards', (tester) async {
+    final db = await startApp(tester);
+    await tester.tap(find.text('Словарь'));
+    await settle(tester);
+    expect(find.text('КҮННІҢ СӨЗІ · СЛОВО ДНЯ'), findsOneWidget);
+    expect(find.text('РАЗДЕЛ 1 · НЕГІЗДЕР'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'волк');
+    await settle(tester);
+    expect(find.text('қасқыр'), findsOneWidget);
+    await tester.tap(find.text('қасқыр'));
+    await settle(tester);
+    expect(find.text('Новое'), findsOneWidget);
+    expect(find.textContaining('Животные · урок'), findsOneWidget);
+    expect(find.text('Карточки этой темы'), findsOneWidget);
+
+    // Into the topic's flashcards, straight from the card.
+    await tester.tap(find.text('Карточки этой темы'));
+    await settle(tester);
+    expect(find.text('1 из 25'), findsOneWidget);
+    for (var i = 0; i < 25; i++) {
+      await tester.tap(find.text('Перевернуть'));
+      await tester.pump();
+      await tester.tap(find.text(i.isEven ? 'Знаю' : 'Не знаю'));
+      await tester.pump();
+    }
+    await settle(tester);
+    expect(find.text('Знаю: 13 из 25'), findsOneWidget);
+    final seen = await tester.runAsync(() => db.select(db.wordProgress).get());
+    expect(seen, hasLength(25));
+
+    await tester.tap(find.text('Готово'));
+    await settle(tester);
+    await tester.enterText(find.byType(TextField), '');
+    await settle(tester);
+    await tester.tap(find.text('А–Я'));
+    await settle(tester);
+    expect(find.text('Қазақша'), findsOneWidget);
+    expect(find.text('Ә'), findsOneWidget); // letter strip
+
+    await tester.tap(find.text('Повторение'));
+    await settle(tester);
+    expect(find.text('Ждут повторения'), findsOneWidget);
+    expect(find.text('Прогноз на неделю'), findsOneWidget);
+    expect(find.text('Память по ступеням'), findsOneWidget);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

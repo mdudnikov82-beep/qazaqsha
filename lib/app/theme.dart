@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/database/tables.dart' show AppPalette;
+
 /// Design tokens from the Qazaqsha mockups (light and dark palettes).
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
@@ -23,6 +25,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.badSoft,
     required this.badText,
     required this.lockIcon,
+    this.brand = primary,
+    this.brandDeep = primaryShadow,
+    this.onBrandMuted = const Color(0xFFCDEFF6),
   });
 
   // Same in both themes: white text on these passes contrast.
@@ -52,6 +57,13 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color badSoft;
   final Color badText;
   final Color lockIcon;
+
+  /// Header and main-button colour of the current palette; white text on
+  /// it passes contrast. [brandDeep] is its shadow, [onBrandMuted] the
+  /// light secondary text on it.
+  final Color brand;
+  final Color brandDeep;
+  final Color onBrandMuted;
 
   static const light = AppColors(
     bg: Color(0xFFF4F8FA),
@@ -98,7 +110,82 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   @override
-  AppColors copyWith() => this;
+  AppColors copyWith({
+    Color? bg,
+    Color? surface,
+    Color? accent,
+    Color? accentSoft,
+    Color? sky,
+    Color? brand,
+    Color? brandDeep,
+    Color? onBrandMuted,
+  }) => AppColors(
+    bg: bg ?? this.bg,
+    surface: surface ?? this.surface,
+    ink: ink,
+    muted: muted,
+    line: line,
+    track: track,
+    accent: accent ?? this.accent,
+    accentSoft: accentSoft ?? this.accentSoft,
+    sky: sky ?? this.sky,
+    goldSoft: goldSoft,
+    goldText: goldText,
+    flame: flame,
+    ok: ok,
+    okSoft: okSoft,
+    okText: okText,
+    bad: bad,
+    badSoft: badSoft,
+    badText: badText,
+    lockIcon: lockIcon,
+    brand: brand ?? this.brand,
+    brandDeep: brandDeep ?? this.brandDeep,
+    onBrandMuted: onBrandMuted ?? this.onBrandMuted,
+  );
+
+  /// Colours of [palette] in [brightness].
+  static AppColors of(AppPalette palette, Brightness brightness) {
+    final base = brightness == Brightness.dark ? dark : light;
+    final d = brightness == Brightness.dark;
+    return switch (palette) {
+      AppPalette.teal => base,
+      AppPalette.steppe => base.copyWith(
+        brand: const Color(0xFF8C5A00),
+        brandDeep: const Color(0xFF6B4400),
+        onBrandMuted: const Color(0xFFF6E3BD),
+        accent: d ? const Color(0xFFF0C674) : const Color(0xFF8C5A00),
+        accentSoft: d ? const Color(0xFF3A2B0C) : const Color(0xFFFBF0D9),
+        sky: d ? const Color(0xFFE6A93A) : const Color(0xFFC98A12),
+      ),
+      AppPalette.tianshan => base.copyWith(
+        brand: const Color(0xFF24508F),
+        brandDeep: const Color(0xFF1A3D6E),
+        onBrandMuted: const Color(0xFFD6E6FA),
+        accent: d ? const Color(0xFF9CC3F5) : const Color(0xFF24508F),
+        accentSoft: d ? const Color(0xFF13284A) : const Color(0xFFE3EEFB),
+        sky: d ? const Color(0xFF6AA6F0) : const Color(0xFF3D7BD9),
+      ),
+      AppPalette.nauryz => base.copyWith(
+        brand: const Color(0xFF1E7A4C),
+        brandDeep: const Color(0xFF166339),
+        onBrandMuted: const Color(0xFFD3F0DF),
+        accent: d ? const Color(0xFF7FDCA9) : const Color(0xFF1E7A4C),
+        accentSoft: d ? const Color(0xFF0F3020) : const Color(0xFFE3F5EA),
+        sky: d ? const Color(0xFF4CCB8A) : const Color(0xFF2EB872),
+      ),
+      AppPalette.night => base.copyWith(
+        brand: const Color(0xFF3B3280),
+        brandDeep: const Color(0xFF2A2360),
+        onBrandMuted: const Color(0xFFDCD8F5),
+        accent: d ? const Color(0xFFB3A8FF) : const Color(0xFF3B3280),
+        accentSoft: d ? const Color(0xFF1E1A44) : const Color(0xFFECEAFB),
+        sky: d ? const Color(0xFF8F82FF) : const Color(0xFF6C5CE7),
+        bg: d ? const Color(0xFF0B0A1A) : null,
+        surface: d ? const Color(0xFF17152E) : null,
+      ),
+    };
+  }
 
   @override
   AppColors lerp(AppColors? other, double t) {
@@ -124,6 +211,9 @@ class AppColors extends ThemeExtension<AppColors> {
       badSoft: l(badSoft, other.badSoft),
       badText: l(badText, other.badText),
       lockIcon: l(lockIcon, other.lockIcon),
+      brand: l(brand, other.brand),
+      brandDeep: l(brandDeep, other.brandDeep),
+      onBrandMuted: l(onBrandMuted, other.onBrandMuted),
     );
   }
 }
@@ -132,14 +222,26 @@ extension AppColorsX on BuildContext {
   AppColors get colors => Theme.of(this).extension<AppColors>()!;
 }
 
+/// A palette, its name and the level that unlocks it.
+const paletteInfo = <AppPalette, ({String title, int level})>{
+  AppPalette.teal: (title: 'Бирюза', level: 1),
+  AppPalette.steppe: (title: 'Дала · Степь', level: 3),
+  AppPalette.tianshan: (title: 'Тянь-Шань', level: 5),
+  AppPalette.nauryz: (title: 'Наурыз', level: 7),
+  AppPalette.night: (title: 'Түн · Ночь', level: 10),
+};
+
 abstract final class AppTheme {
-  static final light = _build(AppColors.light, Brightness.light);
-  static final dark = _build(AppColors.dark, Brightness.dark);
+  static final light = build(AppPalette.teal, Brightness.light);
+  static final dark = build(AppPalette.teal, Brightness.dark);
+
+  static ThemeData build(AppPalette palette, Brightness brightness) =>
+      _build(AppColors.of(palette, brightness), brightness);
 
   static ThemeData _build(AppColors c, Brightness brightness) {
     final scheme = ColorScheme(
       brightness: brightness,
-      primary: AppColors.primary,
+      primary: c.brand,
       onPrimary: Colors.white,
       secondary: AppColors.gold,
       onSecondary: AppColors.onGold,
@@ -215,7 +317,7 @@ abstract final class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: c.brand,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(56),
           shape: RoundedRectangleBorder(

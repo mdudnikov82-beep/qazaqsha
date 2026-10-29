@@ -62,6 +62,9 @@ class WordProgress extends Table {
   Set<Column> get primaryKey => {wordId};
 }
 
+/// Colour themes, unlocked by level (see theme.dart).
+enum AppPalette { teal, steppe, tianshan, nauryz, night }
+
 /// Matches Flutter's ThemeMode order: system, light, dark.
 enum AppThemeMode { system, light, dark }
 
@@ -109,6 +112,9 @@ class UserStats extends Table {
 
   /// Days a week with study that make the week «done».
   IntColumn get weeklyGoalDays => integer().withDefault(const Constant(5))();
+
+  IntColumn get palette =>
+      intEnum<AppPalette>().withDefault(const Constant(0))();
 
   /// Show Kazakh words in Latin letters too (the 2021 alphabet).
   BoolColumn get showLatin => boolean().withDefault(const Constant(false))();

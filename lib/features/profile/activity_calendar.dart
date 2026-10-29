@@ -41,7 +41,7 @@ class ActivityCalendar extends StatelessWidget {
 
   static Color cellColor(AppColors c, int level) => switch (level) {
     0 => c.track,
-    _ => AppColors.primary.withValues(alpha: 0.25 + 0.25 * (level - 1)),
+    _ => c.brand.withValues(alpha: 0.25 + 0.25 * (level - 1)),
   };
 
   @override

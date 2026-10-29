@@ -1889,6 +1889,16 @@ class $UserStatsTable extends UserStats
     requiredDuringInsert: false,
     defaultValue: const Constant(5),
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<AppPalette, int> palette =
+      GeneratedColumn<int>(
+        'palette',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<AppPalette>($UserStatsTable.$converterpalette);
   static const VerificationMeta _showLatinMeta = const VerificationMeta(
     'showLatin',
   );
@@ -1939,6 +1949,7 @@ class $UserStatsTable extends UserStats
     repairStreak,
     repairDay,
     weeklyGoalDays,
+    palette,
     showLatin,
     reminderMinutes,
   ];
@@ -2217,6 +2228,12 @@ class $UserStatsTable extends UserStats
         DriftSqlType.int,
         data['${effectivePrefix}weekly_goal_days'],
       )!,
+      palette: $UserStatsTable.$converterpalette.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}palette'],
+        )!,
+      ),
       showLatin: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}show_latin'],
@@ -2235,6 +2252,8 @@ class $UserStatsTable extends UserStats
 
   static JsonTypeConverter2<AppThemeMode, int, int> $converterthemeMode =
       const EnumIndexConverter<AppThemeMode>(AppThemeMode.values);
+  static JsonTypeConverter2<AppPalette, int, int> $converterpalette =
+      const EnumIndexConverter<AppPalette>(AppPalette.values);
 }
 
 class UserStat extends DataClass implements Insertable<UserStat> {
@@ -2276,6 +2295,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
 
   /// Days a week with study that make the week «done».
   final int weeklyGoalDays;
+  final AppPalette palette;
 
   /// Show Kazakh words in Latin letters too (the 2021 alphabet).
   final bool showLatin;
@@ -2304,6 +2324,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.repairStreak,
     this.repairDay,
     required this.weeklyGoalDays,
+    required this.palette,
     required this.showLatin,
     required this.reminderMinutes,
   });
@@ -2343,6 +2364,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       map['repair_day'] = Variable<DateTime>(repairDay);
     }
     map['weekly_goal_days'] = Variable<int>(weeklyGoalDays);
+    {
+      map['palette'] = Variable<int>(
+        $UserStatsTable.$converterpalette.toSql(palette),
+      );
+    }
     map['show_latin'] = Variable<bool>(showLatin);
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     return map;
@@ -2379,6 +2405,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ? const Value.absent()
           : Value(repairDay),
       weeklyGoalDays: Value(weeklyGoalDays),
+      palette: Value(palette),
       showLatin: Value(showLatin),
       reminderMinutes: Value(reminderMinutes),
     );
@@ -2413,6 +2440,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       repairStreak: serializer.fromJson<int>(json['repairStreak']),
       repairDay: serializer.fromJson<DateTime?>(json['repairDay']),
       weeklyGoalDays: serializer.fromJson<int>(json['weeklyGoalDays']),
+      palette: $UserStatsTable.$converterpalette.fromJson(
+        serializer.fromJson<int>(json['palette']),
+      ),
       showLatin: serializer.fromJson<bool>(json['showLatin']),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
     );
@@ -2444,6 +2474,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       'repairStreak': serializer.toJson<int>(repairStreak),
       'repairDay': serializer.toJson<DateTime?>(repairDay),
       'weeklyGoalDays': serializer.toJson<int>(weeklyGoalDays),
+      'palette': serializer.toJson<int>(
+        $UserStatsTable.$converterpalette.toJson(palette),
+      ),
       'showLatin': serializer.toJson<bool>(showLatin),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
     };
@@ -2471,6 +2504,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     int? repairStreak,
     Value<DateTime?> repairDay = const Value.absent(),
     int? weeklyGoalDays,
+    AppPalette? palette,
     bool? showLatin,
     int? reminderMinutes,
   }) => UserStat(
@@ -2497,6 +2531,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     repairStreak: repairStreak ?? this.repairStreak,
     repairDay: repairDay.present ? repairDay.value : this.repairDay,
     weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
+    palette: palette ?? this.palette,
     showLatin: showLatin ?? this.showLatin,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
   );
@@ -2553,6 +2588,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       weeklyGoalDays: data.weeklyGoalDays.present
           ? data.weeklyGoalDays.value
           : this.weeklyGoalDays,
+      palette: data.palette.present ? data.palette.value : this.palette,
       showLatin: data.showLatin.present ? data.showLatin.value : this.showLatin,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
@@ -2584,6 +2620,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('repairStreak: $repairStreak, ')
           ..write('repairDay: $repairDay, ')
           ..write('weeklyGoalDays: $weeklyGoalDays, ')
+          ..write('palette: $palette, ')
           ..write('showLatin: $showLatin, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
@@ -2613,6 +2650,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     repairStreak,
     repairDay,
     weeklyGoalDays,
+    palette,
     showLatin,
     reminderMinutes,
   ]);
@@ -2641,6 +2679,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.repairStreak == this.repairStreak &&
           other.repairDay == this.repairDay &&
           other.weeklyGoalDays == this.weeklyGoalDays &&
+          other.palette == this.palette &&
           other.showLatin == this.showLatin &&
           other.reminderMinutes == this.reminderMinutes);
 }
@@ -2667,6 +2706,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<int> repairStreak;
   final Value<DateTime?> repairDay;
   final Value<int> weeklyGoalDays;
+  final Value<AppPalette> palette;
   final Value<bool> showLatin;
   final Value<int> reminderMinutes;
   const UserStatsCompanion({
@@ -2691,6 +2731,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.repairStreak = const Value.absent(),
     this.repairDay = const Value.absent(),
     this.weeklyGoalDays = const Value.absent(),
+    this.palette = const Value.absent(),
     this.showLatin = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
@@ -2716,6 +2757,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.repairStreak = const Value.absent(),
     this.repairDay = const Value.absent(),
     this.weeklyGoalDays = const Value.absent(),
+    this.palette = const Value.absent(),
     this.showLatin = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
@@ -2741,6 +2783,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? repairStreak,
     Expression<DateTime>? repairDay,
     Expression<int>? weeklyGoalDays,
+    Expression<int>? palette,
     Expression<bool>? showLatin,
     Expression<int>? reminderMinutes,
   }) {
@@ -2766,6 +2809,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (repairStreak != null) 'repair_streak': repairStreak,
       if (repairDay != null) 'repair_day': repairDay,
       if (weeklyGoalDays != null) 'weekly_goal_days': weeklyGoalDays,
+      if (palette != null) 'palette': palette,
       if (showLatin != null) 'show_latin': showLatin,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
     });
@@ -2793,6 +2837,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<int>? repairStreak,
     Value<DateTime?>? repairDay,
     Value<int>? weeklyGoalDays,
+    Value<AppPalette>? palette,
     Value<bool>? showLatin,
     Value<int>? reminderMinutes,
   }) {
@@ -2818,6 +2863,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       repairStreak: repairStreak ?? this.repairStreak,
       repairDay: repairDay ?? this.repairDay,
       weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
+      palette: palette ?? this.palette,
       showLatin: showLatin ?? this.showLatin,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
@@ -2891,6 +2937,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (weeklyGoalDays.present) {
       map['weekly_goal_days'] = Variable<int>(weeklyGoalDays.value);
     }
+    if (palette.present) {
+      map['palette'] = Variable<int>(
+        $UserStatsTable.$converterpalette.toSql(palette.value),
+      );
+    }
     if (showLatin.present) {
       map['show_latin'] = Variable<bool>(showLatin.value);
     }
@@ -2924,6 +2975,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('repairStreak: $repairStreak, ')
           ..write('repairDay: $repairDay, ')
           ..write('weeklyGoalDays: $weeklyGoalDays, ')
+          ..write('palette: $palette, ')
           ..write('showLatin: $showLatin, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
@@ -6583,6 +6635,7 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<int> repairStreak,
   Value<DateTime?> repairDay,
   Value<int> weeklyGoalDays,
+  Value<AppPalette> palette,
   Value<bool> showLatin,
   Value<int> reminderMinutes,
 });
@@ -6608,6 +6661,7 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> repairStreak,
   Value<DateTime?> repairDay,
   Value<int> weeklyGoalDays,
+  Value<AppPalette> palette,
   Value<bool> showLatin,
   Value<int> reminderMinutes,
 });
@@ -6726,6 +6780,12 @@ class $$UserStatsTableFilterComposer
     column: $table.weeklyGoalDays,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<AppPalette, AppPalette, int> get palette =>
+      $composableBuilder(
+        column: $table.palette,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<bool> get showLatin => $composableBuilder(
     column: $table.showLatin,
@@ -6852,6 +6912,11 @@ class $$UserStatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get palette => $composableBuilder(
+    column: $table.palette,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get showLatin => $composableBuilder(
     column: $table.showLatin,
     builder: (column) => ColumnOrderings(column),
@@ -6965,6 +7030,9 @@ class $$UserStatsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumnWithTypeConverter<AppPalette, int> get palette =>
+      $composableBuilder(column: $table.palette, builder: (column) => column);
+
   GeneratedColumn<bool> get showLatin =>
       $composableBuilder(column: $table.showLatin, builder: (column) => column);
 
@@ -7023,6 +7091,7 @@ class $$UserStatsTableTableManager
                 Value<int> repairStreak = const Value.absent(),
                 Value<DateTime?> repairDay = const Value.absent(),
                 Value<int> weeklyGoalDays = const Value.absent(),
+                Value<AppPalette> palette = const Value.absent(),
                 Value<bool> showLatin = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion(
@@ -7047,6 +7116,7 @@ class $$UserStatsTableTableManager
                 repairStreak: repairStreak,
                 repairDay: repairDay,
                 weeklyGoalDays: weeklyGoalDays,
+                palette: palette,
                 showLatin: showLatin,
                 reminderMinutes: reminderMinutes,
               ),
@@ -7073,6 +7143,7 @@ class $$UserStatsTableTableManager
                 Value<int> repairStreak = const Value.absent(),
                 Value<DateTime?> repairDay = const Value.absent(),
                 Value<int> weeklyGoalDays = const Value.absent(),
+                Value<AppPalette> palette = const Value.absent(),
                 Value<bool> showLatin = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion.insert(
@@ -7097,6 +7168,7 @@ class $$UserStatsTableTableManager
                 repairStreak: repairStreak,
                 repairDay: repairDay,
                 weeklyGoalDays: weeklyGoalDays,
+                palette: palette,
                 showLatin: showLatin,
                 reminderMinutes: reminderMinutes,
               ),

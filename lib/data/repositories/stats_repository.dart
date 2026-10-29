@@ -135,6 +135,9 @@ class StatsRepository {
   Future<void> setDailyGoal(int xp) =>
       _write(UserStatsCompanion(dailyGoalXp: Value(xp)));
 
+  Future<void> setPalette(AppPalette palette) =>
+      _write(UserStatsCompanion(palette: Value(palette)));
+
   Future<void> setShowLatin(bool on) =>
       _write(UserStatsCompanion(showLatin: Value(on)));
 

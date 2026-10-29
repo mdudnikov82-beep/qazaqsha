@@ -13,7 +13,7 @@ class TealHeader extends StatelessWidget {
     this.actions = const [],
     this.bottom,
     this.bottomPadding = 24,
-    this.color = AppColors.primary,
+    this.color,
     this.leading,
   });
 
@@ -26,7 +26,7 @@ class TealHeader extends StatelessWidget {
   final double bottomPadding;
 
   /// Teal by default; a topic screen uses its section's colour.
-  final Color color;
+  final Color? color;
 
   /// E.g. a back button, before the title.
   final Widget? leading;
@@ -36,7 +36,7 @@ class TealHeader extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     return Container(
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? context.colors.brand,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -81,8 +81,8 @@ class TealHeader extends StatelessWidget {
                             subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFCDEFF6),
+                            style: TextStyle(
+                              color: context.colors.onBrandMuted,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),

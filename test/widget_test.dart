@@ -15,8 +15,10 @@ void main() {
     expect(find.text('Сәлем!'), findsOneWidget);
     expect(find.text('Амандасу'), findsOneWidget);
     expect(find.text('Начать урок'), findsOneWidget);
+    expect(find.text('Задания дня'), findsOneWidget);
+    expect(find.text('Пройти урок'), findsOneWidget);
 
-    await tester.tap(find.text('Уроки'));
+    await tester.tap(find.text('Карта'));
     await settle(tester);
     expect(find.text('Основы'), findsOneWidget);
     expect(find.textContaining('Урок 1 из 5'), findsOneWidget);
@@ -29,6 +31,12 @@ void main() {
     await settle(tester);
     expect(find.text('Уровень 1'), findsOneWidget);
     expect(find.text('Тема оформления'), findsOneWidget);
+    // Colour themes beyond the first open with levels.
+    await tester.ensureVisible(find.text('Тянь-Шань'));
+    await tester.tap(find.text('Тянь-Шань'));
+    await tester.pump();
+    expect(find.textContaining('откроется на уровне 5'), findsOneWidget);
+    await settle(tester);
 
     // Theme switches within a single frame, without waiting for the database.
     Brightness brightness() =>
@@ -284,6 +292,8 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('Латиница'));
+    await settle(tester);
     await tester.tap(find.text('Латиница'));
     await settle(tester);
     expect(find.text('Qazaqstan'), findsNothing);

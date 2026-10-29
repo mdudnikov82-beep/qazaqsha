@@ -76,7 +76,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             width: i == _step ? 28 : 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: i == _step ? AppColors.primary : c.line,
+                              color: i == _step ? context.colors.brand : c.line,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -177,11 +177,11 @@ class _Welcome extends StatelessWidget {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: context.colors.brand,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: context.colors.brand.withValues(alpha: 0.3),
                           blurRadius: 28,
                           offset: const Offset(0, 12),
                         ),
@@ -352,7 +352,7 @@ class _GoalTile extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.primary : c.track,
+                      color: selected ? context.colors.brand : c.track,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(

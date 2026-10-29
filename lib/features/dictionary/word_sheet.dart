@@ -71,7 +71,7 @@ class _WordSheet extends ConsumerWidget {
         ?.category;
     final isCustom = isOwnSet(word.categoryId);
     final section = sectionOfCategory(word.categoryId);
-    final accent = section?.color ?? AppColors.primary;
+    final accent = section?.color ?? context.colors.brand;
     final topicWords = [
       for (final w in words)
         if (w.categoryId == word.categoryId) w,

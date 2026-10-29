@@ -8,6 +8,7 @@ import '../features/dictionary/flashcards_screen.dart';
 import '../features/grammar/grammar_practice_screen.dart';
 import '../features/grammar/latin_screen.dart';
 import '../features/grammar/rules_screen.dart';
+import '../features/home/comeback_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
@@ -83,6 +84,10 @@ GoRouter createRouter({
       ),
     ),
     GoRoute(path: '/review', builder: (context, state) => const ReviewScreen()),
+    GoRoute(
+      path: '/comeback',
+      builder: (context, state) => const ComebackScreen(),
+    ),
     GoRoute(
       path: '/dialogues',
       builder: (context, state) => const DialoguesScreen(),
@@ -185,7 +190,7 @@ class _MainShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.map_outlined),
             selectedIcon: Icon(Icons.map_rounded),
-            label: 'Уроки',
+            label: 'Карта',
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),

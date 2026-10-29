@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/motion.dart';
+import '../../core/widgets/barys.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/ornament.dart';
 import '../../data/providers.dart';
@@ -53,6 +54,9 @@ class _Ladder {
   final steps = <_Step>[];
   final exams = <(SectionState, Offset, bool)>[];
   final tracks = <_Track>[];
+
+  /// Section id, colour, and the stretch of the map it covers.
+  final zones = <(String, Color, double, double)>[];
   double height = 0;
 
   _Step? get current {
@@ -70,6 +74,7 @@ class _Ladder {
     var y = 0.0;
     var k = 0;
     for (final s in course.sections) {
+      final zoneTop = y;
       ladder.banners.add((s, y));
       y += _bannerHeight + 56;
       final points = <Offset>[];
@@ -101,6 +106,7 @@ class _Ladder {
       if (s.examPassed || examCurrent) reached = points.length;
       ladder.tracks.add(_Track(points, reached, s.section.color));
       y += _examSize + 64;
+      ladder.zones.add((s.section.id, s.section.color, zoneTop, y));
     }
     ladder.height = y;
     return ladder;
@@ -138,7 +144,7 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Уроки')),
+      appBar: AppBar(title: const Text('Жол картасы')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
         child: Column(
@@ -158,6 +164,14 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _LandscapePainter(
+                            ladder.zones,
+                            ground: context.colors.bg,
+                          ),
+                        ),
+                      ),
                       Positioned.fill(
                         child: CustomPaint(
                           painter: _TrackPainter(
@@ -190,6 +204,16 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
                         ),
                       for (final (s, at, current) in ladder.exams)
                         _examNode(s, at, current, box.maxWidth),
+                      if (ladder.current case final cur?)
+                        Positioned(
+                          left: cur.at.dx > box.maxWidth / 2
+                              ? cur.at.dx - _currentSize / 2 - 58
+                              : cur.at.dx + _currentSize / 2 + 4,
+                          top: cur.at.dy - 56,
+                          child: const IgnorePointer(
+                            child: Barys(size: 54, animate: false),
+                          ),
+                        ),
                       if (selected != null) _bubble(selected, box.maxWidth),
                     ],
                   ),
@@ -798,4 +822,151 @@ class _LevelCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What a section's stretch of the map looks like.
+enum _Scenery { steppe, aul, city, mountains, sea }
+
+_Scenery _sceneryOf(String sectionId) => switch (sectionId) {
+  'basics' || 'speech' => _Scenery.steppe,
+  'life' || 'everyday' => _Scenery.aul,
+  'city' || 'society' => _Scenery.city,
+  'travel' || 'career' => _Scenery.mountains,
+  _ => _Scenery.sea,
+};
+
+/// The map behind the trail: a tinted region per section with its
+/// scenery along the bottom — steppe, aul, city, mountains, sea.
+class _LandscapePainter extends CustomPainter {
+  _LandscapePainter(this.zones, {required this.ground});
+
+  final List<(String, Color, double, double)> zones;
+  final Color ground;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    for (final (id, color, top, bottom) in zones) {
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTRB(-8, top - 8, w + 8, bottom - 16),
+        const Radius.circular(28),
+      );
+      canvas.save();
+      canvas.clipRRect(rect);
+      canvas.drawRRect(
+        rect,
+        Paint()..color = Color.alphaBlend(color.withValues(alpha: .08), ground),
+      );
+      final deco = Paint()..color = color.withValues(alpha: .16);
+      final light = Paint()..color = color.withValues(alpha: .10);
+      final base = bottom - 16;
+      switch (_sceneryOf(id)) {
+        case _Scenery.steppe:
+          canvas.drawCircle(Offset(w - 40, top + 150), 26, light);
+          canvas.drawPath(
+            Path()
+              ..moveTo(-8, base)
+              ..lineTo(-8, base - 50)
+              ..quadraticBezierTo(w * .3, base - 90, w * .55, base - 52)
+              ..quadraticBezierTo(w * .8, base - 20, w + 8, base - 64)
+              ..lineTo(w + 8, base)
+              ..close(),
+            deco,
+          );
+        case _Scenery.aul:
+          canvas.drawPath(
+            Path()
+              ..moveTo(-8, base)
+              ..lineTo(-8, base - 34)
+              ..quadraticBezierTo(w * .5, base - 64, w + 8, base - 30)
+              ..lineTo(w + 8, base)
+              ..close(),
+            light,
+          );
+          for (final (x, s) in [
+            (w * .72, 1.0),
+            (w * .88, .75),
+            (w * .14, .8),
+          ]) {
+            final y = base - 34;
+            canvas.drawPath(
+              Path()
+                ..moveTo(x - 26 * s, y)
+                ..quadraticBezierTo(x, y - 40 * s, x + 26 * s, y)
+                ..lineTo(x + 26 * s, y + 26 * s)
+                ..lineTo(x - 26 * s, y + 26 * s)
+                ..close(),
+              deco,
+            );
+          }
+        case _Scenery.city:
+          var x = -4.0;
+          var i = 0;
+          while (x < w) {
+            final bw = 26.0 + (i * 7) % 18;
+            final bh = 40.0 + (i * 37) % 70;
+            canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                Rect.fromLTWH(x, base - bh, bw, bh),
+                const Radius.circular(4),
+              ),
+              i.isEven ? deco : light,
+            );
+            x += bw + 6;
+            i++;
+          }
+        case _Scenery.mountains:
+          final path = Path()..moveTo(-8, base);
+          const peaks = [
+            (.0, 40.0),
+            (.18, 110.0),
+            (.36, 60.0),
+            (.55, 130.0),
+            (.75, 70.0),
+            (.9, 100.0),
+            (1.0, 50.0),
+          ];
+          for (final (fx, h) in peaks) {
+            path.lineTo(fx * (w + 16) - 8, base - h);
+          }
+          path
+            ..lineTo(w + 8, base)
+            ..close();
+          canvas.drawPath(path, deco);
+          for (final (fx, h) in const [(.18, 110.0), (.55, 130.0)]) {
+            final px = fx * (w + 16) - 8;
+            canvas.drawPath(
+              Path()
+                ..moveTo(px, base - h)
+                ..lineTo(px - 12, base - h + 16)
+                ..lineTo(px + 12, base - h + 16)
+                ..close(),
+              Paint()..color = Colors.white.withValues(alpha: .7),
+            );
+          }
+        case _Scenery.sea:
+          for (var j = 0; j < 3; j++) {
+            final y = base - 20 - j * 22.0;
+            final path = Path()..moveTo(-8, y);
+            for (var x = -8.0; x < w + 8; x += 40) {
+              path.quadraticBezierTo(x + 10, y - 10, x + 20, y);
+              path.quadraticBezierTo(x + 30, y + 10, x + 40, y);
+            }
+            canvas.drawPath(
+              path,
+              Paint()
+                ..color = color.withValues(alpha: .18 - j * .04)
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 4
+                ..strokeCap = StrokeCap.round,
+            );
+          }
+      }
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LandscapePainter old) =>
+      old.zones.length != zones.length || old.ground != ground;
 }

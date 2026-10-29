@@ -90,7 +90,17 @@ void main() {
     expect(topics.first.unlocked, isTrue);
     expect(topics[1].unlocked, isFalse);
     expect(topics.first.lessonCount, 5);
-    expect(course.sections.map((s) => s.topics.length), [6, 8, 4, 5, 8, 6, 9, 10, 8]);
+    expect(course.sections.map((s) => s.topics.length), [
+      6,
+      8,
+      4,
+      5,
+      8,
+      6,
+      9,
+      10,
+      8,
+    ]);
     expect(course.next, isA<NextLesson>());
 
     await finishTopic('greetings', 5);

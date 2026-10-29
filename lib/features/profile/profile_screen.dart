@@ -145,9 +145,9 @@ class _Header extends ConsumerWidget {
     final rank = rankForLevel(level.level);
     final name = stats.userName;
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: context.colors.brand,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -216,7 +216,7 @@ class _Header extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: name == null
-                                            ? const Color(0xFFCDEFF6)
+                                            ? context.colors.onBrandMuted
                                             : Colors.white,
                                         fontSize: 24,
                                         fontWeight: FontWeight.w900,
@@ -224,9 +224,9 @@ class _Header extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  const Icon(
+                                  Icon(
                                     Icons.edit_rounded,
-                                    color: Color(0xFFCDEFF6),
+                                    color: context.colors.onBrandMuted,
                                     size: 18,
                                   ),
                                 ],
@@ -262,8 +262,8 @@ class _Header extends ConsumerWidget {
                     ),
                     Text(
                       '${level.xpIntoLevel} / ${level.xpForLevel} XP',
-                      style: const TextStyle(
-                        color: Color(0xFFCDEFF6),
+                      style: TextStyle(
+                        color: context.colors.onBrandMuted,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -691,6 +691,15 @@ class _Settings extends ConsumerWidget {
                   onSelectionChanged: (v) =>
                       ref.read(themeModeProvider.notifier).set(v.first),
                 ),
+                const SizedBox(height: 16),
+                const Text('Цвет темы', style: label),
+                const SizedBox(height: 4),
+                Text(
+                  'Новые цвета открываются за уровни — просто занимайтесь.',
+                  style: TextStyle(color: c.muted, fontSize: 13),
+                ),
+                const SizedBox(height: 10),
+                _PalettePicker(level: LevelProgress.fromXp(stats.xp).level),
                 const SizedBox(height: 8),
               ],
             ),
@@ -989,4 +998,130 @@ class _TextDialogState extends State<_TextDialog> {
       ),
     ],
   );
+}
+
+class _PalettePicker extends ConsumerWidget {
+  const _PalettePicker({required this.level});
+
+  final int level;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final current = ref.watch(paletteProvider);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final width = (box.maxWidth - 10) / 2;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final p in AppPalette.values)
+              SizedBox(
+                width: width,
+                child: () {
+                  final info = paletteInfo[p]!;
+                  final open = level >= info.level;
+                  final selected = p == current;
+                  final colors = AppColors.of(
+                    p,
+                    dark ? Brightness.dark : Brightness.light,
+                  );
+                  return Semantics(
+                    button: true,
+                    selected: selected,
+                    label: open
+                        ? 'Тема ${info.title}'
+                        : 'Тема ${info.title}: откроется на уровне ${info.level}',
+                    excludeSemantics: true,
+                    child: Material(
+                      color: c.surface,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: BorderSide(
+                          color: selected ? colors.brand : c.line,
+                          width: selected ? 3 : 2,
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          if (open) {
+                            ref.read(paletteProvider.notifier).set(p);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '«${info.title}» откроется на уровне ${info.level}. '
+                                  'Сейчас у вас $level.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              height: 44,
+                              color: open ? colors.brand : c.track,
+                              alignment: Alignment.center,
+                              child: open
+                                  ? null
+                                  : Icon(Icons.lock_rounded, color: c.lockIcon),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 10,
+                                    width: 60,
+                                    decoration: BoxDecoration(
+                                      color: open ? AppColors.gold : c.track,
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    info.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  Text(
+                                    selected
+                                        ? 'Выбрана'
+                                        : open
+                                        ? 'Открыта'
+                                        : 'Уровень ${info.level}',
+                                    style: TextStyle(
+                                      color: selected
+                                          ? c.accent
+                                          : open
+                                          ? c.okText
+                                          : c.muted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }(),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }

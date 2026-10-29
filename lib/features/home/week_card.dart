@@ -205,7 +205,7 @@ class _Day extends StatelessWidget {
     final c = context.colors;
     final (bg, child) = studied
         ? (
-            AppColors.primary,
+            context.colors.brand,
             const Icon(Icons.check_rounded, color: Colors.white, size: 18),
           )
         : frozen

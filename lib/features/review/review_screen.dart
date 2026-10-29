@@ -315,7 +315,7 @@ class _Forecast extends StatelessWidget {
                                     ? c.track
                                     : d == 0
                                     ? AppColors.gold
-                                    : AppColors.primary,
+                                    : context.colors.brand,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                             ),

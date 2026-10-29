@@ -199,6 +199,13 @@ class LessonRepository {
         );
   }
 
+  /// Whether any lesson was finished since [since].
+  Stream<bool> watchLessonSince(DateTime since) =>
+      (_db.select(_db.lessonProgress)
+            ..where((l) => l.completedAt.isBiggerOrEqualValue(since)))
+          .watch()
+          .map((rows) => rows.isNotEmpty);
+
   Future<int> examsPassed() async => (await (_db.select(
     _db.examProgress,
   )..where((e) => e.passedAt.isNotNull())).get()).length;

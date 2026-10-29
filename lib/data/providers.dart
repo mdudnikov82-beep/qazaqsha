@@ -150,3 +150,36 @@ class ThemeModeNotifier extends Notifier<AppThemeMode> {
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, AppThemeMode>(
   ThemeModeNotifier.new,
 );
+
+/// The colour palette; switches at once, saves in the background.
+class PaletteNotifier extends Notifier<AppPalette> {
+  @override
+  AppPalette build() =>
+      ref.watch(statsProvider.select((s) => s.value?.palette)) ??
+      AppPalette.teal;
+
+  Future<void> set(AppPalette palette) async {
+    state = palette;
+    await ref.read(statsRepositoryProvider).setPalette(palette);
+  }
+}
+
+final paletteProvider = NotifierProvider<PaletteNotifier, AppPalette>(
+  PaletteNotifier.new,
+);
+
+/// Start of today, local time.
+DateTime _todayStart() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+}
+
+/// A lesson was finished today (for today's tasks on Home).
+final lessonDoneTodayProvider = StreamProvider<bool>(
+  (ref) => ref.watch(lessonRepositoryProvider).watchLessonSince(_todayStart()),
+);
+
+/// A grammar rule was practised today.
+final ruleDoneTodayProvider = StreamProvider<bool>(
+  (ref) => ref.watch(grammarRepositoryProvider).watchRuleSince(_todayStart()),
+);

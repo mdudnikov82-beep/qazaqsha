@@ -221,10 +221,10 @@ class _Card extends StatelessWidget {
       key: ValueKey(flipped),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: flipped ? AppColors.primary : c.surface,
+        color: flipped ? context.colors.brand : c.surface,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: flipped ? AppColors.primaryShadow : c.line,
+          color: flipped ? context.colors.brandDeep : c.line,
           width: 2,
         ),
       ),
@@ -262,7 +262,10 @@ class _Card extends StatelessWidget {
             Text(
               word.note!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFFCDEFF6), fontSize: 15),
+              style: TextStyle(
+                color: context.colors.onBrandMuted,
+                fontSize: 15,
+              ),
             ),
           ],
           if (!flipped) ...[

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/features/custom_words/word_import.dart';
@@ -209,20 +211,25 @@ void main() {
     final dictionary = DictionaryRepository(db);
     final lessons = LessonRepository(db, dictionary);
 
-    // Mark every lesson of the first section as done.
-    await tester.runAsync(() async {
-      for (final c in await dictionary.categories()) {
-        if (!basics.categoryIds.contains(c.category.id)) continue;
-        for (var i = 0; i < lessonCountFor(c.wordCount); i++) {
-          await lessons.completeLesson(
-            categoryId: c.category.id,
-            lessonIndex: i,
-            score: 100,
-            now: DateTime(2026, 10, 28),
-          );
+    // Mark every lesson of the first section as done. In the test's fake
+    // time: Home watches these rows, and their updates run there.
+    var marked = false;
+    unawaited(
+      () async {
+        for (final c in await dictionary.categories()) {
+          if (!basics.categoryIds.contains(c.category.id)) continue;
+          for (var i = 0; i < lessonCountFor(c.wordCount); i++) {
+            await lessons.completeLesson(
+              categoryId: c.category.id,
+              lessonIndex: i,
+              score: 100,
+              now: DateTime(2026, 10, 28),
+            );
+          }
         }
-      }
-    });
+      }().then((_) => marked = true),
+    );
+    await advanceUntil(tester, () => marked);
     await advanceUntil(
       tester,
       () => find.text('Сдать экзамен').evaluate().isNotEmpty,

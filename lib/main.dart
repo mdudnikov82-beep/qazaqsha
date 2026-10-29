@@ -76,6 +76,7 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
   @override
   Widget build(BuildContext context) {
     final mode = ref.watch(themeModeProvider);
+    final palette = ref.watch(paletteProvider);
     final ready = ref.watch(statsProvider.select((s) => !s.isLoading));
     return MaterialApp.router(
       title: 'Qazaqsha',
@@ -84,8 +85,8 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
       supportedLocales: const [Locale('ru')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: AppTheme.build(palette, Brightness.light),
+      darkTheme: AppTheme.build(palette, Brightness.dark),
       // AppThemeMode is declared in the same order as ThemeMode.
       themeMode: ThemeMode.values[mode.index],
       // Switch instantly: cross-fading every color of the theme makes the

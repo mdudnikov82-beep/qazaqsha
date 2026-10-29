@@ -587,8 +587,8 @@ class CategoryWordsScreen extends ConsumerWidget {
         .length;
     final c = context.colors;
     final color = isCustom
-        ? AppColors.primary
-        : sectionOfCategory(categoryId)?.color ?? AppColors.primary;
+        ? context.colors.brand
+        : sectionOfCategory(categoryId)?.color ?? context.colors.brand;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -641,7 +641,7 @@ class CategoryWordsScreen extends ConsumerWidget {
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: Colors.white,
-                            foregroundColor: AppColors.primary,
+                            foregroundColor: context.colors.brand,
                           ),
                           onPressed: list.isEmpty
                               ? null

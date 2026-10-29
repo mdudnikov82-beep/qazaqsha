@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/motion.dart';
+import '../../core/widgets/barys.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/ornament.dart';
 import '../../core/widgets/confetti.dart';
@@ -755,28 +756,11 @@ class _ResultView extends StatelessWidget {
                           color: AppColors.gold.withValues(alpha: 0.55),
                         ),
                         _PopIn(
-                          child: Container(
-                            width: 112,
-                            height: 112,
-                            decoration: BoxDecoration(
-                              color: failedExam ? c.goldSoft : AppColors.gold,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: failedExam
-                                      ? c.line
-                                      : const Color(0xFFC99700),
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              failedExam
-                                  ? Icons.refresh_rounded
-                                  : Icons.emoji_events_rounded,
-                              size: 58,
-                              color: failedExam ? c.goldText : AppColors.onGold,
-                            ),
+                          child: Barys(
+                            mood: failedExam
+                                ? BarysMood.support
+                                : BarysMood.celebrate,
+                            size: 140,
                           ),
                         ),
                       ],
@@ -865,7 +849,7 @@ class _ResultView extends StatelessWidget {
                 colors: [
                   AppColors.gold,
                   c.sky,
-                  AppColors.primary,
+                  context.colors.brand,
                   c.flame,
                   c.ok,
                   const Color(0xFFB3366A),

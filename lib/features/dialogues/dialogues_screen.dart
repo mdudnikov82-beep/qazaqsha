@@ -283,9 +283,9 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final bg = right ? AppColors.primary : c.surface;
+    final bg = right ? context.colors.brand : c.surface;
     final fg = right ? Colors.white : c.ink;
-    final muted = right ? const Color(0xFFCDEFF6) : c.muted;
+    final muted = right ? context.colors.onBrandMuted : c.muted;
     return Align(
       alignment: right ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(

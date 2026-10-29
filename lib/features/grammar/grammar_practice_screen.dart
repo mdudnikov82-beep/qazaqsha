@@ -8,20 +8,46 @@ import '../../app/theme.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
+import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
+import '../dialogues/dialogues.dart';
 import 'grammar.dart';
 
 /// Exercises of one rule ([ruleId]) or a check-up of a topic ([groupId]).
 /// Wrong answers come back once at the end, like in lessons.
 class GrammarPracticeScreen extends ConsumerStatefulWidget {
   const GrammarPracticeScreen.rule({super.key, required String this.ruleId})
-    : groupId = null;
+    : groupId = null,
+      dialogueId = null,
+      mistakes = false;
 
   const GrammarPracticeScreen.group({super.key, required String this.groupId})
-    : ruleId = null;
+    : ruleId = null,
+      dialogueId = null,
+      mistakes = false;
+
+  /// Tasks from the mistakes notebook.
+  const GrammarPracticeScreen.mistakes({super.key})
+    : ruleId = null,
+      groupId = null,
+      dialogueId = null,
+      mistakes = true;
+
+  /// Comprehension tasks of a dialogue.
+  const GrammarPracticeScreen.dialogue({
+    super.key,
+    required String this.dialogueId,
+  }) : ruleId = null,
+       groupId = null,
+       mistakes = false;
 
   final String? ruleId;
   final String? groupId;
+  final String? dialogueId;
+  final bool mistakes;
+
+  MistakeKind get mistakeKind =>
+      dialogueId != null ? MistakeKind.dialogue : MistakeKind.grammar;
 
   @override
   ConsumerState<GrammarPracticeScreen> createState() =>
@@ -44,9 +70,29 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   bool _retrying = false;
   ({int score, int xp})? _result;
 
-  void _start(List<GrammarGroup> all) {
+  /// Open grammar mistakes, as task refs; loaded before the first start.
+  List<String>? _mistakeRefs;
+
+  Dialogue? _dialogue;
+
+  void _start(List<GrammarGroup> all, List<Dialogue> dialogues) {
     final List<GrammarTask> tasks;
-    if (widget.ruleId case final id?) {
+    if (widget.dialogueId case final id?) {
+      final d = dialogues.firstWhere((x) => x.id == id);
+      _dialogue = d;
+      _title = d.titleKk;
+      tasks = [...d.tasks]..shuffle(_random);
+    } else if (widget.mistakes) {
+      final byRef = {
+        for (final g in all)
+          for (final r in g.rules)
+            for (final t in r.tasks) t.ref: t,
+      };
+      _title = 'Работа над ошибками';
+      tasks = [for (final ref in _mistakeRefs ?? const <String>[]) ?byRef[ref]]
+          .take(grammarGroupTestSize)
+          .toList();
+    } else if (widget.ruleId case final id?) {
       final rule = [for (final g in all) ...g.rules]
           .firstWhere((r) => r.id == id);
       _rule = rule;
@@ -61,6 +107,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     }
     _queue = tasks;
     _total = tasks.length;
+    if (tasks.isEmpty) return;
     _index = 0;
     _correct = 0;
     _missed.clear();
@@ -75,6 +122,18 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     final task = _queue![_index];
     final right = option == task.answer;
     right ? Haptics.success() : Haptics.error();
+    final notebook = ref.read(mistakesRepositoryProvider);
+    if (right) {
+      notebook.resolve(widget.mistakeKind, task.ref);
+    } else {
+      notebook.record(
+        kind: widget.mistakeKind,
+        ref: task.ref,
+        prompt: task.question,
+        answer: task.answer,
+        given: option,
+      );
+    }
     setState(() {
       _picked = option;
       if (_index < _total) {
@@ -114,6 +173,12 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     if (_rule case final rule?) {
       await ref.read(grammarRepositoryProvider).record(rule.id, score, now);
     }
+    if (_dialogue case final d?) {
+      await ref
+          .read(grammarRepositoryProvider)
+          .record(d.progressKey, score, now);
+    }
+    if (!mounted) return;
     await ref
         .read(statsRepositoryProvider)
         .recordSession(
@@ -129,9 +194,25 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   @override
   Widget build(BuildContext context) {
     final grammar = ref.watch(grammarProvider).value;
-    if (grammar == null) return const LoadingScaffold();
-    if (_queue == null) _start(grammar);
-    if (_result case final r?) return _resultView(context, grammar, r);
+    final dialogues = ref.watch(dialoguesProvider).value;
+    if (grammar == null || dialogues == null) return const LoadingScaffold();
+    if (widget.mistakes && _mistakeRefs == null) {
+      ref
+          .read(mistakesRepositoryProvider)
+          .openRefs(MistakeKind.grammar)
+          .then((refs) => mounted ? setState(() => _mistakeRefs = refs) : null);
+      return const LoadingScaffold();
+    }
+    if (_queue == null) _start(grammar, dialogues);
+    if (_queue!.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('Ошибок в правилах нет — отлично!')),
+      );
+    }
+    if (_result case final r?) {
+      return _resultView(context, grammar, dialogues, r);
+    }
 
     final c = context.colors;
     final task = _queue![_index];
@@ -253,6 +334,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   Widget _resultView(
     BuildContext context,
     List<GrammarGroup> grammar,
+    List<Dialogue> dialogues,
     ({int score, int xp}) r,
   ) {
     final c = context.colors;
@@ -281,7 +363,13 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
               const SizedBox(height: 12),
               Text(
                 passed
-                    ? (rule == null ? 'Тема проверена!' : 'Правило изучено!')
+                    ? (widget.dialogueId != null
+                          ? 'Диалог понят!'
+                          : widget.mistakes
+                          ? 'Ошибки исправлены!'
+                          : rule == null
+                          ? 'Тема проверена!'
+                          : 'Правило изучено!')
                     : 'Почти! Попробуйте ещё раз',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -318,7 +406,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
                 GoldButton(
                   label: 'Ещё раз',
                   icon: Icons.replay_rounded,
-                  onPressed: () => setState(() => _start(grammar)),
+                  onPressed: () => setState(() => _start(grammar, dialogues)),
                 ),
               const SizedBox(height: 12),
               OutlinedButton(

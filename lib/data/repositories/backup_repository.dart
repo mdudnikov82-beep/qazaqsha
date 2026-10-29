@@ -294,5 +294,6 @@ class BackupRepository {
     await _db.delete(_db.unlockedAchievements).go();
     await _db.delete(_db.dailyActivity).go();
     await _db.delete(_db.grammarProgress).go();
+    await _db.delete(_db.mistakes).go();
   }
 }

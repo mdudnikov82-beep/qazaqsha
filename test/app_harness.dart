@@ -37,6 +37,9 @@ Future<AppDatabase> startApp(
         grammarSourceProvider.overrideWithValue(
           () => File('assets/data/grammar.json').readAsString(),
         ),
+        dialoguesSourceProvider.overrideWithValue(
+          () => File('assets/data/dialogues.json').readAsString(),
+        ),
       ],
       child: const QazaqshaApp(),
     ),

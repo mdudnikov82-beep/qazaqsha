@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/dates.dart';
@@ -695,6 +696,17 @@ class _Settings extends ConsumerWidget {
             ),
           ),
           Divider(color: c.line, height: 16),
+          ListTile(
+            leading: Icon(Icons.abc_rounded, color: c.accent),
+            title: const Text('Латиница', style: label),
+            subtitle: Text(
+              stats.showLatin
+                  ? 'Показывается рядом с кириллицей'
+                  : 'Новый алфавит и конвертер',
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/latin'),
+          ),
           SwitchListTile(
             secondary: Icon(Icons.vibration_rounded, color: c.accent),
             title: const Text('Вибрация', style: label),

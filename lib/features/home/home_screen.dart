@@ -138,6 +138,17 @@ class HomeScreen extends ConsumerWidget {
                             onTap: () => context.go('/rules'),
                           ),
                         ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _Shortcut(
+                            icon: Icons.forum_rounded,
+                            title: 'Диалоги',
+                            subtitle: '12 сцен',
+                            fg: c.okText,
+                            bg: c.okSoft,
+                            onTap: () => context.push('/dialogues'),
+                          ),
+                        ),
                       ],
                     ),
                   ],

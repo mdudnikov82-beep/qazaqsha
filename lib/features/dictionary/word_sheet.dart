@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/dates.dart';
 import '../../core/widgets/common.dart';
+import '../../core/widgets/latin_line.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/custom_words_repository.dart';
@@ -113,6 +114,7 @@ class _WordSheet extends ConsumerWidget {
                           height: 1.15,
                         ),
                       ),
+                      LatinLine(word.kk, fontSize: 18),
                       const SizedBox(height: 2),
                       Text(
                         word.ru,

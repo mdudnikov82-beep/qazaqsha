@@ -31,6 +31,7 @@ Future<String> _loadSentencesFromAssets() =>
     ExamProgress,
     DailyActivity,
     GrammarProgress,
+    Mistakes,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -47,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -109,6 +110,10 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'UPDATE user_stats SET streak_freezes = MIN(2, streak_days / 7)',
         );
+      }
+      if (from < 10) {
+        await m.addColumn(userStats, userStats.showLatin);
+        await m.createTable(mistakes);
       }
     },
     beforeOpen: (details) async {

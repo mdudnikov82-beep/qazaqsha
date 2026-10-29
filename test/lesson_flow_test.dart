@@ -190,6 +190,14 @@ void main() {
     );
     expect(word!.ru, missed);
 
+    // The notebook kept the mistake, and the right answer at the end
+    // took it out again.
+    final notes = await tester.runAsync(() => db.select(db.mistakes).get());
+    expect(notes, hasLength(1));
+    expect(notes!.single.ref, '${wrong.single.wordId}');
+    expect(notes.single.given, isNotEmpty);
+    expect(notes.single.resolved, isTrue);
+
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 

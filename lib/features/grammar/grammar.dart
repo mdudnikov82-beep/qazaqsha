@@ -9,7 +9,14 @@ class GrammarTask {
     required this.hint,
     required this.answer,
     required this.wrong,
+    this.ref = '',
   });
+
+  /// `ruleId#index`, to find the task again (mistakes notebook).
+  final String ref;
+
+  /// The rule (or dialogue) the task belongs to.
+  String get owner => ref.split('#').first;
 
   final String question;
   final String hint;
@@ -106,9 +113,12 @@ List<GrammarGroup> parseGrammar(String json) {
               table: [for (final row in r['table'] as List) pair(row)],
               examples: [for (final row in r['examples'] as List) pair(row)],
               tasks: [
-                for (final t
-                    in (r['tasks'] as List).cast<Map<String, dynamic>>())
+                for (final (i, t)
+                    in (r['tasks'] as List)
+                        .cast<Map<String, dynamic>>()
+                        .indexed)
                   GrammarTask(
+                    ref: '${r['id']}#$i',
                     question: t['q'] as String,
                     hint: t['h'] as String,
                     answer: t['a'] as String,

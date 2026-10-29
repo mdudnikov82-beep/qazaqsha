@@ -238,9 +238,40 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     _combo = correct ? _combo + 1 : 0;
   }
 
+  /// Wrong answers go to the mistakes notebook; right ones take a word
+  /// back out of it.
+  void _note(
+    bool correct,
+    Word word, {
+    String? prompt,
+    String? answer,
+    String given = '',
+  }) {
+    final repo = ref.read(mistakesRepositoryProvider);
+    final id = '${word.id}';
+    if (correct) {
+      repo.resolve(MistakeKind.word, id);
+    } else {
+      repo.record(
+        kind: MistakeKind.word,
+        ref: id,
+        prompt: prompt ?? word.ru,
+        answer: answer ?? word.kk,
+        given: given,
+      );
+    }
+  }
+
   void _pick(int i) {
     final q = _session!.current as ChoiceQuestion;
     final correct = i == q.correctIndex;
+    _note(
+      correct,
+      q.word,
+      prompt: q.prompt,
+      answer: q.answer,
+      given: q.options[i],
+    );
     _session!.answer(correct: correct);
     _react(correct);
     setState(() {
@@ -253,6 +284,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     final q = _session!.current as TypeQuestion;
     if (_typed.text.trim().isEmpty || _verdict != null) return;
     final verdict = checkTyped(_typed.text, q.word.kk);
+    _note(verdict == TypedVerdict.correct, q.word, given: _typed.text.trim());
     _session!.answer(correct: verdict == TypedVerdict.correct);
     _react(verdict == TypedVerdict.correct);
     setState(() {
@@ -268,15 +300,30 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   void _checkSentence() {
     final q = _session!.current as SentenceQuestion;
     if (_built.isEmpty || _feedback != _Feedback.none) return;
-    final correct = checkSentence([
-      for (final i in _built) q.tiles[i],
-    ], q.sentence.kk);
+    final built = [for (final i in _built) q.tiles[i]];
+    final correct = checkSentence(built, q.sentence.kk);
+    final mistakes = ref.read(mistakesRepositoryProvider);
+    final id = '${q.sentence.id}';
+    if (correct) {
+      mistakes.resolve(MistakeKind.sentence, id);
+    } else {
+      mistakes.record(
+        kind: MistakeKind.sentence,
+        ref: id,
+        prompt: q.sentence.ru,
+        answer: q.sentence.kk,
+        given: built.join(' '),
+      );
+    }
     _session!.answer(correct: correct);
     _react(correct);
     setState(() => _feedback = correct ? _Feedback.right : _Feedback.wrong);
   }
 
   void _matched(Set<int> mistakes) {
+    for (final w in (_session!.current as MatchQuestion).pairs) {
+      _note(!mistakes.contains(w.id), w);
+    }
     _session!.answer(correct: mistakes.isEmpty, mistakeWordIds: mistakes);
     _react(mistakes.isEmpty);
     setState(() {

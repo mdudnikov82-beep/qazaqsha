@@ -110,6 +110,9 @@ class UserStats extends Table {
   /// Days a week with study that make the week «done».
   IntColumn get weeklyGoalDays => integer().withDefault(const Constant(5))();
 
+  /// Show Kazakh words in Latin letters too (the 2021 alphabet).
+  BoolColumn get showLatin => boolean().withDefault(const Constant(false))();
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   IntColumn get reminderMinutes =>
       integer().withDefault(const Constant(19 * 60))();
@@ -141,6 +144,31 @@ class GrammarProgress extends Table {
 
   @override
   Set<Column> get primaryKey => {ruleId};
+}
+
+/// What a wrong answer was about.
+enum MistakeKind { word, grammar, sentence, dialogue }
+
+/// A task answered wrong, kept until it is answered right again.
+class Mistakes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get kind => intEnum<MistakeKind>()();
+
+  /// Which task: a word id, `ruleId#task`, a sentence id, `dialogueId#task`.
+  TextColumn get ref => text()();
+  TextColumn get prompt => text()();
+  TextColumn get answer => text()();
+
+  /// The last wrong answer; empty when there was none to show (pairs).
+  TextColumn get given => text().withDefault(const Constant(''))();
+  IntColumn get times => integer().withDefault(const Constant(1))();
+  DateTimeColumn get lastAt => dateTime()();
+  BoolColumn get resolved => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {kind, ref},
+  ];
 }
 
 /// Best result of a section exam. [passedAt] is set once it was passed.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme.dart';
+import '../../core/latin.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import 'word_sheet.dart';
@@ -65,8 +66,22 @@ class WordTile extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          word.kk,
+                        Text.rich(
+                          TextSpan(
+                            text: word.kk,
+                            children: [
+                              if (ref.watch(showLatinProvider))
+                                TextSpan(
+                                  text: '  ${toLatin(word.kk)}',
+                                  style: TextStyle(
+                                    color: c.accent,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                            ],
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

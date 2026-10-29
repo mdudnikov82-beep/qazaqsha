@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
+import 'package:qazaqsha/features/dialogues/dialogues.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
 
 import 'app_harness.dart';
@@ -195,10 +196,15 @@ void main() {
     await settle(tester);
     expect(find.text('Правило 1 из 100'), findsOneWidget);
     await tester.tap(find.text('Упражнения · 4 задания'));
-    await settle(tester);
-
     final grammar = parseGrammar(
       File('assets/data/grammar.json').readAsStringSync(),
+    );
+    // The exercises load the dialogues file too: real I/O.
+    await advanceUntil(
+      tester,
+      () => grammar.first.rules.first.tasks.any(
+        (t) => find.text(t.question).evaluate().isNotEmpty,
+      ),
     );
     for (var i = 0; i < 4; i++) {
       // Tasks come shuffled: find the one on screen by its question.
@@ -219,6 +225,80 @@ void main() {
       () => db.select(db.grammarProgress).getSingle(),
     );
     expect((saved!.ruleId, saved.bestScore), ('v001', 100));
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('dialogues: read, translate a line, answer, progress saved', (
+    tester,
+  ) async {
+    final db = await startApp(tester);
+    await tester.tap(find.text('Диалоги'));
+    await advanceUntil(tester, () => find.text('Танысу').evaluate().isNotEmpty);
+    expect(find.text('Дүкенде'), findsOneWidget);
+
+    await tester.tap(find.text('Танысу'));
+    await settle(tester);
+    expect(find.text('Здравствуйте! Меня зовут Асан.'), findsNothing);
+    await tester.tap(find.text('Асан').first);
+    await settle(tester);
+    expect(find.text('Здравствуйте! Меня зовут Асан.'), findsOneWidget);
+
+    await tester.tap(find.text('Проверить понимание · 4 задания'));
+    final meet = parseDialogues(
+      File('assets/data/dialogues.json').readAsStringSync(),
+    ).first;
+    await advanceUntil(
+      tester,
+      () => meet.tasks.any((t) => find.text(t.question).evaluate().isNotEmpty),
+    );
+    for (var i = 0; i < 4; i++) {
+      final task = meet.tasks.firstWhere(
+        (t) => find.text(t.question).evaluate().isNotEmpty,
+      );
+      await tester.tap(find.text(task.answer));
+      await settle(tester);
+      await tester.tap(find.text('Дальше'));
+      await settle(tester);
+    }
+    await advanceUntil(
+      tester,
+      () => find.text('Диалог понят!').evaluate().isNotEmpty,
+    );
+    final saved = await tester.runAsync(
+      () => db.select(db.grammarProgress).getSingle(),
+    );
+    expect((saved!.ruleId, saved.bestScore), ('dlg:meet', 100));
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('Latin: the switch shows Latin spelling in the dictionary', (
+    tester,
+  ) async {
+    final db = await startApp(tester);
+    await tester.tap(find.text('Профиль'));
+    await settle(tester);
+    await tester.scrollUntilVisible(
+      find.text('Латиница'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Латиница'));
+    await settle(tester);
+    expect(find.text('Qazaqstan'), findsNothing);
+    await tester.tap(find.text('Показывать латиницу'));
+    await settle(tester);
+    // The converter shows its sample sentence in Latin.
+    expect(find.text('Sälem! Qalaisyñ?'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await settle(tester);
+    await tester.tap(find.text('Словарь'));
+    await settle(tester);
+    await tester.enterText(find.byType(TextField), 'волк');
+    await settle(tester);
+    expect(find.textContaining('qasqyr', findRichText: true), findsOneWidget);
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

@@ -51,6 +51,7 @@ const _categoryIcons = <String, IconData>{
   'bolt': Icons.bolt_rounded,
   'tune': Icons.tune_rounded,
   'celebration': Icons.celebration_rounded,
+  'storefront': Icons.storefront_rounded,
   'lightbulb': Icons.lightbulb_rounded,
 };
 

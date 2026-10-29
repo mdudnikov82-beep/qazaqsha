@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../features/quiz/srs.dart';
 import '../../features/review/review_mode.dart';
 import '../database/app_database.dart';
+import 'mistakes_repository.dart';
 
 class ProgressRepository {
   ProgressRepository(this._db);
@@ -101,6 +102,21 @@ class ProgressRepository {
     Random? random,
   }) async {
     if (mode == ReviewMode.due) return dueWords(now, limit: limit);
+    if (mode == ReviewMode.mistakes) {
+      final ids = [
+        for (final r in await MistakesRepository(
+          _db,
+        ).openRefs(MistakeKind.word))
+          ?int.tryParse(r),
+      ].take(limit).toList();
+      final words = {
+        for (final w in await (_db.select(
+          _db.words,
+        )..where((w) => w.id.isIn(ids))).get())
+          w.id: w,
+      };
+      return [for (final id in ids) ?words[id]];
+    }
     final p = _db.wordProgress;
     final rows =
         await (_db.select(_db.words).join([

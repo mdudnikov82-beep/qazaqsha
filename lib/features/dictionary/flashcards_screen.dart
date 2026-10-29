@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
+import '../../core/widgets/latin_line.dart';
 import '../../core/widgets/gold_button.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
@@ -249,6 +250,13 @@ class _Card extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+          if (showKazakh)
+            LatinLine(
+              word.kk,
+              fontSize: 18,
+              textAlign: TextAlign.center,
+              color: flipped ? AppColors.gold : null,
+            ),
           if (flipped && word.note != null) ...[
             const SizedBox(height: 12),
             Text(

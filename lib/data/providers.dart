@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/dialogues/dialogues.dart';
 import '../features/grammar/grammar.dart';
 
 import 'database/app_database.dart';
@@ -9,6 +10,7 @@ import 'repositories/custom_words_repository.dart';
 import 'repositories/dictionary_repository.dart';
 import 'repositories/grammar_repository.dart';
 import 'repositories/lesson_repository.dart';
+import 'repositories/mistakes_repository.dart';
 import 'repositories/progress_repository.dart';
 import 'repositories/stats_repository.dart';
 
@@ -48,6 +50,19 @@ final activityProvider = StreamProvider.family<List<DailyActivityData>, int>(
       .watchActivity(DateTime.now().subtract(Duration(days: weeks * 7))),
 );
 
+final mistakesRepositoryProvider = Provider<MistakesRepository>(
+  (ref) => MistakesRepository(ref.watch(appDatabaseProvider)),
+);
+
+final openMistakesProvider = StreamProvider<List<Mistake>>(
+  (ref) => ref.watch(mistakesRepositoryProvider).watchOpen(),
+);
+
+/// Show Latin spelling next to Kazakh words.
+final showLatinProvider = Provider<bool>(
+  (ref) => ref.watch(statsProvider.select((s) => s.value?.showLatin)) ?? false,
+);
+
 final grammarRepositoryProvider = Provider<GrammarRepository>(
   (ref) => GrammarRepository(ref.watch(appDatabaseProvider)),
 );
@@ -60,6 +75,16 @@ final grammarSourceProvider = Provider<Future<String> Function()>(
 
 final grammarProvider = FutureProvider<List<GrammarGroup>>(
   (ref) async => parseGrammar(await ref.watch(grammarSourceProvider)()),
+);
+
+/// Reads the dialogues; tests read the file instead of the bundle.
+final dialoguesSourceProvider = Provider<Future<String> Function()>(
+  (ref) =>
+      () => rootBundle.loadString('assets/data/dialogues.json'),
+);
+
+final dialoguesProvider = FutureProvider<List<Dialogue>>(
+  (ref) async => parseDialogues(await ref.watch(dialoguesSourceProvider)()),
 );
 
 final grammarProgressProvider =

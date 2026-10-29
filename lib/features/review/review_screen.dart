@@ -69,6 +69,8 @@ class ReviewScreen extends ConsumerWidget {
                       _Forecast(studied: studied, now: now),
                       const SizedBox(height: 24),
                     ],
+                    const _MistakesCard(),
+                    const SizedBox(height: 24),
                     const _Title('Другие тренировки'),
                     _Modes(
                       hard: hard.length,
@@ -566,6 +568,57 @@ class _Mistakes extends StatelessWidget {
             style: TextStyle(color: c.muted, fontSize: 12),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MistakesCard extends ConsumerWidget {
+  const _MistakesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final n = ref.watch(openMistakesProvider).value?.length ?? 0;
+    return Semantics(
+      button: true,
+      label: 'Работа над ошибками: $n',
+      excludeSemantics: true,
+      child: SurfaceCard(
+        radius: 20,
+        color: n == 0 ? c.surface : c.badSoft,
+        onTap: () => context.push('/mistakes'),
+        child: Row(
+          children: [
+            Icon(
+              n == 0 ? Icons.task_alt_rounded : Icons.edit_note_rounded,
+              color: n == 0 ? c.ok : c.badText,
+              size: 30,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Работа над ошибками',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  ),
+                  Text(
+                    n == 0
+                        ? 'Ошибок нет'
+                        : '$n ${plural(n, 'ошибка', 'ошибки', 'ошибок')} ждут исправления',
+                    style: TextStyle(
+                      color: n == 0 ? c.muted : c.badText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
       ),
     );
   }

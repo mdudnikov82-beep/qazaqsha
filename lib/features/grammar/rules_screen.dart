@@ -100,6 +100,49 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
                       ),
                       const SizedBox(height: 12),
                     ],
+                    SurfaceCard(
+                      radius: 20,
+                      onTap: () => context.push('/latin'),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.gold,
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Ää',
+                                style: TextStyle(
+                                  color: AppColors.onGold,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Латиница',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                Text('Новый казахский алфавит и конвертер'),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

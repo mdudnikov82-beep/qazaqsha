@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/custom_words/import_screen.dart';
+import '../features/dialogues/dialogues_screen.dart';
 import '../features/dictionary/dictionary_screen.dart';
 import '../features/dictionary/flashcards_screen.dart';
 import '../features/grammar/grammar_practice_screen.dart';
+import '../features/grammar/latin_screen.dart';
 import '../features/grammar/rules_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/quiz/quiz_screen.dart';
+import '../features/review/mistakes_screen.dart';
 import '../features/review/review_mode.dart';
 import '../features/review/review_screen.dart';
 
@@ -80,6 +83,35 @@ GoRouter createRouter({
       ),
     ),
     GoRoute(path: '/review', builder: (context, state) => const ReviewScreen()),
+    GoRoute(
+      path: '/dialogues',
+      builder: (context, state) => const DialoguesScreen(),
+      routes: [
+        GoRoute(
+          path: ':dialogueId',
+          builder: (context, state) =>
+              DialogueScreen(dialogueId: state.pathParameters['dialogueId']!),
+          routes: [
+            GoRoute(
+              path: 'practice',
+              builder: (context, state) => GrammarPracticeScreen.dialogue(
+                dialogueId: state.pathParameters['dialogueId']!,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+    GoRoute(path: '/latin', builder: (context, state) => const LatinScreen()),
+    GoRoute(
+      path: '/mistakes',
+      builder: (context, state) => const MistakesScreen(),
+    ),
+    // Before /rules/:ruleId, which would take «mistakes» for an id.
+    GoRoute(
+      path: '/rules/mistakes',
+      builder: (context, state) => const GrammarPracticeScreen.mistakes(),
+    ),
     GoRoute(
       path: '/rules/test/:groupId',
       builder: (context, state) => GrammarPracticeScreen.group(

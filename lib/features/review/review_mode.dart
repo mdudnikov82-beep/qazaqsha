@@ -8,7 +8,10 @@ enum ReviewMode {
   favorites,
 
   /// Any studied words, for extra practice when nothing is due.
-  random;
+  random,
+
+  /// Words from the mistakes notebook.
+  mistakes;
 
   static ReviewMode parse(String? name) => ReviewMode.values.firstWhere(
     (m) => m.name == name,

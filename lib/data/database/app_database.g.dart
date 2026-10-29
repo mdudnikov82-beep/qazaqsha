@@ -1889,6 +1889,21 @@ class $UserStatsTable extends UserStats
     requiredDuringInsert: false,
     defaultValue: const Constant(5),
   );
+  static const VerificationMeta _showLatinMeta = const VerificationMeta(
+    'showLatin',
+  );
+  @override
+  late final GeneratedColumn<bool> showLatin = GeneratedColumn<bool>(
+    'show_latin',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("show_latin" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _reminderMinutesMeta = const VerificationMeta(
     'reminderMinutes',
   );
@@ -1924,6 +1939,7 @@ class $UserStatsTable extends UserStats
     repairStreak,
     repairDay,
     weeklyGoalDays,
+    showLatin,
     reminderMinutes,
   ];
   @override
@@ -2091,6 +2107,12 @@ class $UserStatsTable extends UserStats
         ),
       );
     }
+    if (data.containsKey('show_latin')) {
+      context.handle(
+        _showLatinMeta,
+        showLatin.isAcceptableOrUnknown(data['show_latin']!, _showLatinMeta),
+      );
+    }
     if (data.containsKey('reminder_minutes')) {
       context.handle(
         _reminderMinutesMeta,
@@ -2195,6 +2217,10 @@ class $UserStatsTable extends UserStats
         DriftSqlType.int,
         data['${effectivePrefix}weekly_goal_days'],
       )!,
+      showLatin: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}show_latin'],
+      )!,
       reminderMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}reminder_minutes'],
@@ -2251,6 +2277,9 @@ class UserStat extends DataClass implements Insertable<UserStat> {
   /// Days a week with study that make the week «done».
   final int weeklyGoalDays;
 
+  /// Show Kazakh words in Latin letters too (the 2021 alphabet).
+  final bool showLatin;
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   final int reminderMinutes;
   const UserStat({
@@ -2275,6 +2304,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.repairStreak,
     this.repairDay,
     required this.weeklyGoalDays,
+    required this.showLatin,
     required this.reminderMinutes,
   });
   @override
@@ -2313,6 +2343,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       map['repair_day'] = Variable<DateTime>(repairDay);
     }
     map['weekly_goal_days'] = Variable<int>(weeklyGoalDays);
+    map['show_latin'] = Variable<bool>(showLatin);
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     return map;
   }
@@ -2348,6 +2379,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ? const Value.absent()
           : Value(repairDay),
       weeklyGoalDays: Value(weeklyGoalDays),
+      showLatin: Value(showLatin),
       reminderMinutes: Value(reminderMinutes),
     );
   }
@@ -2381,6 +2413,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       repairStreak: serializer.fromJson<int>(json['repairStreak']),
       repairDay: serializer.fromJson<DateTime?>(json['repairDay']),
       weeklyGoalDays: serializer.fromJson<int>(json['weeklyGoalDays']),
+      showLatin: serializer.fromJson<bool>(json['showLatin']),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
     );
   }
@@ -2411,6 +2444,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       'repairStreak': serializer.toJson<int>(repairStreak),
       'repairDay': serializer.toJson<DateTime?>(repairDay),
       'weeklyGoalDays': serializer.toJson<int>(weeklyGoalDays),
+      'showLatin': serializer.toJson<bool>(showLatin),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
     };
   }
@@ -2437,6 +2471,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     int? repairStreak,
     Value<DateTime?> repairDay = const Value.absent(),
     int? weeklyGoalDays,
+    bool? showLatin,
     int? reminderMinutes,
   }) => UserStat(
     id: id ?? this.id,
@@ -2462,6 +2497,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     repairStreak: repairStreak ?? this.repairStreak,
     repairDay: repairDay.present ? repairDay.value : this.repairDay,
     weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
+    showLatin: showLatin ?? this.showLatin,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
@@ -2517,6 +2553,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       weeklyGoalDays: data.weeklyGoalDays.present
           ? data.weeklyGoalDays.value
           : this.weeklyGoalDays,
+      showLatin: data.showLatin.present ? data.showLatin.value : this.showLatin,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -2547,6 +2584,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('repairStreak: $repairStreak, ')
           ..write('repairDay: $repairDay, ')
           ..write('weeklyGoalDays: $weeklyGoalDays, ')
+          ..write('showLatin: $showLatin, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -2575,6 +2613,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     repairStreak,
     repairDay,
     weeklyGoalDays,
+    showLatin,
     reminderMinutes,
   ]);
   @override
@@ -2602,6 +2641,7 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.repairStreak == this.repairStreak &&
           other.repairDay == this.repairDay &&
           other.weeklyGoalDays == this.weeklyGoalDays &&
+          other.showLatin == this.showLatin &&
           other.reminderMinutes == this.reminderMinutes);
 }
 
@@ -2627,6 +2667,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<int> repairStreak;
   final Value<DateTime?> repairDay;
   final Value<int> weeklyGoalDays;
+  final Value<bool> showLatin;
   final Value<int> reminderMinutes;
   const UserStatsCompanion({
     this.id = const Value.absent(),
@@ -2650,6 +2691,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.repairStreak = const Value.absent(),
     this.repairDay = const Value.absent(),
     this.weeklyGoalDays = const Value.absent(),
+    this.showLatin = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   UserStatsCompanion.insert({
@@ -2674,6 +2716,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.repairStreak = const Value.absent(),
     this.repairDay = const Value.absent(),
     this.weeklyGoalDays = const Value.absent(),
+    this.showLatin = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   static Insertable<UserStat> custom({
@@ -2698,6 +2741,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? repairStreak,
     Expression<DateTime>? repairDay,
     Expression<int>? weeklyGoalDays,
+    Expression<bool>? showLatin,
     Expression<int>? reminderMinutes,
   }) {
     return RawValuesInsertable({
@@ -2722,6 +2766,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (repairStreak != null) 'repair_streak': repairStreak,
       if (repairDay != null) 'repair_day': repairDay,
       if (weeklyGoalDays != null) 'weekly_goal_days': weeklyGoalDays,
+      if (showLatin != null) 'show_latin': showLatin,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
     });
   }
@@ -2748,6 +2793,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<int>? repairStreak,
     Value<DateTime?>? repairDay,
     Value<int>? weeklyGoalDays,
+    Value<bool>? showLatin,
     Value<int>? reminderMinutes,
   }) {
     return UserStatsCompanion(
@@ -2772,6 +2818,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       repairStreak: repairStreak ?? this.repairStreak,
       repairDay: repairDay ?? this.repairDay,
       weeklyGoalDays: weeklyGoalDays ?? this.weeklyGoalDays,
+      showLatin: showLatin ?? this.showLatin,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
   }
@@ -2844,6 +2891,9 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (weeklyGoalDays.present) {
       map['weekly_goal_days'] = Variable<int>(weeklyGoalDays.value);
     }
+    if (showLatin.present) {
+      map['show_latin'] = Variable<bool>(showLatin.value);
+    }
     if (reminderMinutes.present) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
     }
@@ -2874,6 +2924,7 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('repairStreak: $repairStreak, ')
           ..write('repairDay: $repairDay, ')
           ..write('weeklyGoalDays: $weeklyGoalDays, ')
+          ..write('showLatin: $showLatin, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -4331,6 +4382,551 @@ class GrammarProgressCompanion extends UpdateCompanion<GrammarProgressData> {
   }
 }
 
+class $MistakesTable extends Mistakes with TableInfo<$MistakesTable, Mistake> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MistakesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<MistakeKind, int> kind =
+      GeneratedColumn<int>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<MistakeKind>($MistakesTable.$converterkind);
+  static const VerificationMeta _refMeta = const VerificationMeta('ref');
+  @override
+  late final GeneratedColumn<String> ref = GeneratedColumn<String>(
+    'ref',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _promptMeta = const VerificationMeta('prompt');
+  @override
+  late final GeneratedColumn<String> prompt = GeneratedColumn<String>(
+    'prompt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _answerMeta = const VerificationMeta('answer');
+  @override
+  late final GeneratedColumn<String> answer = GeneratedColumn<String>(
+    'answer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _givenMeta = const VerificationMeta('given');
+  @override
+  late final GeneratedColumn<String> given = GeneratedColumn<String>(
+    'given',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _timesMeta = const VerificationMeta('times');
+  @override
+  late final GeneratedColumn<int> times = GeneratedColumn<int>(
+    'times',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _lastAtMeta = const VerificationMeta('lastAt');
+  @override
+  late final GeneratedColumn<DateTime> lastAt = GeneratedColumn<DateTime>(
+    'last_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resolvedMeta = const VerificationMeta(
+    'resolved',
+  );
+  @override
+  late final GeneratedColumn<bool> resolved = GeneratedColumn<bool>(
+    'resolved',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("resolved" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    ref,
+    prompt,
+    answer,
+    given,
+    times,
+    lastAt,
+    resolved,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'mistakes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Mistake> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('ref')) {
+      context.handle(
+        _refMeta,
+        ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_refMeta);
+    }
+    if (data.containsKey('prompt')) {
+      context.handle(
+        _promptMeta,
+        prompt.isAcceptableOrUnknown(data['prompt']!, _promptMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_promptMeta);
+    }
+    if (data.containsKey('answer')) {
+      context.handle(
+        _answerMeta,
+        answer.isAcceptableOrUnknown(data['answer']!, _answerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_answerMeta);
+    }
+    if (data.containsKey('given')) {
+      context.handle(
+        _givenMeta,
+        given.isAcceptableOrUnknown(data['given']!, _givenMeta),
+      );
+    }
+    if (data.containsKey('times')) {
+      context.handle(
+        _timesMeta,
+        times.isAcceptableOrUnknown(data['times']!, _timesMeta),
+      );
+    }
+    if (data.containsKey('last_at')) {
+      context.handle(
+        _lastAtMeta,
+        lastAt.isAcceptableOrUnknown(data['last_at']!, _lastAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastAtMeta);
+    }
+    if (data.containsKey('resolved')) {
+      context.handle(
+        _resolvedMeta,
+        resolved.isAcceptableOrUnknown(data['resolved']!, _resolvedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {kind, ref},
+  ];
+  @override
+  Mistake map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Mistake(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: $MistakesTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
+      ref: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref'],
+      )!,
+      prompt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt'],
+      )!,
+      answer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answer'],
+      )!,
+      given: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}given'],
+      )!,
+      times: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}times'],
+      )!,
+      lastAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_at'],
+      )!,
+      resolved: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}resolved'],
+      )!,
+    );
+  }
+
+  @override
+  $MistakesTable createAlias(String alias) {
+    return $MistakesTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<MistakeKind, int, int> $converterkind =
+      const EnumIndexConverter<MistakeKind>(MistakeKind.values);
+}
+
+class Mistake extends DataClass implements Insertable<Mistake> {
+  final int id;
+  final MistakeKind kind;
+
+  /// Which task: a word id, `ruleId#task`, a sentence id, `dialogueId#task`.
+  final String ref;
+  final String prompt;
+  final String answer;
+
+  /// The last wrong answer; empty when there was none to show (pairs).
+  final String given;
+  final int times;
+  final DateTime lastAt;
+  final bool resolved;
+  const Mistake({
+    required this.id,
+    required this.kind,
+    required this.ref,
+    required this.prompt,
+    required this.answer,
+    required this.given,
+    required this.times,
+    required this.lastAt,
+    required this.resolved,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    {
+      map['kind'] = Variable<int>($MistakesTable.$converterkind.toSql(kind));
+    }
+    map['ref'] = Variable<String>(ref);
+    map['prompt'] = Variable<String>(prompt);
+    map['answer'] = Variable<String>(answer);
+    map['given'] = Variable<String>(given);
+    map['times'] = Variable<int>(times);
+    map['last_at'] = Variable<DateTime>(lastAt);
+    map['resolved'] = Variable<bool>(resolved);
+    return map;
+  }
+
+  MistakesCompanion toCompanion(bool nullToAbsent) {
+    return MistakesCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      ref: Value(ref),
+      prompt: Value(prompt),
+      answer: Value(answer),
+      given: Value(given),
+      times: Value(times),
+      lastAt: Value(lastAt),
+      resolved: Value(resolved),
+    );
+  }
+
+  factory Mistake.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Mistake(
+      id: serializer.fromJson<int>(json['id']),
+      kind: $MistakesTable.$converterkind.fromJson(
+        serializer.fromJson<int>(json['kind']),
+      ),
+      ref: serializer.fromJson<String>(json['ref']),
+      prompt: serializer.fromJson<String>(json['prompt']),
+      answer: serializer.fromJson<String>(json['answer']),
+      given: serializer.fromJson<String>(json['given']),
+      times: serializer.fromJson<int>(json['times']),
+      lastAt: serializer.fromJson<DateTime>(json['lastAt']),
+      resolved: serializer.fromJson<bool>(json['resolved']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'kind': serializer.toJson<int>(
+        $MistakesTable.$converterkind.toJson(kind),
+      ),
+      'ref': serializer.toJson<String>(ref),
+      'prompt': serializer.toJson<String>(prompt),
+      'answer': serializer.toJson<String>(answer),
+      'given': serializer.toJson<String>(given),
+      'times': serializer.toJson<int>(times),
+      'lastAt': serializer.toJson<DateTime>(lastAt),
+      'resolved': serializer.toJson<bool>(resolved),
+    };
+  }
+
+  Mistake copyWith({
+    int? id,
+    MistakeKind? kind,
+    String? ref,
+    String? prompt,
+    String? answer,
+    String? given,
+    int? times,
+    DateTime? lastAt,
+    bool? resolved,
+  }) => Mistake(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    ref: ref ?? this.ref,
+    prompt: prompt ?? this.prompt,
+    answer: answer ?? this.answer,
+    given: given ?? this.given,
+    times: times ?? this.times,
+    lastAt: lastAt ?? this.lastAt,
+    resolved: resolved ?? this.resolved,
+  );
+  Mistake copyWithCompanion(MistakesCompanion data) {
+    return Mistake(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      ref: data.ref.present ? data.ref.value : this.ref,
+      prompt: data.prompt.present ? data.prompt.value : this.prompt,
+      answer: data.answer.present ? data.answer.value : this.answer,
+      given: data.given.present ? data.given.value : this.given,
+      times: data.times.present ? data.times.value : this.times,
+      lastAt: data.lastAt.present ? data.lastAt.value : this.lastAt,
+      resolved: data.resolved.present ? data.resolved.value : this.resolved,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Mistake(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('ref: $ref, ')
+          ..write('prompt: $prompt, ')
+          ..write('answer: $answer, ')
+          ..write('given: $given, ')
+          ..write('times: $times, ')
+          ..write('lastAt: $lastAt, ')
+          ..write('resolved: $resolved')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    kind,
+    ref,
+    prompt,
+    answer,
+    given,
+    times,
+    lastAt,
+    resolved,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Mistake &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.ref == this.ref &&
+          other.prompt == this.prompt &&
+          other.answer == this.answer &&
+          other.given == this.given &&
+          other.times == this.times &&
+          other.lastAt == this.lastAt &&
+          other.resolved == this.resolved);
+}
+
+class MistakesCompanion extends UpdateCompanion<Mistake> {
+  final Value<int> id;
+  final Value<MistakeKind> kind;
+  final Value<String> ref;
+  final Value<String> prompt;
+  final Value<String> answer;
+  final Value<String> given;
+  final Value<int> times;
+  final Value<DateTime> lastAt;
+  final Value<bool> resolved;
+  const MistakesCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.prompt = const Value.absent(),
+    this.answer = const Value.absent(),
+    this.given = const Value.absent(),
+    this.times = const Value.absent(),
+    this.lastAt = const Value.absent(),
+    this.resolved = const Value.absent(),
+  });
+  MistakesCompanion.insert({
+    this.id = const Value.absent(),
+    required MistakeKind kind,
+    required String ref,
+    required String prompt,
+    required String answer,
+    this.given = const Value.absent(),
+    this.times = const Value.absent(),
+    required DateTime lastAt,
+    this.resolved = const Value.absent(),
+  }) : kind = Value(kind),
+       ref = Value(ref),
+       prompt = Value(prompt),
+       answer = Value(answer),
+       lastAt = Value(lastAt);
+  static Insertable<Mistake> custom({
+    Expression<int>? id,
+    Expression<int>? kind,
+    Expression<String>? ref,
+    Expression<String>? prompt,
+    Expression<String>? answer,
+    Expression<String>? given,
+    Expression<int>? times,
+    Expression<DateTime>? lastAt,
+    Expression<bool>? resolved,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (ref != null) 'ref': ref,
+      if (prompt != null) 'prompt': prompt,
+      if (answer != null) 'answer': answer,
+      if (given != null) 'given': given,
+      if (times != null) 'times': times,
+      if (lastAt != null) 'last_at': lastAt,
+      if (resolved != null) 'resolved': resolved,
+    });
+  }
+
+  MistakesCompanion copyWith({
+    Value<int>? id,
+    Value<MistakeKind>? kind,
+    Value<String>? ref,
+    Value<String>? prompt,
+    Value<String>? answer,
+    Value<String>? given,
+    Value<int>? times,
+    Value<DateTime>? lastAt,
+    Value<bool>? resolved,
+  }) {
+    return MistakesCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      ref: ref ?? this.ref,
+      prompt: prompt ?? this.prompt,
+      answer: answer ?? this.answer,
+      given: given ?? this.given,
+      times: times ?? this.times,
+      lastAt: lastAt ?? this.lastAt,
+      resolved: resolved ?? this.resolved,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<int>(
+        $MistakesTable.$converterkind.toSql(kind.value),
+      );
+    }
+    if (ref.present) {
+      map['ref'] = Variable<String>(ref.value);
+    }
+    if (prompt.present) {
+      map['prompt'] = Variable<String>(prompt.value);
+    }
+    if (answer.present) {
+      map['answer'] = Variable<String>(answer.value);
+    }
+    if (given.present) {
+      map['given'] = Variable<String>(given.value);
+    }
+    if (times.present) {
+      map['times'] = Variable<int>(times.value);
+    }
+    if (lastAt.present) {
+      map['last_at'] = Variable<DateTime>(lastAt.value);
+    }
+    if (resolved.present) {
+      map['resolved'] = Variable<bool>(resolved.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MistakesCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('ref: $ref, ')
+          ..write('prompt: $prompt, ')
+          ..write('answer: $answer, ')
+          ..write('given: $given, ')
+          ..write('times: $times, ')
+          ..write('lastAt: $lastAt, ')
+          ..write('resolved: $resolved')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4347,6 +4943,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GrammarProgressTable grammarProgress = $GrammarProgressTable(
     this,
   );
+  late final $MistakesTable mistakes = $MistakesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4362,6 +4959,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     examProgress,
     dailyActivity,
     grammarProgress,
+    mistakes,
   ];
 }
 
@@ -5985,6 +6583,7 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<int> repairStreak,
   Value<DateTime?> repairDay,
   Value<int> weeklyGoalDays,
+  Value<bool> showLatin,
   Value<int> reminderMinutes,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
@@ -6009,6 +6608,7 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> repairStreak,
   Value<DateTime?> repairDay,
   Value<int> weeklyGoalDays,
+  Value<bool> showLatin,
   Value<int> reminderMinutes,
 });
 
@@ -6124,6 +6724,11 @@ class $$UserStatsTableFilterComposer
 
   ColumnFilters<int> get weeklyGoalDays => $composableBuilder(
     column: $table.weeklyGoalDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get showLatin => $composableBuilder(
+    column: $table.showLatin,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6247,6 +6852,11 @@ class $$UserStatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get showLatin => $composableBuilder(
+    column: $table.showLatin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => ColumnOrderings(column),
@@ -6355,6 +6965,9 @@ class $$UserStatsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get showLatin =>
+      $composableBuilder(column: $table.showLatin, builder: (column) => column);
+
   GeneratedColumn<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => column,
@@ -6410,6 +7023,7 @@ class $$UserStatsTableTableManager
                 Value<int> repairStreak = const Value.absent(),
                 Value<DateTime?> repairDay = const Value.absent(),
                 Value<int> weeklyGoalDays = const Value.absent(),
+                Value<bool> showLatin = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
@@ -6433,6 +7047,7 @@ class $$UserStatsTableTableManager
                 repairStreak: repairStreak,
                 repairDay: repairDay,
                 weeklyGoalDays: weeklyGoalDays,
+                showLatin: showLatin,
                 reminderMinutes: reminderMinutes,
               ),
           createCompanionCallback:
@@ -6458,6 +7073,7 @@ class $$UserStatsTableTableManager
                 Value<int> repairStreak = const Value.absent(),
                 Value<DateTime?> repairDay = const Value.absent(),
                 Value<int> weeklyGoalDays = const Value.absent(),
+                Value<bool> showLatin = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
@@ -6481,6 +7097,7 @@ class $$UserStatsTableTableManager
                 repairStreak: repairStreak,
                 repairDay: repairDay,
                 weeklyGoalDays: weeklyGoalDays,
+                showLatin: showLatin,
                 reminderMinutes: reminderMinutes,
               ),
           withReferenceMapper: (p0) => p0
@@ -7566,6 +8183,278 @@ typedef $$GrammarProgressTableProcessedTableManager =
       GrammarProgressData,
       PrefetchHooks Function()
     >;
+typedef $$MistakesTableCreateCompanionBuilder = MistakesCompanion Function({
+  Value<int> id,
+  required MistakeKind kind,
+  required String ref,
+  required String prompt,
+  required String answer,
+  Value<String> given,
+  Value<int> times,
+  required DateTime lastAt,
+  Value<bool> resolved,
+});
+typedef $$MistakesTableUpdateCompanionBuilder = MistakesCompanion Function({
+  Value<int> id,
+  Value<MistakeKind> kind,
+  Value<String> ref,
+  Value<String> prompt,
+  Value<String> answer,
+  Value<String> given,
+  Value<int> times,
+  Value<DateTime> lastAt,
+  Value<bool> resolved,
+});
+
+class $$MistakesTableFilterComposer
+    extends Composer<_$AppDatabase, $MistakesTable> {
+  $$MistakesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<MistakeKind, MistakeKind, int> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prompt => $composableBuilder(
+    column: $table.prompt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answer => $composableBuilder(
+    column: $table.answer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get given => $composableBuilder(
+    column: $table.given,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get times => $composableBuilder(
+    column: $table.times,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAt => $composableBuilder(
+    column: $table.lastAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get resolved => $composableBuilder(
+    column: $table.resolved,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MistakesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MistakesTable> {
+  $$MistakesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prompt => $composableBuilder(
+    column: $table.prompt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answer => $composableBuilder(
+    column: $table.answer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get given => $composableBuilder(
+    column: $table.given,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get times => $composableBuilder(
+    column: $table.times,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAt => $composableBuilder(
+    column: $table.lastAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get resolved => $composableBuilder(
+    column: $table.resolved,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MistakesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MistakesTable> {
+  $$MistakesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<MistakeKind, int> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get ref =>
+      $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get prompt =>
+      $composableBuilder(column: $table.prompt, builder: (column) => column);
+
+  GeneratedColumn<String> get answer =>
+      $composableBuilder(column: $table.answer, builder: (column) => column);
+
+  GeneratedColumn<String> get given =>
+      $composableBuilder(column: $table.given, builder: (column) => column);
+
+  GeneratedColumn<int> get times =>
+      $composableBuilder(column: $table.times, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAt =>
+      $composableBuilder(column: $table.lastAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get resolved =>
+      $composableBuilder(column: $table.resolved, builder: (column) => column);
+}
+
+class $$MistakesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MistakesTable,
+          Mistake,
+          $$MistakesTableFilterComposer,
+          $$MistakesTableOrderingComposer,
+          $$MistakesTableAnnotationComposer,
+          $$MistakesTableCreateCompanionBuilder,
+          $$MistakesTableUpdateCompanionBuilder,
+          (Mistake, BaseReferences<_$AppDatabase, $MistakesTable, Mistake>),
+          Mistake,
+          PrefetchHooks Function()
+        > {
+  $$MistakesTableTableManager(_$AppDatabase db, $MistakesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MistakesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MistakesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MistakesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<MistakeKind> kind = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                Value<String> prompt = const Value.absent(),
+                Value<String> answer = const Value.absent(),
+                Value<String> given = const Value.absent(),
+                Value<int> times = const Value.absent(),
+                Value<DateTime> lastAt = const Value.absent(),
+                Value<bool> resolved = const Value.absent(),
+              }) => MistakesCompanion(
+                id: id,
+                kind: kind,
+                ref: ref,
+                prompt: prompt,
+                answer: answer,
+                given: given,
+                times: times,
+                lastAt: lastAt,
+                resolved: resolved,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required MistakeKind kind,
+                required String ref,
+                required String prompt,
+                required String answer,
+                Value<String> given = const Value.absent(),
+                Value<int> times = const Value.absent(),
+                required DateTime lastAt,
+                Value<bool> resolved = const Value.absent(),
+              }) => MistakesCompanion.insert(
+                id: id,
+                kind: kind,
+                ref: ref,
+                prompt: prompt,
+                answer: answer,
+                given: given,
+                times: times,
+                lastAt: lastAt,
+                resolved: resolved,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MistakesTable, Mistake>(table),
+                  BaseReferences<_$AppDatabase, $MistakesTable, Mistake>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MistakesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MistakesTable,
+      Mistake,
+      $$MistakesTableFilterComposer,
+      $$MistakesTableOrderingComposer,
+      $$MistakesTableAnnotationComposer,
+      $$MistakesTableCreateCompanionBuilder,
+      $$MistakesTableUpdateCompanionBuilder,
+      (Mistake, BaseReferences<_$AppDatabase, $MistakesTable, Mistake>),
+      Mistake,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7590,4 +8479,6 @@ class $AppDatabaseManager {
       $$DailyActivityTableTableManager(_db, _db.dailyActivity);
   $$GrammarProgressTableTableManager get grammarProgress =>
       $$GrammarProgressTableTableManager(_db, _db.grammarProgress);
+  $$MistakesTableTableManager get mistakes =>
+      $$MistakesTableTableManager(_db, _db.mistakes);
 }

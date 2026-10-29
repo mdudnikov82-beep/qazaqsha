@@ -27,22 +27,25 @@ class QuizScreen extends ConsumerStatefulWidget {
     required int this.lessonIndex,
   }) : sectionId = null,
        isCustom = false,
-       reviewMode = ReviewMode.due;
+       reviewMode = ReviewMode.due,
+       setId = null;
 
   const QuizScreen.review({super.key, this.reviewMode = ReviewMode.due})
     : categoryId = null,
       lessonIndex = null,
       sectionId = null,
-      isCustom = false;
+      isCustom = false,
+      setId = null;
 
   const QuizScreen.exam({super.key, required String this.sectionId})
     : categoryId = null,
       lessonIndex = null,
       isCustom = false,
-      reviewMode = ReviewMode.due;
+      reviewMode = ReviewMode.due,
+      setId = null;
 
-  /// Practice of the user's own words.
-  const QuizScreen.custom({super.key})
+  /// Practice of the user's own words: one set, or all of them.
+  const QuizScreen.custom({super.key, this.setId})
     : categoryId = null,
       lessonIndex = null,
       sectionId = null,
@@ -54,6 +57,9 @@ class QuizScreen extends ConsumerStatefulWidget {
   final String? sectionId;
   final bool isCustom;
   final ReviewMode reviewMode;
+
+  /// Own word set to practise; null = all own words.
+  final String? setId;
 
   bool get isLesson => categoryId != null;
   bool get isExam => sectionId != null;
@@ -180,12 +186,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       } else if (widget.isCustom) {
         final progress = await ref.read(progressMapProvider.future);
         // Fresh words first, then the weakest (lowest repetition box).
-        final words = [...await ref.read(customWordsRepositoryProvider).words()]
-          ..sort(
-            (a, b) => (progress[a.id]?.box ?? -1).compareTo(
-              progress[b.id]?.box ?? -1,
-            ),
-          );
+        final words =
+            [
+              ...await ref
+                  .read(customWordsRepositoryProvider)
+                  .words(widget.setId),
+            ]..sort(
+              (a, b) => (progress[a.id]?.box ?? -1).compareTo(
+                progress[b.id]?.box ?? -1,
+              ),
+            );
         final picked = words.take(_customPracticeSize).toList();
         questions = _engine.buildLesson(
           lessonWords: picked,

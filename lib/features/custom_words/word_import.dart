@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import '../../core/kazakh_letters.dart';
 
@@ -24,16 +25,21 @@ class ImportedWord {
 const maxImportWords = 100;
 const maxWordLength = 60;
 
+/// Longest name of an own word set.
+const maxSetTitle = 30;
+
 const webImportBase = 'https://mdudnikov82-beep.github.io/qazaqsha/#/import';
 const appImportBase = 'qazaqsha://app/import';
 
 /// Packs words into a URL-safe code: base64url of `{"v":1,"w":[[kk,ru],…]}`,
-/// without padding. The Telegram bot produces exactly this format.
-String encodeWords(List<ImportedWord> words) => base64Url
+/// without padding. The Telegram bot produces exactly this format. A
+/// shared set also carries its name as `"t"`.
+String encodeWords(List<ImportedWord> words, {String? title}) => base64Url
     .encode(
       utf8.encode(
         jsonEncode({
           'v': 1,
+          't': ?title,
           'w': [
             for (final w in words) [w.kk, w.ru],
           ],
@@ -45,17 +51,33 @@ String encodeWords(List<ImportedWord> words) => base64Url
 String webImportLink(String code) => '$webImportBase?w=$code';
 String appImportLink(String code) => '$appImportBase?w=$code';
 
+/// Words from a link or code, and the set's name if it was shared.
+class WordSet {
+  const WordSet(this.words, {this.title});
+
+  final List<ImportedWord> words;
+  final String? title;
+}
+
 /// Unpacks a code made by [encodeWords]; null if it isn't one.
-List<ImportedWord>? decodeWords(String code) {
+List<ImportedWord>? decodeWords(String code) => decodeWordSet(code)?.words;
+
+WordSet? decodeWordSet(String code) {
   try {
     final padded = code.padRight((code.length + 3) ~/ 4 * 4, '=');
     final data = jsonDecode(utf8.decode(base64Url.decode(padded)));
     if (data is! Map || data['w'] is! List) return null;
-    return _clean([
-      for (final pair in data['w'] as List)
-        if (pair is List && pair.length >= 2)
-          ImportedWord('${pair[0]}', '${pair[1]}'),
-    ]);
+    final title = data['t'];
+    return WordSet(
+      _clean([
+        for (final pair in data['w'] as List)
+          if (pair is List && pair.length >= 2)
+            ImportedWord('${pair[0]}', '${pair[1]}'),
+      ]),
+      title: title is String && title.trim().isNotEmpty
+          ? title.trim().substring(0, min(title.trim().length, maxSetTitle))
+          : null,
+    );
   } on FormatException {
     return null;
   }
@@ -66,15 +88,18 @@ final _bareCode = RegExp(r'^[A-Za-z0-9_-]{8,}$');
 
 /// Reads whatever the user pasted: an import link, a bare code, or plain
 /// lines like «сөз — слово».
-List<ImportedWord> parseImport(String input) {
+List<ImportedWord> parseImport(String input) => parseImportSet(input).words;
+
+WordSet parseImportSet(String input) {
   final text = input.trim();
   final fromLink = _codeParam.firstMatch(text);
-  if (fromLink != null) return decodeWords(fromLink.group(1)!) ?? const [];
-  if (_bareCode.hasMatch(text)) {
-    final decoded = decodeWords(text);
-    if (decoded != null) return decoded;
+  if (fromLink != null) {
+    return decodeWordSet(fromLink.group(1)!) ?? const WordSet([]);
   }
-  return parseWordLines(text);
+  if (_bareCode.hasMatch(text)) {
+    if (decodeWordSet(text) case final set?) return set;
+  }
+  return WordSet(parseWordLines(text));
 }
 
 /// Separators between the two halves of a line: a dash with spaces around
@@ -82,20 +107,32 @@ List<ImportedWord> parseImport(String input) {
 final _separator = RegExp(r'\s+[—–-]\s+|\t+|\s*=\s*|\s*:\s+');
 final _listMarker = RegExp(r'^\s*(?:[-•*]|\d+[.)])\s*');
 
-/// Parses one pair per line. Kazakh is expected first, but a line written
-/// the other way round is flipped when only its second half has Kazakh
-/// letters.
+/// Parses one pair per line. A line is flipped when only its second half
+/// has Kazakh letters. Lines that don't tell (no ә, қ, і… on either side)
+/// follow the order most other lines use, Kazakh first if none tell.
 List<ImportedWord> parseWordLines(String text) {
-  final words = <ImportedWord>[];
+  final pairs = <(String, String)>[];
+  var kazakhFirst = 0;
+  var kazakhSecond = 0;
   for (final raw in const LineSplitter().convert(text)) {
     final line = raw.replaceFirst(_listMarker, '').trim();
     final parts = line.split(_separator);
     if (parts.length != 2) continue;
-    var (kk, ru) = (parts[0].trim(), parts[1].trim());
-    if (!hasKazakhLetters(kk) && hasKazakhLetters(ru)) (kk, ru) = (ru, kk);
-    words.add(ImportedWord(kk, ru));
+    final (a, b) = (parts[0].trim(), parts[1].trim());
+    final (ka, kb) = (hasKazakhLetters(a), hasKazakhLetters(b));
+    if (ka && !kb) kazakhFirst++;
+    if (kb && !ka) kazakhSecond++;
+    pairs.add((a, b));
   }
-  return _clean(words);
+  final flipUnclear = kazakhSecond > kazakhFirst;
+  return _clean([
+    for (final (a, b) in pairs)
+      switch ((hasKazakhLetters(a), hasKazakhLetters(b))) {
+        (false, true) => ImportedWord(b, a),
+        (true, false) => ImportedWord(a, b),
+        _ => flipUnclear ? ImportedWord(b, a) : ImportedWord(a, b),
+      },
+  ]);
 }
 
 final _kazakhOnly = RegExp(

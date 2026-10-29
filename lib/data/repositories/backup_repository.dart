@@ -47,9 +47,21 @@ class BackupRepository {
         'sec': s.studySeconds,
         'name': s.userName,
       },
+      // Kept for backups read by 1.2.0, which knew one set only.
       'custom': [
         for (final w in words.values)
           if (w.categoryId == customCategoryId) [w.kk, w.ru],
+      ],
+      'sets': [
+        for (final set in await _customWords.sets())
+          [
+            set.id,
+            set.titleRu,
+            [
+              for (final w in await _customWords.words(set.id))
+                [w.kk, w.ru, w.note],
+            ],
+          ],
       ],
       'words': [
         for (final p in await _db.select(_db.wordProgress).get())
@@ -114,8 +126,31 @@ class BackupRepository {
     try {
       await _db.transaction(() async {
         await _clearProgress();
-        final custom = rows('custom');
-        if (custom.isNotEmpty) {
+        if (data['sets'] case final List<dynamic> sets) {
+          for (final set in sets.cast<List<dynamic>>()) {
+            final (id, title) = (set[0] as String, set[1] as String);
+            final words = (set[2] as List).cast<List<dynamic>>();
+            final setId = id == customCategoryId
+                ? customCategoryId
+                : await _customWords.createSet(title);
+            if (id == customCategoryId && words.isEmpty) continue;
+            await _customWords.addWords([
+              for (final w in words)
+                ImportedWord(w[0] as String, w[1] as String),
+            ], setId: setId);
+            for (final w in words) {
+              if (w.length > 2 && w[2] is String) {
+                await (_db.update(_db.words)..where(
+                      (x) =>
+                          x.categoryId.equals(setId) &
+                          x.kk.equals(w[0] as String) &
+                          x.ru.equals(w[1] as String),
+                    ))
+                    .write(WordsCompanion(note: Value(w[2] as String)));
+              }
+            }
+          }
+        } else if (rows('custom') case final custom when custom.isNotEmpty) {
           await _customWords.addWords([
             for (final w in custom)
               ImportedWord(w[0] as String, w[1] as String),

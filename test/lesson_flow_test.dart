@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qazaqsha/features/custom_words/word_import.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/data/repositories/dictionary_repository.dart';
 import 'package:qazaqsha/data/repositories/lesson_repository.dart';
@@ -266,24 +268,45 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Показать слова'));
     await settle(tester);
-    expect(find.text('Новые слова: 3'), findsOneWidget);
-    // The Russian-first line was flipped: Kazakh word first.
+    expect(find.text('Найдено пар: 3'), findsOneWidget);
+    // The Russian-first lines were flipped: Kazakh word first.
     expect(
       find.textContaining('кесіртке — ящерица', findRichText: true),
       findsOneWidget,
     );
+    // «рахмет» is already in the built-in dictionary: switched off.
+    expect(find.text('Уже в словаре: 1 — они выключены.'), findsOneWidget);
 
-    await tester.tap(find.text('Добавить 3 в «Мои слова»'));
+    await tester.tap(find.text('Добавить 2'));
     // The word list reloads from the database right after saving.
     await advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
-    // «рахмет» is already in the built-in dictionary.
-    expect(find.text('Добавлено: 2, уже были в словаре: 1'), findsOneWidget);
+    expect(find.text('Добавлено слов: 2'), findsOneWidget);
     expect(find.text('тиін'), findsOneWidget);
     expect(find.text('кесіртке'), findsOneWidget);
 
     await tester.tap(find.text('Тренировать'));
     await settle(tester);
     expect(find.text('Новое слово'), findsOneWidget);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('a shared link becomes a new named set', (tester) async {
+    final db = await startApp(tester);
+    final code = encodeWords(const [
+      ImportedWord('тиін', 'белка'),
+      ImportedWord('қасқыр', 'волк'), // in the dictionary already
+    ], title: 'Лес');
+    GoRouter.of(tester.element(find.text('Главная'))).go('/import?w=$code');
+    await settle(tester);
+
+    expect(find.text('«Лес»'), findsOneWidget);
+    expect(find.text('Название набора'), findsOneWidget);
+    await tester.tap(find.text('Добавить 1'));
+    await advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
+    expect(find.text('Лес'), findsWidgets); // the set's screen
+    final sets = await tester.runAsync(() => db.select(db.categories).get());
+    expect(sets!.where((c) => c.titleRu == 'Лес'), hasLength(1));
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

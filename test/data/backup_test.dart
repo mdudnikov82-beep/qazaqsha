@@ -107,6 +107,26 @@ void main() {
     expect(progress.map((p) => p.wordId), containsAll([1, squirrel.id]));
   });
 
+  test('own sets travel in the backup with names and notes', () async {
+    final repo = CustomWordsRepository(db);
+    final work = await repo.createSet('Работа');
+    await repo.addWords(const [
+      ImportedWord('кеңсе қызметкері', 'офисный работник'),
+    ], setId: work);
+    final w = (await repo.words(work)).single;
+    await repo.updateWord(w.id, kk: w.kk, ru: w.ru, note: 'о человеке');
+    final code = await backupOf(db).exportCode();
+
+    final other = testDatabase();
+    addTearDown(other.close);
+    await backupOf(other).importCode(code);
+    final otherRepo = CustomWordsRepository(other);
+    final sets = await otherRepo.sets();
+    expect(sets.map((s) => s.titleRu), ['Работа']);
+    final restored = (await otherRepo.words(sets.last.id)).single;
+    expect((restored.kk, restored.note), ('кеңсе қызметкері', 'о человеке'));
+  });
+
   test('a broken code changes nothing', () async {
     await study();
     final backup = backupOf(db);

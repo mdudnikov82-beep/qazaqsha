@@ -84,4 +84,68 @@ void main() {
     await custom.delete((await rakhmet()).single.id);
     expect(await rakhmet(), hasLength(1));
   });
+
+  test('sets: create, add, rename, edit words, delete', () async {
+    final work = await custom.createSet('  Работа  ');
+    expect(isOwnSet(work), isTrue);
+    expect(isOwnSet('custom'), isTrue);
+    expect(isOwnSet('family'), isFalse);
+    await custom.addWords(const [ImportedWord('тиін', 'белка')]);
+    final r = await custom.addWords(const [
+      ImportedWord('кеңсе қызметкері', 'офисный работник'),
+      ImportedWord('жоспар', 'план'), // in the dictionary
+    ], setId: work);
+    expect((r.added, r.skipped), (1, 1));
+
+    final sets = await custom.sets();
+    expect(sets.map((s) => s.titleRu), ['Мои слова', 'Работа']);
+    expect((await custom.words(work)).single.kk, 'кеңсе қызметкері');
+    expect(await custom.words(), hasLength(2)); // all own words
+
+    await custom.renameSet(work, 'Офис');
+    expect((await custom.sets()).last.titleRu, 'Офис');
+
+    final word = (await custom.words(work)).single;
+    await custom.updateWord(
+      word.id,
+      kk: 'әріптесім',
+      ru: 'мой коллега',
+      note: 'о человеке',
+    );
+    final edited = (await custom.words(work)).single;
+    expect(
+      (edited.kk, edited.ru, edited.note),
+      ('әріптесім', 'мой коллега', 'о человеке'),
+    );
+    expect(edited.searchText, 'мой коллега әріптесім');
+    // A pair the dictionary already has is refused.
+    await expectLater(
+      custom.updateWord(word.id, kk: 'жоспар', ru: 'план'),
+      throwsA(isA<DuplicateWord>()),
+    );
+
+    await custom.deleteSet(work);
+    expect((await custom.sets()).map((s) => s.id), ['custom']);
+    expect(await custom.words(), hasLength(1));
+    // The default set is only emptied, never removed.
+    await custom.deleteSet('custom');
+    expect((await custom.sets()).map((s) => s.id), ['custom']);
+    expect(await custom.words(), isEmpty);
+  });
+
+  test('a set id with LIKE wildcards never matches course topics', () async {
+    // «my_» must not act as «my» + any character.
+    await db
+        .into(db.categories)
+        .insert(
+          CategoriesCompanion.insert(
+            id: 'myX1',
+            titleRu: 't',
+            titleKk: 't',
+            icon: 'x',
+            sortOrder: 0,
+          ),
+        );
+    expect((await custom.sets()).map((s) => s.id), isNot(contains('myX1')));
+  });
 }

@@ -84,14 +84,17 @@ GoRouter createRouter({
     ),
     GoRoute(
       path: '/practice/custom',
-      builder: (context, state) => const QuizScreen.custom(),
+      builder: (context, state) =>
+          QuizScreen.custom(setId: state.uri.queryParameters['set']),
     ),
     // Also the target of import links: …/#/import?w=CODE (web) and
     // qazaqsha://app/import?w=CODE (Android).
     GoRoute(
       path: '/import',
-      builder: (context, state) =>
-          ImportWordsScreen(code: state.uri.queryParameters['w']),
+      builder: (context, state) => ImportWordsScreen(
+        code: state.uri.queryParameters['w'],
+        setId: state.uri.queryParameters['set'],
+      ),
     ),
   ],
 );

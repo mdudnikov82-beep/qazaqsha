@@ -11,6 +11,7 @@ import '../../data/database/app_database.dart';
 import '../../data/database/seed.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/custom_words_repository.dart';
+import '../custom_words/set_actions.dart';
 import '../../data/repositories/dictionary_repository.dart';
 import '../lessons/sections.dart';
 import '../quiz/quiz_engine.dart';
@@ -364,7 +365,7 @@ class _WordList extends StatelessWidget {
   }
 }
 
-class _Topics extends StatelessWidget {
+class _Topics extends ConsumerWidget {
   const _Topics({
     required this.categories,
     required this.words,
@@ -376,7 +377,7 @@ class _Topics extends StatelessWidget {
   final Map<int, WordProgressData> progress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final byId = {for (final x in categories) x.category.id: x};
     final learnedIn = <String, int>{};
@@ -386,7 +387,10 @@ class _Topics extends StatelessWidget {
       }
     }
     final today = wordOfDay(words, DateTime.now());
-    final custom = byId[customCategoryId];
+    final ownSets = [
+      for (final x in categories)
+        if (isOwnSet(x.category.id)) x,
+    ];
 
     Widget grid(List<CategoryWithCount> list, Color color) => GridView.count(
       crossAxisCount: 2,
@@ -445,13 +449,24 @@ class _Topics extends StatelessWidget {
           grid([for (final id in s.categoryIds) ?byId[id]], s.color),
         ],
         const SizedBox(height: 22),
-        const Text(
-          'Свои слова',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Свои слова',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => createSetFlow(context, ref),
+              icon: const Icon(Icons.create_new_folder_rounded),
+              label: const Text('Новый набор'),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        if (custom != null)
-          grid([custom], c.goldText)
+        const SizedBox(height: 6),
+        if (ownSets.isNotEmpty)
+          grid(ownSets, c.goldText)
         else
           SurfaceCard(
             onTap: () => context.push('/import'),
@@ -461,7 +476,8 @@ class _Topics extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Добавьте свои слова — вручную или через Telegram-бота',
+                    'Добавьте свои слова — вручную, списком или через '
+                    'Telegram-бота',
                   ),
                 ),
               ],
@@ -559,7 +575,7 @@ class CategoryWordsScreen extends ConsumerWidget {
       return LoadingScaffold(error: words.error ?? categories.error);
     }
     final progress = ref.watch(progressMapProvider).value ?? const {};
-    final isCustom = categoryId == customCategoryId;
+    final isCustom = isOwnSet(categoryId);
     final cat = categories.value!
         .where((c) => c.category.id == categoryId)
         .firstOrNull
@@ -584,9 +600,26 @@ class CategoryWordsScreen extends ConsumerWidget {
                 color: color,
                 leading: const BackButton(color: Colors.white),
                 title: cat?.titleKk ?? 'Менің сөздерім',
-                subtitle:
-                    '${cat?.titleRu ?? 'Мои слова'} · ${list.length} слов · '
-                    'выучено $learned',
+                subtitle: [
+                  // An own set has one name; don't print it twice.
+                  if (cat == null || cat.titleRu != cat.titleKk)
+                    cat?.titleRu ?? 'Мои слова',
+                  '${list.length} слов',
+                  'выучено $learned',
+                ].join(' · '),
+                actions: [
+                  if (isCustom && cat != null) ...[
+                    IconButton(
+                      tooltip: 'Поделиться набором',
+                      color: Colors.white,
+                      onPressed: list.isEmpty
+                          ? null
+                          : () => shareSet(context, cat, list),
+                      icon: const Icon(Icons.share_rounded),
+                    ),
+                    SetMenu(set: cat),
+                  ],
+                ],
                 bottom: Row(
                   children: [
                     Expanded(
@@ -612,7 +645,9 @@ class CategoryWordsScreen extends ConsumerWidget {
                           ),
                           onPressed: list.isEmpty
                               ? null
-                              : () => context.push('/practice/custom'),
+                              : () => context.push(
+                                  '/practice/custom?set=$categoryId',
+                                ),
                           icon: const Icon(Icons.fitness_center_rounded),
                           label: const Text('Тренировать'),
                         ),
@@ -621,7 +656,8 @@ class CategoryWordsScreen extends ConsumerWidget {
                       IconButton(
                         tooltip: 'Добавить',
                         color: Colors.white,
-                        onPressed: () => context.push('/import'),
+                        onPressed: () =>
+                            context.push('/import?set=$categoryId'),
                         icon: const Icon(Icons.add_rounded),
                       ),
                     ],

@@ -28,6 +28,7 @@ const _categoryIcons = <String, IconData>{
   'link': Icons.link_rounded,
   'music_note': Icons.music_note_rounded,
   'bookmark': Icons.bookmark_rounded,
+  'folder': Icons.folder_rounded,
   'shopping_cart': Icons.shopping_cart_rounded,
   'mood': Icons.mood_rounded,
   'beach_access': Icons.beach_access_rounded,

@@ -8,6 +8,8 @@ import '../../core/widgets/common.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/custom_words_repository.dart';
+import '../custom_words/import_screen.dart' show EditedPair, PairDialog;
+import '../custom_words/word_import.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../gamification/progress_rules.dart';
 import '../lessons/sections.dart';
@@ -66,7 +68,7 @@ class _WordSheet extends ConsumerWidget {
         .where((x) => x.category.id == word.categoryId)
         .firstOrNull
         ?.category;
-    final isCustom = word.categoryId == customCategoryId;
+    final isCustom = isOwnSet(word.categoryId);
     final section = sectionOfCategory(word.categoryId);
     final accent = section?.color ?? AppColors.primary;
     final topicWords = [
@@ -215,6 +217,15 @@ class _WordSheet extends ConsumerWidget {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: () => _edit(context, ref),
+                icon: const Icon(Icons.edit_rounded),
+                label: const Text('Изменить'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
                   foregroundColor: c.badText,
                   minimumSize: const Size.fromHeight(48),
                 ),
@@ -224,13 +235,41 @@ class _WordSheet extends ConsumerWidget {
                   ref.invalidate(allWordsProvider);
                 },
                 icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('Удалить из «Мои слова»'),
+                label: Text('Удалить из «${category?.titleRu ?? 'Мои слова'}»'),
               ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await showDialog<EditedPair>(
+      context: context,
+      builder: (_) => PairDialog(
+        initial: ImportedWord(word.kk, word.ru),
+        note: word.note ?? '',
+      ),
+    );
+    if (result == null) return;
+    try {
+      await ref
+          .read(customWordsRepositoryProvider)
+          .updateWord(
+            word.id,
+            kk: result.word.kk,
+            ru: result.word.ru,
+            note: result.note,
+          );
+      ref.invalidate(allWordsProvider);
+      if (context.mounted) Navigator.of(context).pop();
+    } on DuplicateWord {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Такое слово уже есть в словаре')),
+      );
+    }
   }
 
   static String _when(DateTime next, DateTime now) {

@@ -33,7 +33,7 @@ class _Round extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.symmetric(
           horizontal: side * .12,
-          vertical: side * .1,
+          vertical: side * .07,
         ),
         children: children,
       ),
@@ -84,18 +84,17 @@ class WatchHome extends ConsumerWidget {
         Center(
           child: Barys(
             mood: goalDone ? BarysMood.proud : BarysMood.hello,
-            size: 64,
+            size: 50,
           ),
         ),
-        const SizedBox(height: 4),
         Text(
           '🔥 $streak  ·  ⚡ $daily/${stats.dailyGoalXp}',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(18),
@@ -114,23 +113,27 @@ class WatchHome extends ConsumerWidget {
               Text(
                 word.kk,
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               Text(
                 word.ru,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.muted, fontSize: 12),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         FilledButton(
           style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(44),
+            minimumSize: const Size.fromHeight(42),
             backgroundColor: AppColors.gold,
             foregroundColor: AppColors.onGold,
           ),
@@ -306,18 +309,23 @@ class _WatchWorkoutState extends ConsumerState<WatchWorkout> {
     final word = words[_index];
     return _Round(
       children: [
+        const SizedBox(height: 8),
         Text(
           '${_index + 1} / ${words.length}',
           textAlign: TextAlign.center,
           style: TextStyle(color: c.muted, fontSize: 12),
         ),
         const SizedBox(height: 4),
-        Text(
-          word.kk,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+        // Long words shrink to one line instead of breaking mid-word.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            word.kk,
+            maxLines: 1,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         for (final o in _options) ...[
           FilledButton(
             style: FilledButton.styleFrom(

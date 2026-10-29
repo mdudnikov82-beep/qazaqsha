@@ -1,6 +1,6 @@
 # Политика конфиденциальности Qazaqsha
 
-*Дата вступления в силу: 29 октября 2026 г. (обновлено для версии 1.3.0)*
+*Дата вступления в силу: 29 октября 2026 г. (обновлено для версии 1.4.0)*
 
 Qazaqsha — приложение для изучения казахского языка. Мы уважаем вашу
 конфиденциальность, поэтому приложение устроено так, чтобы вообще не
@@ -33,6 +33,11 @@ Qazaqsha — приложение для изучения казахского �
 буфер обмена только по вашему нажатию. Куда его сохранить, решаете вы.
 Так же устроена кнопка «Поделиться набором»: ссылка со словами набора
 собирается на телефоне, а отправляете её вы сами через выбранное приложение.
+
+Озвучка 🔊 использует синтезатор речи, установленный в телефоне; приложение
+передаёт ему только казахский текст, который нужно произнести. Виджет на
+экране телефона показывает слово дня и серию — эти данные тоже хранятся
+только на устройстве.
 
 Эти данные никуда не отправляются. Удалить их можно, удалив приложение или
 очистив его данные в настройках телефона.
@@ -71,7 +76,9 @@ answers, review dates), experience points, level, day streak, activity by
 day, achievements, the name you entered, favorite and own words, and
 settings. A progress backup is a text code copied to the clipboard only
 when you tap the button. Sharing a word set works the same way: the link is built on the
-device and you send it yourself. This data never leaves your device and is
+device and you send it yourself. The 🔊 buttons use the speech engine
+installed on the phone, passing it only the Kazakh text to read; the
+home-screen widget shows data kept on the device. This data never leaves your device and is
 removed when you uninstall the app or clear its data.
 
 **Children:** the app collects no data from anyone, including children.

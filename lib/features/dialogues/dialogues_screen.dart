@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
 import '../../core/widgets/latin_line.dart';
+import '../../core/widgets/speak_button.dart';
 import '../../core/widgets/teal_header.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
@@ -310,13 +311,19 @@ class _Bubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      speaker,
-                      style: TextStyle(
-                        color: right ? AppColors.gold : c.accent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          speaker,
+                          style: TextStyle(
+                            color: right ? AppColors.gold : c.accent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SpeakButton(kk, size: 18, color: muted),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Wrap(

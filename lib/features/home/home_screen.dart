@@ -12,6 +12,7 @@ import 'week_card.dart';
 import '../dictionary/word_sheet.dart';
 import '../../core/motion.dart';
 import '../../core/dates.dart';
+import '../../core/home_widget_sync.dart';
 import '../../core/widgets/barys.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
@@ -97,8 +98,15 @@ class HomeScreen extends ConsumerWidget {
         : (
             BarysMood.hello,
             'Сегодня осталось $left ${plural(left, 'задание', 'задания', 'заданий')} '
-                'из 3 — минут на десять.',
+                'из 3 — минут на ${const ['пять', 'десять', 'пятнадцать'][left - 1]}.',
           );
+    HomeWidgetSync.update(
+      wordKk: today.kk,
+      wordRu: today.ru,
+      streak: streak,
+      freezes: s.streakFreezes,
+      tasksLeft: left,
+    );
     if (lapsed && !_comebackShown) {
       _comebackShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {

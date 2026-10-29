@@ -199,6 +199,28 @@ class LessonRepository {
         );
   }
 
+  /// After the placement test: every lesson and exam of the sections
+  /// before [sections] counts as passed. Never takes progress away.
+  Future<void> placeBefore(List<CourseSection> sections, DateTime now) async {
+    final counts = {
+      for (final c in await _dictionary.categories())
+        c.category.id: c.wordCount,
+    };
+    for (final s in sections) {
+      for (final id in s.categoryIds) {
+        for (var i = 0; i < lessonCountFor(counts[id] ?? 0); i++) {
+          await completeLesson(
+            categoryId: id,
+            lessonIndex: i,
+            score: examPassScore,
+            now: now,
+          );
+        }
+      }
+      await recordExam(sectionId: s.id, score: examPassScore, now: now);
+    }
+  }
+
   /// Whether any lesson was finished since [since].
   Stream<bool> watchLessonSince(DateTime since) =>
       (_db.select(_db.lessonProgress)

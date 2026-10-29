@@ -144,7 +144,17 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Жол картасы')),
+      appBar: AppBar(
+        title: const Text('Жол картасы'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => context.push('/placement'),
+            icon: const Icon(Icons.speed_rounded),
+            label: const Text('Мой уровень'),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
         child: Column(

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
+import '../../core/widgets/speak_button.dart';
 import '../../core/widgets/teal_header.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
@@ -486,12 +487,19 @@ class RuleScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      kk,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            kk,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        SpeakButton(kk, size: 20),
+                      ],
                     ),
                     Text(ru, style: TextStyle(color: c.muted)),
                   ],

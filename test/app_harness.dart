@@ -37,6 +37,7 @@ Future<AppDatabase> startApp(
         grammarSourceProvider.overrideWithValue(
           () => File('assets/data/grammar.json').readAsString(),
         ),
+        speechCheckProvider.overrideWithValue(() async => false),
         dialoguesSourceProvider.overrideWithValue(
           () => File('assets/data/dialogues.json').readAsString(),
         ),

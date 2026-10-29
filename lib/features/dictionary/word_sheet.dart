@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../core/dates.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/latin_line.dart';
+import '../../core/widgets/speak_button.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/custom_words_repository.dart';
@@ -123,6 +124,7 @@ class _WordSheet extends ConsumerWidget {
                     ],
                   ),
                 ),
+                SpeakButton(word.kk, size: 30),
                 IconButton.filledTonal(
                   tooltip: fav ? 'Убрать из избранного' : 'В избранное',
                   onPressed: () => ref

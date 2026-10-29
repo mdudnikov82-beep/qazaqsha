@@ -8,6 +8,7 @@ import '../../app/theme.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/latin_line.dart';
+import '../../core/widgets/speak_button.dart';
 import '../../core/widgets/gold_button.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
@@ -250,6 +251,8 @@ class _Card extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+          if (showKazakh)
+            SpeakButton(word.kk, color: flipped ? AppColors.gold : null),
           if (showKazakh)
             LatinLine(
               word.kk,

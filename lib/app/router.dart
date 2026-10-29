@@ -12,6 +12,7 @@ import '../features/home/comeback_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/placement/placement_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/quiz/quiz_screen.dart';
 import '../features/review/mistakes_screen.dart';
@@ -33,8 +34,9 @@ GoRouter createRouter({
     final done = onboardingDone();
     final here = state.matchedLocation;
     if (done == null) return null;
-    // Import links from the bot work even before the welcome is done.
-    if (!done && here != '/welcome' && here != '/import') return '/welcome';
+    // Import links and the placement test work before the welcome is done.
+    const open = {'/welcome', '/import', '/placement'};
+    if (!done && !open.contains(here)) return '/welcome';
     if (done && here == '/welcome') return '/home';
     return null;
   },
@@ -84,6 +86,10 @@ GoRouter createRouter({
       ),
     ),
     GoRoute(path: '/review', builder: (context, state) => const ReviewScreen()),
+    GoRoute(
+      path: '/placement',
+      builder: (context, state) => const PlacementScreen(),
+    ),
     GoRoute(
       path: '/comeback',
       builder: (context, state) => const ComebackScreen(),

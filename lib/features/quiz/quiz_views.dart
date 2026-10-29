@@ -5,6 +5,7 @@ import '../../core/kazakh_letters.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/latin_line.dart';
+import '../../core/widgets/speak_button.dart';
 import '../../data/database/app_database.dart';
 import 'answer_check.dart';
 import 'questions.dart';
@@ -97,6 +98,7 @@ class IntroView extends StatelessWidget {
                 ),
               ),
               LatinLine(word.kk, fontSize: 18, textAlign: TextAlign.center),
+              SpeakButton(word.kk, size: 32),
               const SizedBox(height: 8),
               Text(
                 word.ru,

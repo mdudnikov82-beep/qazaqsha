@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/speech.dart';
 import '../features/dialogues/dialogues.dart';
 import '../features/grammar/grammar.dart';
 
@@ -182,4 +183,14 @@ final lessonDoneTodayProvider = StreamProvider<bool>(
 /// A grammar rule was practised today.
 final ruleDoneTodayProvider = StreamProvider<bool>(
   (ref) => ref.watch(grammarRepositoryProvider).watchRuleSince(_todayStart()),
+);
+
+/// A Kazakh voice is installed (speaker buttons show).
+final speechAvailableProvider = FutureProvider<bool>(
+  (ref) => ref.watch(speechCheckProvider)(),
+);
+
+/// How the voice is looked up; tests replace it.
+final speechCheckProvider = Provider<Future<bool> Function()>(
+  (ref) => Speech.available,
 );

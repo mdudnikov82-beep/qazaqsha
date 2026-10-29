@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/dates.dart';
+import '../../core/speech.dart';
 import '../../core/reminders.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/ornament.dart';
@@ -705,6 +706,19 @@ class _Settings extends ConsumerWidget {
             ),
           ),
           Divider(color: c.line, height: 16),
+          ListTile(
+            leading: Icon(Icons.record_voice_over_rounded, color: c.accent),
+            title: const Text('Озвучка', style: label),
+            subtitle: Text(switch (ref.watch(speechAvailableProvider).value) {
+              true => 'Казахский голос есть — нажмите, чтобы послушать',
+              false =>
+                'В телефоне нет казахского голоса. Установите синтезатор с '
+                    'казахским языком (например, бесплатный RHVoice) и выберите '
+                    'его в настройках «Синтез речи» — кнопки 🔊 появятся сами.',
+              null => 'Проверяем…',
+            }),
+            onTap: () => Speech.say('Сәлем! Қазақ тілін бірге үйренейік.'),
+          ),
           ListTile(
             leading: Icon(Icons.abc_rounded, color: c.accent),
             title: const Text('Латиница', style: label),

@@ -463,6 +463,11 @@ class _CourseStep extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ],
+        TextButton.icon(
+          onPressed: () => context.push('/placement'),
+          icon: const Icon(Icons.speed_rounded),
+          label: const Text('Я уже немного знаю казахский — пройти тест'),
+        ),
       ],
     );
   }

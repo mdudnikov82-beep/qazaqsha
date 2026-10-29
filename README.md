@@ -7,6 +7,9 @@ Telegram-бота, интервальное повторение и геймиф
 *A Kazakh learning app for Russian speakers: topic lessons, word and sentence
 quizzes, spaced repetition and gamification.*
 
+**Бесплатно и навсегда:** без подписок, без платных функций и без рекламы.
+Весь курс открыт всем.
+
 **▶ Открыть в браузере: https://mdudnikov82-beep.github.io/qazaqsha/**
 
 На телефоне откройте ссылку и выберите «Добавить на главный экран» —

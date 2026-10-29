@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- A Wear OS app (Galaxy Watch): works on its own, without the phone. -->
+    <uses-feature android:name="android.hardware.type.watch" />
+    <application>
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+        <!-- Home-screen widgets don't exist on watches. -->
+        <receiver android:name=".QazaqshaWidget" tools:node="remove" />
+    </application>
+</manifest>

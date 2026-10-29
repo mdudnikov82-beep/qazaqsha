@@ -53,6 +53,21 @@ android {
         versionName = flutter.versionName
     }
 
+    // Phone and Galaxy Watch / Wear OS builds of the same app. The watch
+    // runs lib/main_watch.dart: flutter build apk --flavor watch
+    // -t lib/main_watch.dart (see README).
+    flavorDimensions += "device"
+    productFlavors {
+        create("phone") {
+            dimension = "device"
+        }
+        create("watch") {
+            dimension = "device"
+            minSdk = 30
+            versionNameSuffix = "-watch"
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {

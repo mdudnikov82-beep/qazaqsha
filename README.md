@@ -77,6 +77,9 @@ quizzes, spaced repetition and gamification.*
 - **Профиль:** имя, звание по уровню, календарь активности, лучшая серия,
   прогресс достижений, напоминание о занятиях (Android), резервная копия
   прогресса кодом и сброс.
+- **Часы Galaxy Watch / Wear OS:** отдельное приложение для часов — Барыс,
+  серия, слово дня, минутная тренировка из 5 слов и повторение. Прогресс
+  на часах пока свой, без синхронизации с телефоном.
 - **Пять цветовых тем** (Бирюза, Степь, Тянь-Шань, Наурыз, Ночь) открываются
   за уровни; у каждой светлый и тёмный вариант, казахский орнамент;
   режим «Авто» следует настройке телефона. Анимации отключаются, если в
@@ -101,8 +104,16 @@ git clone https://github.com/mdudnikov82-beep/qazaqsha.git
 cd qazaqsha
 flutter pub get
 
-flutter run -d chrome     # в браузере
-flutter run               # на подключённом Android-телефоне
+flutter run -d chrome                                   # в браузере
+flutter run --flavor phone                              # на Android-телефоне
+flutter run --flavor watch -t lib/main_watch.dart       # на Galaxy Watch / Wear OS
+```
+
+Релизные APK:
+
+```bash
+flutter build apk --release --flavor phone --split-per-abi
+flutter build apk --release --flavor watch -t lib/main_watch.dart   --target-platform android-arm,android-arm64
 ```
 
 Для сборки под Android нужны Android SDK и NDK 28.2 — Gradle подскажет,

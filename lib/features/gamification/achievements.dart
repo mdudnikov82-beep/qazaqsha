@@ -26,6 +26,8 @@ class Achievement {
     required this.description,
     required this.icon,
     required this.isEarned,
+    this.goal,
+    this.current,
   });
 
   final String id;
@@ -33,6 +35,10 @@ class Achievement {
   final String description;
   final IconData icon;
   final bool Function(AchievementFacts f) isEarned;
+
+  /// For countable achievements: the target and how far the user is.
+  final int? goal;
+  final int Function(AchievementFacts f)? current;
 }
 
 final achievements = <Achievement>[
@@ -42,6 +48,8 @@ final achievements = <Achievement>[
     description: 'Пройти первый урок',
     icon: Icons.flag_rounded,
     isEarned: (f) => f.quizzesCompleted >= 1,
+    goal: 1,
+    current: (f) => f.quizzesCompleted,
   ),
   Achievement(
     id: 'perfect',
@@ -56,6 +64,8 @@ final achievements = <Achievement>[
     description: 'Заниматься 3 дня подряд',
     icon: Icons.local_fire_department_rounded,
     isEarned: (f) => f.streakDays >= 3,
+    goal: 3,
+    current: (f) => f.streakDays,
   ),
   Achievement(
     id: 'streak_7',
@@ -63,6 +73,8 @@ final achievements = <Achievement>[
     description: 'Заниматься неделю без пропусков',
     icon: Icons.whatshot_rounded,
     isEarned: (f) => f.streakDays >= 7,
+    goal: 7,
+    current: (f) => f.streakDays,
   ),
   Achievement(
     id: 'words_50',
@@ -70,6 +82,8 @@ final achievements = <Achievement>[
     description: 'Выучить 50 слов',
     icon: Icons.menu_book_rounded,
     isEarned: (f) => f.learnedWords >= 50,
+    goal: 50,
+    current: (f) => f.learnedWords,
   ),
   Achievement(
     id: 'words_100',
@@ -77,6 +91,8 @@ final achievements = <Achievement>[
     description: 'Выучить 100 слов',
     icon: Icons.auto_stories_rounded,
     isEarned: (f) => f.learnedWords >= 100,
+    goal: 100,
+    current: (f) => f.learnedWords,
   ),
   Achievement(
     id: 'exam_1',
@@ -84,6 +100,8 @@ final achievements = <Achievement>[
     description: 'Сдать экзамен за раздел',
     icon: Icons.workspace_premium_rounded,
     isEarned: (f) => f.examsPassed >= 1,
+    goal: 1,
+    current: (f) => f.examsPassed,
   ),
   Achievement(
     id: 'all_exams',
@@ -91,6 +109,8 @@ final achievements = <Achievement>[
     description: 'Сдать экзамены всех разделов',
     icon: Icons.school_rounded,
     isEarned: (f) => f.examsPassed >= 4,
+    goal: 4,
+    current: (f) => f.examsPassed,
   ),
   Achievement(
     id: 'xp_1000',
@@ -98,6 +118,8 @@ final achievements = <Achievement>[
     description: 'Набрать 1000 очков опыта',
     icon: Icons.bolt_rounded,
     isEarned: (f) => f.totalXp >= 1000,
+    goal: 1000,
+    current: (f) => f.totalXp,
   ),
 ];
 

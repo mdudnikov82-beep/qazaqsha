@@ -7,11 +7,20 @@ bool reduceMotion(BuildContext context) =>
     MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
 abstract final class Haptics {
-  static void success() => HapticFeedback.lightImpact();
+  /// Follows the "Вибрация" setting in the profile.
+  static bool enabled = true;
 
-  static void error() => HapticFeedback.heavyImpact();
+  static void success() {
+    if (enabled) HapticFeedback.lightImpact();
+  }
 
-  static void tap() => HapticFeedback.selectionClick();
+  static void error() {
+    if (enabled) HapticFeedback.heavyImpact();
+  }
+
+  static void tap() {
+    if (enabled) HapticFeedback.selectionClick();
+  }
 }
 
 enum Reaction { none, pop, shake }

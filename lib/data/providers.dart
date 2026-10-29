@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'database/app_database.dart';
+import 'repositories/backup_repository.dart';
 import 'repositories/custom_words_repository.dart';
 import 'repositories/dictionary_repository.dart';
 import 'repositories/lesson_repository.dart';
@@ -27,6 +28,20 @@ final statsRepositoryProvider = Provider<StatsRepository>(
 
 final customWordsRepositoryProvider = Provider<CustomWordsRepository>(
   (ref) => CustomWordsRepository(ref.watch(appDatabaseProvider)),
+);
+
+final backupRepositoryProvider = Provider<BackupRepository>(
+  (ref) => BackupRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(customWordsRepositoryProvider),
+  ),
+);
+
+/// Activity of the last [weeks] weeks, for the profile calendar.
+final activityProvider = StreamProvider.family<List<DailyActivityData>, int>(
+  (ref, weeks) => ref
+      .watch(statsRepositoryProvider)
+      .watchActivity(DateTime.now().subtract(Duration(days: weeks * 7))),
 );
 
 final lessonRepositoryProvider = Provider<LessonRepository>(
@@ -57,7 +72,7 @@ final courseProvider = StreamProvider<CourseState>(
   (ref) => ref.watch(lessonRepositoryProvider).watchCourse(),
 );
 
-final unlockedAchievementsProvider = StreamProvider<Set<String>>(
+final unlockedAchievementsProvider = StreamProvider<Map<String, DateTime>>(
   (ref) => ref.watch(statsRepositoryProvider).watchUnlocked(),
 );
 

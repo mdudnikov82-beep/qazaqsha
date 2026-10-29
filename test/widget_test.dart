@@ -80,4 +80,36 @@ void main() {
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('profile: name, achievement details, activity', (tester) async {
+    final db = await startApp(tester);
+    await tester.tap(find.text('Профиль'));
+    await settle(tester);
+
+    expect(find.text('Жаңа бастаушы · Новичок'), findsOneWidget);
+    expect(find.text('Активность'), findsOneWidget);
+    expect(find.text('0 из 9'), findsOneWidget);
+
+    await tester.tap(find.text('Как вас зовут?'));
+    await settle(tester);
+    await tester.enterText(find.byType(TextField), 'Максим');
+    await tester.tap(find.text('Сохранить'));
+    // The avatar shows the first letter once the name is saved.
+    await advanceUntil(tester, () => find.text('М').evaluate().isNotEmpty);
+    await settle(tester); // the dialog fades out
+    expect(find.text('Максим'), findsOneWidget);
+
+    await tester.tap(find.text('50 слов'));
+    await settle(tester);
+    expect(find.text('Выучить 50 слов'), findsOneWidget);
+    expect(find.text('0 из 50'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await settle(tester);
+
+    await tester.tap(find.text('Главная'));
+    await settle(tester);
+    expect(find.text('Сәлем, Максим!'), findsOneWidget);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

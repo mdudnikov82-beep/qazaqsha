@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'core/motion.dart';
+import 'core/reminders.dart';
 import 'data/providers.dart';
 import 'features/splash/splash_gate.dart';
 
@@ -34,6 +39,31 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
       statsProvider.select((s) => s.value?.onboardingDone),
       (_, _) => _onboardingChanged.value++,
     );
+    ref.listenManual(
+      statsProvider.select((s) => s.value?.hapticsEnabled),
+      (_, on) => Haptics.enabled = on ?? true,
+      fireImmediately: true,
+    );
+    // The profile only saves the reminder setting; scheduling lives here,
+    // so it also re-runs on every start (time zone may have changed).
+    ref.listenManual(
+      statsProvider.select(
+        (s) => switch (s.value) {
+          final v? => (v.reminderEnabled, v.reminderMinutes),
+          null => null,
+        },
+      ),
+      (before, now) {
+        if (now == null || !Reminders.supported) return;
+        final (on, minutes) = now;
+        if (on) {
+          unawaited(Reminders.scheduleDaily(minutes).catchError((_) {}));
+        } else if (before?.$1 ?? false) {
+          unawaited(Reminders.cancel().catchError((_) {}));
+        }
+      },
+      fireImmediately: true,
+    );
   }
 
   @override
@@ -49,6 +79,10 @@ class _QazaqshaAppState extends ConsumerState<QazaqshaApp> {
     final ready = ref.watch(statsProvider.select((s) => !s.isLoading));
     return MaterialApp.router(
       title: 'Qazaqsha',
+      // Russian system texts: date and time pickers, "Paste", tooltips.
+      locale: const Locale('ru'),
+      supportedLocales: const [Locale('ru')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

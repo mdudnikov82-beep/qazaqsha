@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../../features/gamification/progress_rules.dart';
 import 'seed.dart';
 import 'tables.dart';
 
@@ -27,6 +28,7 @@ Future<String> _loadSentencesFromAssets() =>
     UnlockedAchievements,
     LessonProgress,
     ExamProgress,
+    DailyActivity,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -43,7 +45,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -76,11 +78,47 @@ class AppDatabase extends _$AppDatabase {
         // People upgrading already know the app: don't greet them again.
         await customStatement('UPDATE user_stats SET onboarding_done = 1');
       }
+      if (from < 6) {
+        await m.addColumn(userStats, userStats.bestStreak);
+        await m.addColumn(userStats, userStats.userName);
+        await m.addColumn(userStats, userStats.hapticsEnabled);
+        await m.addColumn(userStats, userStats.reminderEnabled);
+        await m.addColumn(userStats, userStats.reminderMinutes);
+        await customStatement(
+          'UPDATE user_stats SET best_streak = streak_days',
+        );
+        await m.createTable(dailyActivity);
+        await _backfillActivity();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Before v6 days weren't recorded; finished lessons and today's XP
+  /// still tell which days had activity.
+  Future<void> _backfillActivity() async {
+    final days = <DateTime, DailyActivityCompanion>{};
+    for (final l in await select(lessonProgress).get()) {
+      final day = dayOf(l.completedAt);
+      final old = days[day];
+      days[day] = DailyActivityCompanion.insert(
+        day: day,
+        sessions: Value((old?.sessions.value ?? 0) + 1),
+      );
+    }
+    final stats = await select(userStats).getSingleOrNull();
+    if (stats?.dailyXpDate case final date?) {
+      final day = dayOf(date);
+      days[day] = DailyActivityCompanion.insert(
+        day: day,
+        xp: Value(stats!.dailyXp),
+        sessions: Value(days[day]?.sessions.value ?? 1),
+      );
+    }
+    await batch((b) => b.insertAll(dailyActivity, days.values));
+  }
 
   Future<void> _seed() async {
     final categories = parseDictionary(await _loadSeed());

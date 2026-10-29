@@ -66,7 +66,7 @@ class HomeScreen extends ConsumerWidget {
         body: ListView(
           padding: EdgeInsets.zero,
           children: [
-            _Header(streak: streak, xp: s.xp),
+            _Header(streak: streak, xp: s.xp, name: s.userName),
             Transform.translate(
               offset: const Offset(0, -46),
               child: Padding(
@@ -137,10 +137,11 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.streak, required this.xp});
+  const _Header({required this.streak, required this.xp, this.name});
 
   final int streak;
   final int xp;
+  final String? name;
 
   @override
   Widget build(BuildContext context) {
@@ -166,20 +167,22 @@ class _Header extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(20, top + 22, 20, 70),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Сәлем!',
-                        style: TextStyle(
+                        name == null ? 'Сәлем!' : 'Сәлем, $name!',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 30,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      Text(
+                      const Text(
                         'Бүгін де жалғастырайық',
                         style: TextStyle(
                           color: Color(0xFFCDEFF6),

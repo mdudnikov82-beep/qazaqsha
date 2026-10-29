@@ -89,8 +89,34 @@ class UserStats extends Table {
   BoolColumn get onboardingDone =>
       boolean().withDefault(const Constant(false))();
 
+  /// Longest streak ever reached.
+  IntColumn get bestStreak => integer().withDefault(const Constant(0))();
+
+  /// How the app greets the user; null = not set.
+  TextColumn get userName => text().nullable()();
+  BoolColumn get hapticsEnabled =>
+      boolean().withDefault(const Constant(true))();
+  BoolColumn get reminderEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// Daily reminder time, minutes after midnight (19:00 by default).
+  IntColumn get reminderMinutes =>
+      integer().withDefault(const Constant(19 * 60))();
+
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// What was done on one calendar day, for the activity calendar.
+class DailyActivity extends Table {
+  /// The day as a UTC date (see dayOf), so DST never splits a day.
+  DateTimeColumn get day => dateTime()();
+  IntColumn get xp => integer().withDefault(const Constant(0))();
+  IntColumn get seconds => integer().withDefault(const Constant(0))();
+  IntColumn get sessions => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {day};
 }
 
 /// Best result of a section exam. [passedAt] is set once it was passed.

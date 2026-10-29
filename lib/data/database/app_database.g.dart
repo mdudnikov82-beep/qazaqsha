@@ -1789,6 +1789,71 @@ class $UserStatsTable extends UserStats
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _bestStreakMeta = const VerificationMeta(
+    'bestStreak',
+  );
+  @override
+  late final GeneratedColumn<int> bestStreak = GeneratedColumn<int>(
+    'best_streak',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _userNameMeta = const VerificationMeta(
+    'userName',
+  );
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+    'user_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _hapticsEnabledMeta = const VerificationMeta(
+    'hapticsEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> hapticsEnabled = GeneratedColumn<bool>(
+    'haptics_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("haptics_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _reminderEnabledMeta = const VerificationMeta(
+    'reminderEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> reminderEnabled = GeneratedColumn<bool>(
+    'reminder_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("reminder_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _reminderMinutesMeta = const VerificationMeta(
+    'reminderMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> reminderMinutes = GeneratedColumn<int>(
+    'reminder_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(19 * 60),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1804,6 +1869,11 @@ class $UserStatsTable extends UserStats
     themeMode,
     studySeconds,
     onboardingDone,
+    bestStreak,
+    userName,
+    hapticsEnabled,
+    reminderEnabled,
+    reminderMinutes,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1907,6 +1977,45 @@ class $UserStatsTable extends UserStats
         ),
       );
     }
+    if (data.containsKey('best_streak')) {
+      context.handle(
+        _bestStreakMeta,
+        bestStreak.isAcceptableOrUnknown(data['best_streak']!, _bestStreakMeta),
+      );
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(
+        _userNameMeta,
+        userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta),
+      );
+    }
+    if (data.containsKey('haptics_enabled')) {
+      context.handle(
+        _hapticsEnabledMeta,
+        hapticsEnabled.isAcceptableOrUnknown(
+          data['haptics_enabled']!,
+          _hapticsEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_enabled')) {
+      context.handle(
+        _reminderEnabledMeta,
+        reminderEnabled.isAcceptableOrUnknown(
+          data['reminder_enabled']!,
+          _reminderEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_minutes')) {
+      context.handle(
+        _reminderMinutesMeta,
+        reminderMinutes.isAcceptableOrUnknown(
+          data['reminder_minutes']!,
+          _reminderMinutesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1970,6 +2079,26 @@ class $UserStatsTable extends UserStats
         DriftSqlType.bool,
         data['${effectivePrefix}onboarding_done'],
       )!,
+      bestStreak: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}best_streak'],
+      )!,
+      userName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_name'],
+      ),
+      hapticsEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}haptics_enabled'],
+      )!,
+      reminderEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}reminder_enabled'],
+      )!,
+      reminderMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_minutes'],
+      )!,
     );
   }
 
@@ -2002,6 +2131,17 @@ class UserStat extends DataClass implements Insertable<UserStat> {
 
   /// The welcome flow was finished or skipped.
   final bool onboardingDone;
+
+  /// Longest streak ever reached.
+  final int bestStreak;
+
+  /// How the app greets the user; null = not set.
+  final String? userName;
+  final bool hapticsEnabled;
+  final bool reminderEnabled;
+
+  /// Daily reminder time, minutes after midnight (19:00 by default).
+  final int reminderMinutes;
   const UserStat({
     required this.id,
     required this.xp,
@@ -2016,6 +2156,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.themeMode,
     required this.studySeconds,
     required this.onboardingDone,
+    required this.bestStreak,
+    this.userName,
+    required this.hapticsEnabled,
+    required this.reminderEnabled,
+    required this.reminderMinutes,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2041,6 +2186,13 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     }
     map['study_seconds'] = Variable<int>(studySeconds);
     map['onboarding_done'] = Variable<bool>(onboardingDone);
+    map['best_streak'] = Variable<int>(bestStreak);
+    if (!nullToAbsent || userName != null) {
+      map['user_name'] = Variable<String>(userName);
+    }
+    map['haptics_enabled'] = Variable<bool>(hapticsEnabled);
+    map['reminder_enabled'] = Variable<bool>(reminderEnabled);
+    map['reminder_minutes'] = Variable<int>(reminderMinutes);
     return map;
   }
 
@@ -2063,6 +2215,13 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       themeMode: Value(themeMode),
       studySeconds: Value(studySeconds),
       onboardingDone: Value(onboardingDone),
+      bestStreak: Value(bestStreak),
+      userName: userName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userName),
+      hapticsEnabled: Value(hapticsEnabled),
+      reminderEnabled: Value(reminderEnabled),
+      reminderMinutes: Value(reminderMinutes),
     );
   }
 
@@ -2087,6 +2246,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       ),
       studySeconds: serializer.fromJson<int>(json['studySeconds']),
       onboardingDone: serializer.fromJson<bool>(json['onboardingDone']),
+      bestStreak: serializer.fromJson<int>(json['bestStreak']),
+      userName: serializer.fromJson<String?>(json['userName']),
+      hapticsEnabled: serializer.fromJson<bool>(json['hapticsEnabled']),
+      reminderEnabled: serializer.fromJson<bool>(json['reminderEnabled']),
+      reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
     );
   }
   @override
@@ -2108,6 +2272,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       ),
       'studySeconds': serializer.toJson<int>(studySeconds),
       'onboardingDone': serializer.toJson<bool>(onboardingDone),
+      'bestStreak': serializer.toJson<int>(bestStreak),
+      'userName': serializer.toJson<String?>(userName),
+      'hapticsEnabled': serializer.toJson<bool>(hapticsEnabled),
+      'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
+      'reminderMinutes': serializer.toJson<int>(reminderMinutes),
     };
   }
 
@@ -2125,6 +2294,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     AppThemeMode? themeMode,
     int? studySeconds,
     bool? onboardingDone,
+    int? bestStreak,
+    Value<String?> userName = const Value.absent(),
+    bool? hapticsEnabled,
+    bool? reminderEnabled,
+    int? reminderMinutes,
   }) => UserStat(
     id: id ?? this.id,
     xp: xp ?? this.xp,
@@ -2141,6 +2315,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     themeMode: themeMode ?? this.themeMode,
     studySeconds: studySeconds ?? this.studySeconds,
     onboardingDone: onboardingDone ?? this.onboardingDone,
+    bestStreak: bestStreak ?? this.bestStreak,
+    userName: userName.present ? userName.value : this.userName,
+    hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+    reminderMinutes: reminderMinutes ?? this.reminderMinutes,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
     return UserStat(
@@ -2175,6 +2354,19 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       onboardingDone: data.onboardingDone.present
           ? data.onboardingDone.value
           : this.onboardingDone,
+      bestStreak: data.bestStreak.present
+          ? data.bestStreak.value
+          : this.bestStreak,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      hapticsEnabled: data.hapticsEnabled.present
+          ? data.hapticsEnabled.value
+          : this.hapticsEnabled,
+      reminderEnabled: data.reminderEnabled.present
+          ? data.reminderEnabled.value
+          : this.reminderEnabled,
+      reminderMinutes: data.reminderMinutes.present
+          ? data.reminderMinutes.value
+          : this.reminderMinutes,
     );
   }
 
@@ -2193,7 +2385,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('answersTotal: $answersTotal, ')
           ..write('themeMode: $themeMode, ')
           ..write('studySeconds: $studySeconds, ')
-          ..write('onboardingDone: $onboardingDone')
+          ..write('onboardingDone: $onboardingDone, ')
+          ..write('bestStreak: $bestStreak, ')
+          ..write('userName: $userName, ')
+          ..write('hapticsEnabled: $hapticsEnabled, ')
+          ..write('reminderEnabled: $reminderEnabled, ')
+          ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
   }
@@ -2213,6 +2410,11 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     themeMode,
     studySeconds,
     onboardingDone,
+    bestStreak,
+    userName,
+    hapticsEnabled,
+    reminderEnabled,
+    reminderMinutes,
   );
   @override
   bool operator ==(Object other) =>
@@ -2230,7 +2432,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.answersTotal == this.answersTotal &&
           other.themeMode == this.themeMode &&
           other.studySeconds == this.studySeconds &&
-          other.onboardingDone == this.onboardingDone);
+          other.onboardingDone == this.onboardingDone &&
+          other.bestStreak == this.bestStreak &&
+          other.userName == this.userName &&
+          other.hapticsEnabled == this.hapticsEnabled &&
+          other.reminderEnabled == this.reminderEnabled &&
+          other.reminderMinutes == this.reminderMinutes);
 }
 
 class UserStatsCompanion extends UpdateCompanion<UserStat> {
@@ -2247,6 +2454,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<AppThemeMode> themeMode;
   final Value<int> studySeconds;
   final Value<bool> onboardingDone;
+  final Value<int> bestStreak;
+  final Value<String?> userName;
+  final Value<bool> hapticsEnabled;
+  final Value<bool> reminderEnabled;
+  final Value<int> reminderMinutes;
   const UserStatsCompanion({
     this.id = const Value.absent(),
     this.xp = const Value.absent(),
@@ -2261,6 +2473,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.themeMode = const Value.absent(),
     this.studySeconds = const Value.absent(),
     this.onboardingDone = const Value.absent(),
+    this.bestStreak = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.hapticsEnabled = const Value.absent(),
+    this.reminderEnabled = const Value.absent(),
+    this.reminderMinutes = const Value.absent(),
   });
   UserStatsCompanion.insert({
     this.id = const Value.absent(),
@@ -2276,6 +2493,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.themeMode = const Value.absent(),
     this.studySeconds = const Value.absent(),
     this.onboardingDone = const Value.absent(),
+    this.bestStreak = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.hapticsEnabled = const Value.absent(),
+    this.reminderEnabled = const Value.absent(),
+    this.reminderMinutes = const Value.absent(),
   });
   static Insertable<UserStat> custom({
     Expression<int>? id,
@@ -2291,6 +2513,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? themeMode,
     Expression<int>? studySeconds,
     Expression<bool>? onboardingDone,
+    Expression<int>? bestStreak,
+    Expression<String>? userName,
+    Expression<bool>? hapticsEnabled,
+    Expression<bool>? reminderEnabled,
+    Expression<int>? reminderMinutes,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2306,6 +2533,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (themeMode != null) 'theme_mode': themeMode,
       if (studySeconds != null) 'study_seconds': studySeconds,
       if (onboardingDone != null) 'onboarding_done': onboardingDone,
+      if (bestStreak != null) 'best_streak': bestStreak,
+      if (userName != null) 'user_name': userName,
+      if (hapticsEnabled != null) 'haptics_enabled': hapticsEnabled,
+      if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
+      if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
     });
   }
 
@@ -2323,6 +2555,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<AppThemeMode>? themeMode,
     Value<int>? studySeconds,
     Value<bool>? onboardingDone,
+    Value<int>? bestStreak,
+    Value<String?>? userName,
+    Value<bool>? hapticsEnabled,
+    Value<bool>? reminderEnabled,
+    Value<int>? reminderMinutes,
   }) {
     return UserStatsCompanion(
       id: id ?? this.id,
@@ -2338,6 +2575,11 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       themeMode: themeMode ?? this.themeMode,
       studySeconds: studySeconds ?? this.studySeconds,
       onboardingDone: onboardingDone ?? this.onboardingDone,
+      bestStreak: bestStreak ?? this.bestStreak,
+      userName: userName ?? this.userName,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
   }
 
@@ -2385,6 +2627,21 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (onboardingDone.present) {
       map['onboarding_done'] = Variable<bool>(onboardingDone.value);
     }
+    if (bestStreak.present) {
+      map['best_streak'] = Variable<int>(bestStreak.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (hapticsEnabled.present) {
+      map['haptics_enabled'] = Variable<bool>(hapticsEnabled.value);
+    }
+    if (reminderEnabled.present) {
+      map['reminder_enabled'] = Variable<bool>(reminderEnabled.value);
+    }
+    if (reminderMinutes.present) {
+      map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
+    }
     return map;
   }
 
@@ -2403,7 +2660,12 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('answersTotal: $answersTotal, ')
           ..write('themeMode: $themeMode, ')
           ..write('studySeconds: $studySeconds, ')
-          ..write('onboardingDone: $onboardingDone')
+          ..write('onboardingDone: $onboardingDone, ')
+          ..write('bestStreak: $bestStreak, ')
+          ..write('userName: $userName, ')
+          ..write('hapticsEnabled: $hapticsEnabled, ')
+          ..write('reminderEnabled: $reminderEnabled, ')
+          ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
   }
@@ -3236,6 +3498,310 @@ class ExamProgressCompanion extends UpdateCompanion<ExamProgressData> {
   }
 }
 
+class $DailyActivityTable extends DailyActivity
+    with TableInfo<$DailyActivityTable, DailyActivityData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DailyActivityTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<DateTime> day = GeneratedColumn<DateTime>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _xpMeta = const VerificationMeta('xp');
+  @override
+  late final GeneratedColumn<int> xp = GeneratedColumn<int>(
+    'xp',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _secondsMeta = const VerificationMeta(
+    'seconds',
+  );
+  @override
+  late final GeneratedColumn<int> seconds = GeneratedColumn<int>(
+    'seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sessionsMeta = const VerificationMeta(
+    'sessions',
+  );
+  @override
+  late final GeneratedColumn<int> sessions = GeneratedColumn<int>(
+    'sessions',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [day, xp, seconds, sessions];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'daily_activity';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DailyActivityData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('xp')) {
+      context.handle(_xpMeta, xp.isAcceptableOrUnknown(data['xp']!, _xpMeta));
+    }
+    if (data.containsKey('seconds')) {
+      context.handle(
+        _secondsMeta,
+        seconds.isAcceptableOrUnknown(data['seconds']!, _secondsMeta),
+      );
+    }
+    if (data.containsKey('sessions')) {
+      context.handle(
+        _sessionsMeta,
+        sessions.isAcceptableOrUnknown(data['sessions']!, _sessionsMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {day};
+  @override
+  DailyActivityData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DailyActivityData(
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}day'],
+      )!,
+      xp: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}xp'],
+      )!,
+      seconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seconds'],
+      )!,
+      sessions: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sessions'],
+      )!,
+    );
+  }
+
+  @override
+  $DailyActivityTable createAlias(String alias) {
+    return $DailyActivityTable(attachedDatabase, alias);
+  }
+}
+
+class DailyActivityData extends DataClass
+    implements Insertable<DailyActivityData> {
+  /// The day as a UTC date (see dayOf), so DST never splits a day.
+  final DateTime day;
+  final int xp;
+  final int seconds;
+  final int sessions;
+  const DailyActivityData({
+    required this.day,
+    required this.xp,
+    required this.seconds,
+    required this.sessions,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day'] = Variable<DateTime>(day);
+    map['xp'] = Variable<int>(xp);
+    map['seconds'] = Variable<int>(seconds);
+    map['sessions'] = Variable<int>(sessions);
+    return map;
+  }
+
+  DailyActivityCompanion toCompanion(bool nullToAbsent) {
+    return DailyActivityCompanion(
+      day: Value(day),
+      xp: Value(xp),
+      seconds: Value(seconds),
+      sessions: Value(sessions),
+    );
+  }
+
+  factory DailyActivityData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DailyActivityData(
+      day: serializer.fromJson<DateTime>(json['day']),
+      xp: serializer.fromJson<int>(json['xp']),
+      seconds: serializer.fromJson<int>(json['seconds']),
+      sessions: serializer.fromJson<int>(json['sessions']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'day': serializer.toJson<DateTime>(day),
+      'xp': serializer.toJson<int>(xp),
+      'seconds': serializer.toJson<int>(seconds),
+      'sessions': serializer.toJson<int>(sessions),
+    };
+  }
+
+  DailyActivityData copyWith({
+    DateTime? day,
+    int? xp,
+    int? seconds,
+    int? sessions,
+  }) => DailyActivityData(
+    day: day ?? this.day,
+    xp: xp ?? this.xp,
+    seconds: seconds ?? this.seconds,
+    sessions: sessions ?? this.sessions,
+  );
+  DailyActivityData copyWithCompanion(DailyActivityCompanion data) {
+    return DailyActivityData(
+      day: data.day.present ? data.day.value : this.day,
+      xp: data.xp.present ? data.xp.value : this.xp,
+      seconds: data.seconds.present ? data.seconds.value : this.seconds,
+      sessions: data.sessions.present ? data.sessions.value : this.sessions,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyActivityData(')
+          ..write('day: $day, ')
+          ..write('xp: $xp, ')
+          ..write('seconds: $seconds, ')
+          ..write('sessions: $sessions')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(day, xp, seconds, sessions);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DailyActivityData &&
+          other.day == this.day &&
+          other.xp == this.xp &&
+          other.seconds == this.seconds &&
+          other.sessions == this.sessions);
+}
+
+class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
+  final Value<DateTime> day;
+  final Value<int> xp;
+  final Value<int> seconds;
+  final Value<int> sessions;
+  final Value<int> rowid;
+  const DailyActivityCompanion({
+    this.day = const Value.absent(),
+    this.xp = const Value.absent(),
+    this.seconds = const Value.absent(),
+    this.sessions = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DailyActivityCompanion.insert({
+    required DateTime day,
+    this.xp = const Value.absent(),
+    this.seconds = const Value.absent(),
+    this.sessions = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : day = Value(day);
+  static Insertable<DailyActivityData> custom({
+    Expression<DateTime>? day,
+    Expression<int>? xp,
+    Expression<int>? seconds,
+    Expression<int>? sessions,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (day != null) 'day': day,
+      if (xp != null) 'xp': xp,
+      if (seconds != null) 'seconds': seconds,
+      if (sessions != null) 'sessions': sessions,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DailyActivityCompanion copyWith({
+    Value<DateTime>? day,
+    Value<int>? xp,
+    Value<int>? seconds,
+    Value<int>? sessions,
+    Value<int>? rowid,
+  }) {
+    return DailyActivityCompanion(
+      day: day ?? this.day,
+      xp: xp ?? this.xp,
+      seconds: seconds ?? this.seconds,
+      sessions: sessions ?? this.sessions,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (day.present) {
+      map['day'] = Variable<DateTime>(day.value);
+    }
+    if (xp.present) {
+      map['xp'] = Variable<int>(xp.value);
+    }
+    if (seconds.present) {
+      map['seconds'] = Variable<int>(seconds.value);
+    }
+    if (sessions.present) {
+      map['sessions'] = Variable<int>(sessions.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyActivityCompanion(')
+          ..write('day: $day, ')
+          ..write('xp: $xp, ')
+          ..write('seconds: $seconds, ')
+          ..write('sessions: $sessions, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3248,6 +3814,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $UnlockedAchievementsTable(this);
   late final $LessonProgressTable lessonProgress = $LessonProgressTable(this);
   late final $ExamProgressTable examProgress = $ExamProgressTable(this);
+  late final $DailyActivityTable dailyActivity = $DailyActivityTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3261,6 +3828,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     unlockedAchievements,
     lessonProgress,
     examProgress,
+    dailyActivity,
   ];
 }
 
@@ -4876,6 +5444,11 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<AppThemeMode> themeMode,
   Value<int> studySeconds,
   Value<bool> onboardingDone,
+  Value<int> bestStreak,
+  Value<String?> userName,
+  Value<bool> hapticsEnabled,
+  Value<bool> reminderEnabled,
+  Value<int> reminderMinutes,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<int> id,
@@ -4891,6 +5464,11 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<AppThemeMode> themeMode,
   Value<int> studySeconds,
   Value<bool> onboardingDone,
+  Value<int> bestStreak,
+  Value<String?> userName,
+  Value<bool> hapticsEnabled,
+  Value<bool> reminderEnabled,
+  Value<int> reminderMinutes,
 });
 
 class $$UserStatsTableFilterComposer
@@ -4965,6 +5543,31 @@ class $$UserStatsTableFilterComposer
 
   ColumnFilters<bool> get onboardingDone => $composableBuilder(
     column: $table.onboardingDone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bestStreak => $composableBuilder(
+    column: $table.bestStreak,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hapticsEnabled => $composableBuilder(
+    column: $table.hapticsEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderMinutes => $composableBuilder(
+    column: $table.reminderMinutes,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5042,6 +5645,31 @@ class $$UserStatsTableOrderingComposer
     column: $table.onboardingDone,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get bestStreak => $composableBuilder(
+    column: $table.bestStreak,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hapticsEnabled => $composableBuilder(
+    column: $table.hapticsEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderMinutes => $composableBuilder(
+    column: $table.reminderMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserStatsTableAnnotationComposer
@@ -5109,6 +5737,29 @@ class $$UserStatsTableAnnotationComposer
     column: $table.onboardingDone,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get bestStreak => $composableBuilder(
+    column: $table.bestStreak,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<bool> get hapticsEnabled => $composableBuilder(
+    column: $table.hapticsEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderMinutes => $composableBuilder(
+    column: $table.reminderMinutes,
+    builder: (column) => column,
+  );
 }
 
 class $$UserStatsTableTableManager
@@ -5152,6 +5803,11 @@ class $$UserStatsTableTableManager
                 Value<AppThemeMode> themeMode = const Value.absent(),
                 Value<int> studySeconds = const Value.absent(),
                 Value<bool> onboardingDone = const Value.absent(),
+                Value<int> bestStreak = const Value.absent(),
+                Value<String?> userName = const Value.absent(),
+                Value<bool> hapticsEnabled = const Value.absent(),
+                Value<bool> reminderEnabled = const Value.absent(),
+                Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
                 xp: xp,
@@ -5166,6 +5822,11 @@ class $$UserStatsTableTableManager
                 themeMode: themeMode,
                 studySeconds: studySeconds,
                 onboardingDone: onboardingDone,
+                bestStreak: bestStreak,
+                userName: userName,
+                hapticsEnabled: hapticsEnabled,
+                reminderEnabled: reminderEnabled,
+                reminderMinutes: reminderMinutes,
               ),
           createCompanionCallback:
               ({
@@ -5182,6 +5843,11 @@ class $$UserStatsTableTableManager
                 Value<AppThemeMode> themeMode = const Value.absent(),
                 Value<int> studySeconds = const Value.absent(),
                 Value<bool> onboardingDone = const Value.absent(),
+                Value<int> bestStreak = const Value.absent(),
+                Value<String?> userName = const Value.absent(),
+                Value<bool> hapticsEnabled = const Value.absent(),
+                Value<bool> reminderEnabled = const Value.absent(),
+                Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
                 xp: xp,
@@ -5196,6 +5862,11 @@ class $$UserStatsTableTableManager
                 themeMode: themeMode,
                 studySeconds: studySeconds,
                 onboardingDone: onboardingDone,
+                bestStreak: bestStreak,
+                userName: userName,
+                hapticsEnabled: hapticsEnabled,
+                reminderEnabled: reminderEnabled,
+                reminderMinutes: reminderMinutes,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5882,6 +6553,200 @@ typedef $$ExamProgressTableProcessedTableManager =
       ExamProgressData,
       PrefetchHooks Function()
     >;
+typedef $$DailyActivityTableCreateCompanionBuilder =
+    DailyActivityCompanion Function({
+      required DateTime day,
+      Value<int> xp,
+      Value<int> seconds,
+      Value<int> sessions,
+      Value<int> rowid,
+    });
+typedef $$DailyActivityTableUpdateCompanionBuilder =
+    DailyActivityCompanion Function({
+      Value<DateTime> day,
+      Value<int> xp,
+      Value<int> seconds,
+      Value<int> sessions,
+      Value<int> rowid,
+    });
+
+class $$DailyActivityTableFilterComposer
+    extends Composer<_$AppDatabase, $DailyActivityTable> {
+  $$DailyActivityTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get xp => $composableBuilder(
+    column: $table.xp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seconds => $composableBuilder(
+    column: $table.seconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sessions => $composableBuilder(
+    column: $table.sessions,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DailyActivityTableOrderingComposer
+    extends Composer<_$AppDatabase, $DailyActivityTable> {
+  $$DailyActivityTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get xp => $composableBuilder(
+    column: $table.xp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seconds => $composableBuilder(
+    column: $table.seconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sessions => $composableBuilder(
+    column: $table.sessions,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DailyActivityTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DailyActivityTable> {
+  $$DailyActivityTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<int> get xp =>
+      $composableBuilder(column: $table.xp, builder: (column) => column);
+
+  GeneratedColumn<int> get seconds =>
+      $composableBuilder(column: $table.seconds, builder: (column) => column);
+
+  GeneratedColumn<int> get sessions =>
+      $composableBuilder(column: $table.sessions, builder: (column) => column);
+}
+
+class $$DailyActivityTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DailyActivityTable,
+          DailyActivityData,
+          $$DailyActivityTableFilterComposer,
+          $$DailyActivityTableOrderingComposer,
+          $$DailyActivityTableAnnotationComposer,
+          $$DailyActivityTableCreateCompanionBuilder,
+          $$DailyActivityTableUpdateCompanionBuilder,
+          (
+            DailyActivityData,
+            BaseReferences<
+              _$AppDatabase,
+              $DailyActivityTable,
+              DailyActivityData
+            >,
+          ),
+          DailyActivityData,
+          PrefetchHooks Function()
+        > {
+  $$DailyActivityTableTableManager(_$AppDatabase db, $DailyActivityTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DailyActivityTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DailyActivityTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DailyActivityTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<DateTime> day = const Value.absent(),
+                Value<int> xp = const Value.absent(),
+                Value<int> seconds = const Value.absent(),
+                Value<int> sessions = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DailyActivityCompanion(
+                day: day,
+                xp: xp,
+                seconds: seconds,
+                sessions: sessions,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required DateTime day,
+                Value<int> xp = const Value.absent(),
+                Value<int> seconds = const Value.absent(),
+                Value<int> sessions = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DailyActivityCompanion.insert(
+                day: day,
+                xp: xp,
+                seconds: seconds,
+                sessions: sessions,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DailyActivityTable, DailyActivityData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $DailyActivityTable,
+                    DailyActivityData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DailyActivityTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DailyActivityTable,
+      DailyActivityData,
+      $$DailyActivityTableFilterComposer,
+      $$DailyActivityTableOrderingComposer,
+      $$DailyActivityTableAnnotationComposer,
+      $$DailyActivityTableCreateCompanionBuilder,
+      $$DailyActivityTableUpdateCompanionBuilder,
+      (
+        DailyActivityData,
+        BaseReferences<_$AppDatabase, $DailyActivityTable, DailyActivityData>,
+      ),
+      DailyActivityData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5902,4 +6767,6 @@ class $AppDatabaseManager {
       $$LessonProgressTableTableManager(_db, _db.lessonProgress);
   $$ExamProgressTableTableManager get examProgress =>
       $$ExamProgressTableTableManager(_db, _db.examProgress);
+  $$DailyActivityTableTableManager get dailyActivity =>
+      $$DailyActivityTableTableManager(_db, _db.dailyActivity);
 }

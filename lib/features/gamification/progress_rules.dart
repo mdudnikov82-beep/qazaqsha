@@ -75,3 +75,12 @@ int todayXp({
   if (storedDay == null || daysBetween(storedDay, now) != 0) return 0;
   return storedDailyXp;
 }
+
+/// Title for a level, in Kazakh and Russian.
+({String kk, String ru}) rankForLevel(int level) => switch (level) {
+  <= 2 => (kk: 'Жаңа бастаушы', ru: 'Новичок'),
+  <= 4 => (kk: 'Үйренуші', ru: 'Ученик'),
+  <= 7 => (kk: 'Білгір', ru: 'Знаток'),
+  <= 10 => (kk: 'Шешен', ru: 'Оратор'),
+  _ => (kk: 'Шебер', ru: 'Мастер'),
+};

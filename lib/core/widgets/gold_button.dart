@@ -55,12 +55,16 @@ class _GoldButtonState extends State<GoldButton> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                widget.label,
-                style: const TextStyle(
-                  color: AppColors.onGold,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
+              Flexible(
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.onGold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               if (widget.icon case final icon?) ...[

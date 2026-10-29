@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../features/custom_words/import_screen.dart';
 import '../features/dictionary/dictionary_screen.dart';
 import '../features/dictionary/flashcards_screen.dart';
+import '../features/grammar/grammar_practice_screen.dart';
+import '../features/grammar/rules_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lessons_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
@@ -54,7 +56,7 @@ GoRouter createRouter({
             ),
           ],
         ),
-        _branch('/review', const ReviewScreen()),
+        _branch('/rules', const RulesScreen()),
         _branch('/profile', const ProfileScreen()),
       ],
     ),
@@ -76,6 +78,26 @@ GoRouter createRouter({
       builder: (context, state) => QuizScreen.review(
         reviewMode: ReviewMode.parse(state.uri.queryParameters['mode']),
       ),
+    ),
+    GoRoute(path: '/review', builder: (context, state) => const ReviewScreen()),
+    GoRoute(
+      path: '/rules/test/:groupId',
+      builder: (context, state) => GrammarPracticeScreen.group(
+        groupId: state.pathParameters['groupId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/rules/:ruleId',
+      builder: (context, state) =>
+          RuleScreen(ruleId: state.pathParameters['ruleId']!),
+      routes: [
+        GoRoute(
+          path: 'practice',
+          builder: (context, state) => GrammarPracticeScreen.rule(
+            ruleId: state.pathParameters['ruleId']!,
+          ),
+        ),
+      ],
     ),
     GoRoute(
       path: '/flashcards/:source',
@@ -139,9 +161,9 @@ class _MainShell extends StatelessWidget {
             label: 'Словарь',
           ),
           NavigationDestination(
-            icon: Icon(Icons.replay_outlined),
-            selectedIcon: Icon(Icons.replay_rounded),
-            label: 'Повторение',
+            icon: Icon(Icons.rule_outlined),
+            selectedIcon: Icon(Icons.rule_rounded),
+            label: 'Правила',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),

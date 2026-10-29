@@ -51,6 +51,7 @@ class ReviewScreen extends ConsumerWidget {
           padding: EdgeInsets.zero,
           children: [
             const TealHeader(
+              leading: BackButton(color: Colors.white),
               title: 'Қайталау',
               subtitle: 'Повторение слов',
               bottomPadding: 64,

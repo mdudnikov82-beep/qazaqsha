@@ -119,6 +119,16 @@ class DailyActivity extends Table {
   Set<Column> get primaryKey => {day};
 }
 
+/// A grammar rule whose exercises were done. [bestScore] in percent.
+class GrammarProgress extends Table {
+  TextColumn get ruleId => text()();
+  IntColumn get bestScore => integer()();
+  DateTimeColumn get completedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {ruleId};
+}
+
 /// Best result of a section exam. [passedAt] is set once it was passed.
 class ExamProgress extends Table {
   TextColumn get sectionId => text()();

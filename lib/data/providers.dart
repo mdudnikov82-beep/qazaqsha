@@ -1,9 +1,13 @@
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../features/grammar/grammar.dart';
 
 import 'database/app_database.dart';
 import 'repositories/backup_repository.dart';
 import 'repositories/custom_words_repository.dart';
 import 'repositories/dictionary_repository.dart';
+import 'repositories/grammar_repository.dart';
 import 'repositories/lesson_repository.dart';
 import 'repositories/progress_repository.dart';
 import 'repositories/stats_repository.dart';
@@ -43,6 +47,25 @@ final activityProvider = StreamProvider.family<List<DailyActivityData>, int>(
       .watch(statsRepositoryProvider)
       .watchActivity(DateTime.now().subtract(Duration(days: weeks * 7))),
 );
+
+final grammarRepositoryProvider = Provider<GrammarRepository>(
+  (ref) => GrammarRepository(ref.watch(appDatabaseProvider)),
+);
+
+/// Reads the grammar rules; tests read the file instead of the bundle.
+final grammarSourceProvider = Provider<Future<String> Function()>(
+  (ref) =>
+      () => rootBundle.loadString('assets/data/grammar.json'),
+);
+
+final grammarProvider = FutureProvider<List<GrammarGroup>>(
+  (ref) async => parseGrammar(await ref.watch(grammarSourceProvider)()),
+);
+
+final grammarProgressProvider =
+    StreamProvider<Map<String, GrammarProgressData>>(
+      (ref) => ref.watch(grammarRepositoryProvider).watch(),
+    );
 
 final lessonRepositoryProvider = Provider<LessonRepository>(
   (ref) => LessonRepository(

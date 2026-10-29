@@ -99,34 +99,32 @@ class HomeScreen extends ConsumerWidget {
                         onTap: () => showWordSheet(context, today),
                       ),
                     ),
-                    if (due > 0) ...[
-                      const SizedBox(height: 14),
-                      SurfaceCard(
-                        color: c.goldSoft,
-                        radius: 18,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 16,
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _Shortcut(
+                            icon: Icons.replay_rounded,
+                            title: 'Повторение',
+                            subtitle: due > 0 ? 'Ждут: $due' : 'Всё повторено',
+                            fg: c.goldText,
+                            bg: c.goldSoft,
+                            onTap: () => context.push('/review'),
+                          ),
                         ),
-                        onTap: () => context.go('/review'),
-                        child: Row(
-                          children: [
-                            Icon(Icons.replay_rounded, color: c.goldText),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Повторить слова: $due',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                            const Icon(Icons.chevron_right_rounded),
-                          ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _Shortcut(
+                            icon: Icons.rule_rounded,
+                            title: 'Правила',
+                            subtitle: '100 о глаголах',
+                            fg: c.accent,
+                            bg: c.accentSoft,
+                            onTap: () => context.go('/rules'),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -675,4 +673,65 @@ class _StatsRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Shortcut extends StatelessWidget {
+  const _Shortcut({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.fg,
+    required this.bg,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color fg;
+  final Color bg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: '$title: $subtitle',
+    excludeSemantics: true,
+    child: SurfaceCard(
+      color: bg,
+      radius: 18,
+      padding: const EdgeInsets.all(14),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, color: fg),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

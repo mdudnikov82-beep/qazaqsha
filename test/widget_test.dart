@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
+import 'package:qazaqsha/features/grammar/grammar.dart';
 
 import 'app_harness.dart';
 
@@ -153,11 +156,62 @@ void main() {
     expect(find.text('Қазақша'), findsOneWidget);
     expect(find.text('Ә'), findsOneWidget); // letter strip
 
+    await tester.tap(find.text('Главная'));
+    await settle(tester);
     await tester.tap(find.text('Повторение'));
     await settle(tester);
     expect(find.text('Ждут повторения'), findsOneWidget);
     expect(find.text('Прогноз на неделю'), findsOneWidget);
     expect(find.text('Память по ступеням'), findsOneWidget);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('rules: open a rule, do its exercises, progress is saved', (
+    tester,
+  ) async {
+    final db = await startApp(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Правила'),
+      ),
+    );
+    await advanceUntil(
+      tester,
+      () => find.text('Открыть правило').evaluate().isNotEmpty,
+    );
+    expect(find.text('1. Начальная форма на -у'), findsOneWidget);
+    expect(find.text('Основы глагола'), findsOneWidget);
+
+    await tester.tap(find.text('Открыть правило'));
+    await settle(tester);
+    expect(find.text('Правило 1 из 100'), findsOneWidget);
+    await tester.tap(find.text('Упражнения · 4 задания'));
+    await settle(tester);
+
+    final grammar = parseGrammar(
+      File('assets/data/grammar.json').readAsStringSync(),
+    );
+    for (var i = 0; i < 4; i++) {
+      // Tasks come shuffled: find the one on screen by its question.
+      final task = grammar.first.rules.first.tasks.firstWhere(
+        (t) => find.text(t.question).evaluate().isNotEmpty,
+      );
+      await tester.tap(find.text(task.answer));
+      await settle(tester);
+      await tester.tap(find.text('Дальше'));
+      await settle(tester);
+    }
+    await advanceUntil(
+      tester,
+      () => find.text('Правило изучено!').evaluate().isNotEmpty,
+    );
+    expect(find.textContaining('+30 XP'), findsOneWidget);
+    final saved = await tester.runAsync(
+      () => db.select(db.grammarProgress).getSingle(),
+    );
+    expect((saved!.ruleId, saved.bestScore), ('v001', 100));
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

@@ -30,6 +30,7 @@ Future<String> _loadSentencesFromAssets() =>
     LessonProgress,
     ExamProgress,
     DailyActivity,
+    GrammarProgress,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -46,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -94,6 +95,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         // Dictionary v2: 500 → 1500 words in three new course sections.
         await _addNewSeed();
+      }
+      if (from < 8) {
+        await m.createTable(grammarProgress);
       }
     },
     beforeOpen: (details) async {

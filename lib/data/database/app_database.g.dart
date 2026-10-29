@@ -3802,6 +3802,279 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
   }
 }
 
+class $GrammarProgressTable extends GrammarProgress
+    with TableInfo<$GrammarProgressTable, GrammarProgressData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GrammarProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ruleIdMeta = const VerificationMeta('ruleId');
+  @override
+  late final GeneratedColumn<String> ruleId = GeneratedColumn<String>(
+    'rule_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bestScoreMeta = const VerificationMeta(
+    'bestScore',
+  );
+  @override
+  late final GeneratedColumn<int> bestScore = GeneratedColumn<int>(
+    'best_score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [ruleId, bestScore, completedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'grammar_progress';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GrammarProgressData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('rule_id')) {
+      context.handle(
+        _ruleIdMeta,
+        ruleId.isAcceptableOrUnknown(data['rule_id']!, _ruleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleIdMeta);
+    }
+    if (data.containsKey('best_score')) {
+      context.handle(
+        _bestScoreMeta,
+        bestScore.isAcceptableOrUnknown(data['best_score']!, _bestScoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bestScoreMeta);
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_completedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ruleId};
+  @override
+  GrammarProgressData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GrammarProgressData(
+      ruleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_id'],
+      )!,
+      bestScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}best_score'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      )!,
+    );
+  }
+
+  @override
+  $GrammarProgressTable createAlias(String alias) {
+    return $GrammarProgressTable(attachedDatabase, alias);
+  }
+}
+
+class GrammarProgressData extends DataClass
+    implements Insertable<GrammarProgressData> {
+  final String ruleId;
+  final int bestScore;
+  final DateTime completedAt;
+  const GrammarProgressData({
+    required this.ruleId,
+    required this.bestScore,
+    required this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['rule_id'] = Variable<String>(ruleId);
+    map['best_score'] = Variable<int>(bestScore);
+    map['completed_at'] = Variable<DateTime>(completedAt);
+    return map;
+  }
+
+  GrammarProgressCompanion toCompanion(bool nullToAbsent) {
+    return GrammarProgressCompanion(
+      ruleId: Value(ruleId),
+      bestScore: Value(bestScore),
+      completedAt: Value(completedAt),
+    );
+  }
+
+  factory GrammarProgressData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GrammarProgressData(
+      ruleId: serializer.fromJson<String>(json['ruleId']),
+      bestScore: serializer.fromJson<int>(json['bestScore']),
+      completedAt: serializer.fromJson<DateTime>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ruleId': serializer.toJson<String>(ruleId),
+      'bestScore': serializer.toJson<int>(bestScore),
+      'completedAt': serializer.toJson<DateTime>(completedAt),
+    };
+  }
+
+  GrammarProgressData copyWith({
+    String? ruleId,
+    int? bestScore,
+    DateTime? completedAt,
+  }) => GrammarProgressData(
+    ruleId: ruleId ?? this.ruleId,
+    bestScore: bestScore ?? this.bestScore,
+    completedAt: completedAt ?? this.completedAt,
+  );
+  GrammarProgressData copyWithCompanion(GrammarProgressCompanion data) {
+    return GrammarProgressData(
+      ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
+      bestScore: data.bestScore.present ? data.bestScore.value : this.bestScore,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GrammarProgressData(')
+          ..write('ruleId: $ruleId, ')
+          ..write('bestScore: $bestScore, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ruleId, bestScore, completedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GrammarProgressData &&
+          other.ruleId == this.ruleId &&
+          other.bestScore == this.bestScore &&
+          other.completedAt == this.completedAt);
+}
+
+class GrammarProgressCompanion extends UpdateCompanion<GrammarProgressData> {
+  final Value<String> ruleId;
+  final Value<int> bestScore;
+  final Value<DateTime> completedAt;
+  final Value<int> rowid;
+  const GrammarProgressCompanion({
+    this.ruleId = const Value.absent(),
+    this.bestScore = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GrammarProgressCompanion.insert({
+    required String ruleId,
+    required int bestScore,
+    required DateTime completedAt,
+    this.rowid = const Value.absent(),
+  }) : ruleId = Value(ruleId),
+       bestScore = Value(bestScore),
+       completedAt = Value(completedAt);
+  static Insertable<GrammarProgressData> custom({
+    Expression<String>? ruleId,
+    Expression<int>? bestScore,
+    Expression<DateTime>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ruleId != null) 'rule_id': ruleId,
+      if (bestScore != null) 'best_score': bestScore,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GrammarProgressCompanion copyWith({
+    Value<String>? ruleId,
+    Value<int>? bestScore,
+    Value<DateTime>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return GrammarProgressCompanion(
+      ruleId: ruleId ?? this.ruleId,
+      bestScore: bestScore ?? this.bestScore,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ruleId.present) {
+      map['rule_id'] = Variable<String>(ruleId.value);
+    }
+    if (bestScore.present) {
+      map['best_score'] = Variable<int>(bestScore.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GrammarProgressCompanion(')
+          ..write('ruleId: $ruleId, ')
+          ..write('bestScore: $bestScore, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3815,6 +4088,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LessonProgressTable lessonProgress = $LessonProgressTable(this);
   late final $ExamProgressTable examProgress = $ExamProgressTable(this);
   late final $DailyActivityTable dailyActivity = $DailyActivityTable(this);
+  late final $GrammarProgressTable grammarProgress = $GrammarProgressTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3829,6 +4105,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     lessonProgress,
     examProgress,
     dailyActivity,
+    grammarProgress,
   ];
 }
 
@@ -6747,6 +7024,191 @@ typedef $$DailyActivityTableProcessedTableManager =
       DailyActivityData,
       PrefetchHooks Function()
     >;
+typedef $$GrammarProgressTableCreateCompanionBuilder =
+    GrammarProgressCompanion Function({
+      required String ruleId,
+      required int bestScore,
+      required DateTime completedAt,
+      Value<int> rowid,
+    });
+typedef $$GrammarProgressTableUpdateCompanionBuilder =
+    GrammarProgressCompanion Function({
+      Value<String> ruleId,
+      Value<int> bestScore,
+      Value<DateTime> completedAt,
+      Value<int> rowid,
+    });
+
+class $$GrammarProgressTableFilterComposer
+    extends Composer<_$AppDatabase, $GrammarProgressTable> {
+  $$GrammarProgressTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bestScore => $composableBuilder(
+    column: $table.bestScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GrammarProgressTableOrderingComposer
+    extends Composer<_$AppDatabase, $GrammarProgressTable> {
+  $$GrammarProgressTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bestScore => $composableBuilder(
+    column: $table.bestScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GrammarProgressTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GrammarProgressTable> {
+  $$GrammarProgressTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ruleId =>
+      $composableBuilder(column: $table.ruleId, builder: (column) => column);
+
+  GeneratedColumn<int> get bestScore =>
+      $composableBuilder(column: $table.bestScore, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$GrammarProgressTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GrammarProgressTable,
+          GrammarProgressData,
+          $$GrammarProgressTableFilterComposer,
+          $$GrammarProgressTableOrderingComposer,
+          $$GrammarProgressTableAnnotationComposer,
+          $$GrammarProgressTableCreateCompanionBuilder,
+          $$GrammarProgressTableUpdateCompanionBuilder,
+          (
+            GrammarProgressData,
+            BaseReferences<
+              _$AppDatabase,
+              $GrammarProgressTable,
+              GrammarProgressData
+            >,
+          ),
+          GrammarProgressData,
+          PrefetchHooks Function()
+        > {
+  $$GrammarProgressTableTableManager(
+    _$AppDatabase db,
+    $GrammarProgressTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GrammarProgressTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GrammarProgressTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GrammarProgressTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> ruleId = const Value.absent(),
+                Value<int> bestScore = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GrammarProgressCompanion(
+                ruleId: ruleId,
+                bestScore: bestScore,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ruleId,
+                required int bestScore,
+                required DateTime completedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => GrammarProgressCompanion.insert(
+                ruleId: ruleId,
+                bestScore: bestScore,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$GrammarProgressTable, GrammarProgressData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $GrammarProgressTable,
+                    GrammarProgressData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GrammarProgressTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GrammarProgressTable,
+      GrammarProgressData,
+      $$GrammarProgressTableFilterComposer,
+      $$GrammarProgressTableOrderingComposer,
+      $$GrammarProgressTableAnnotationComposer,
+      $$GrammarProgressTableCreateCompanionBuilder,
+      $$GrammarProgressTableUpdateCompanionBuilder,
+      (
+        GrammarProgressData,
+        BaseReferences<
+          _$AppDatabase,
+          $GrammarProgressTable,
+          GrammarProgressData
+        >,
+      ),
+      GrammarProgressData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6769,4 +7231,6 @@ class $AppDatabaseManager {
       $$ExamProgressTableTableManager(_db, _db.examProgress);
   $$DailyActivityTableTableManager get dailyActivity =>
       $$DailyActivityTableTableManager(_db, _db.dailyActivity);
+  $$GrammarProgressTableTableManager get grammarProgress =>
+      $$GrammarProgressTableTableManager(_db, _db.grammarProgress);
 }

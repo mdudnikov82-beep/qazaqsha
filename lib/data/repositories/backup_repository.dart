@@ -90,6 +90,10 @@ class BackupRepository {
         for (final a in await _db.select(_db.unlockedAchievements).get())
           [a.id, ms(a.unlockedAt)],
       ],
+      'grammar': [
+        for (final g in await _db.select(_db.grammarProgress).get())
+          [g.ruleId, g.bestScore, ms(g.completedAt)],
+      ],
       'days': [
         for (final d in await _db.select(_db.dailyActivity).get())
           [ms(d.day), d.xp, d.seconds, d.sessions],
@@ -209,6 +213,16 @@ class BackupRepository {
               ),
             );
           }
+          for (final r in rows('grammar')) {
+            b.insert(
+              _db.grammarProgress,
+              GrammarProgressCompanion.insert(
+                ruleId: r[0] as String,
+                bestScore: r[1] as int,
+                completedAt: at(r[2])!,
+              ),
+            );
+          }
           for (final r in rows('days')) {
             b.insert(
               _db.dailyActivity,
@@ -271,5 +285,6 @@ class BackupRepository {
     await _db.delete(_db.examProgress).go();
     await _db.delete(_db.unlockedAchievements).go();
     await _db.delete(_db.dailyActivity).go();
+    await _db.delete(_db.grammarProgress).go();
   }
 }

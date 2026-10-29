@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -31,7 +32,12 @@ Future<AppDatabase> startApp(
   final db = testDatabase();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        grammarSourceProvider.overrideWithValue(
+          () => File('assets/data/grammar.json').readAsString(),
+        ),
+      ],
       child: const QazaqshaApp(),
     ),
   );

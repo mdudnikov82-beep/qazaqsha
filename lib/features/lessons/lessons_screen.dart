@@ -839,9 +839,9 @@ enum _Scenery { steppe, aul, city, mountains, sea }
 
 _Scenery _sceneryOf(String sectionId) => switch (sectionId) {
   'basics' || 'speech' => _Scenery.steppe,
-  'life' || 'everyday' => _Scenery.aul,
-  'city' || 'society' => _Scenery.city,
-  'travel' || 'career' => _Scenery.mountains,
+  'life' || 'everyday' || 'heritage' => _Scenery.aul,
+  'city' || 'society' || 'daily2' => _Scenery.city,
+  'travel' || 'career' || 'discovery' => _Scenery.mountains,
   _ => _Scenery.sea,
 };
 

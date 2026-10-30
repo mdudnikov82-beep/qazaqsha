@@ -28,7 +28,7 @@ void main() {
     );
 
     final result = await custom.addWords(const [
-      ImportedWord('кесіртке', 'ящерица'),
+      ImportedWord('борсық', 'барсук'),
       ImportedWord('рахмет', 'спасибо'), // already in the dictionary
       ImportedWord('тиін', 'белка'),
     ]);
@@ -49,17 +49,17 @@ void main() {
     ]);
     expect((again.added, again.skipped), (1, 1));
     expect((await custom.words()).map((w) => w.kk), [
-      'кесіртке',
+      'борсық',
       'тиін',
       'жираф',
     ]);
-    expect((await dictionary.search('ящер')).single.kk, 'кесіртке');
+    expect((await dictionary.search('барсу')).single.kk, 'борсық');
   });
 
   test('own words never enter the course ladder', () async {
     await custom.addWords(const [ImportedWord('тиін', 'белка')]);
     final course = await LessonRepository(db, dictionary).watchCourse().first;
-    expect(course.topics, hasLength(64));
+    expect(course.topics, hasLength(97));
     expect(
       course.topics.map((t) => t.category.id),
       isNot(contains(customCategoryId)),

@@ -415,7 +415,7 @@ class _CourseStep extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          '${courseSections.length} разделов, 2200 слов, около 450 уроков. '
+          '${courseSections.length} разделов, 3000 слов, около 600 уроков. '
           'В конце раздела — экзамен, и откроется следующий.',
           style: TextStyle(color: c.muted, fontSize: 16),
         ),

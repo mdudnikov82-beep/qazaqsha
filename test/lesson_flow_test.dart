@@ -286,7 +286,7 @@ void main() {
     // Russian-first line on purpose: the app should flip it.
     await tester.enterText(
       find.widgetWithText(TextField, 'кітап — книга\nқалам — ручка'),
-      'тиін — белка\nящерица — кесіртке\nрахмет — спасибо',
+      'тиін — белка\nбарсук — борсық\nрахмет — спасибо',
     );
     await tester.pump();
     await tester.tap(find.text('Показать слова'));
@@ -294,7 +294,7 @@ void main() {
     expect(find.text('Найдено пар: 3'), findsOneWidget);
     // The Russian-first lines were flipped: Kazakh word first.
     expect(
-      find.textContaining('кесіртке — ящерица', findRichText: true),
+      find.textContaining('борсық — барсук', findRichText: true),
       findsOneWidget,
     );
     // «рахмет» is already in the built-in dictionary: switched off.
@@ -305,7 +305,7 @@ void main() {
     await advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
     expect(find.text('Добавлено слов: 2'), findsOneWidget);
     expect(find.text('тиін'), findsOneWidget);
-    expect(find.text('кесіртке'), findsOneWidget);
+    expect(find.text('борсық'), findsOneWidget);
 
     await tester.tap(find.text('Тренировать'));
     await settle(tester);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
+import '../../core/dates.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/barys.dart';
 import '../../core/widgets/common.dart';
@@ -12,6 +13,7 @@ import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/stats_repository.dart';
 import '../gamification/achievements.dart';
+import '../gamification/progress_rules.dart';
 import '../review/review_mode.dart';
 import '../lessons/sections.dart';
 import 'answer_check.dart';
@@ -84,6 +86,12 @@ class _Result {
     this.newAchievements, {
     this.examPassed = false,
     this.seconds = 0,
+    this.words = 0,
+    this.fixed = 0,
+    this.correct = 0,
+    this.total = 0,
+    this.toReview = 0,
+    this.goalReached = false,
   });
 
   final _Kind kind;
@@ -92,6 +100,18 @@ class _Result {
   final List<Achievement> newAchievements;
   final bool examPassed;
   final int seconds;
+
+  /// Words practised, mistakes fixed on the retry, answers right of all.
+  final int words;
+  final int fixed;
+  final int correct;
+  final int total;
+
+  /// Words answered wrong in this session: they wait in the notebook.
+  final int toReview;
+
+  /// This session completed today's goal.
+  final bool goalReached;
 }
 
 /// Longest time one session can add to the study total.
@@ -391,7 +411,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         streakDays: after.streakDays,
         learnedWords: await progress.learnedCount(),
         totalXp: after.xp,
-        lastSessionPerfect: s.perfect,
+        fixedMistakes: await ref.read(mistakesRepositoryProvider).fixedCount(),
         examsPassed: await lessons.examsPassed(),
       ),
       now,
@@ -405,6 +425,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           unlocked,
           examPassed: examPassed,
           seconds: _studySeconds,
+          words: s.wordResults.length,
+          fixed: s.fixedMistakes,
+          correct: s.correctAnswers,
+          total: s.totalAnswers,
+          toReview: s.wordResults.values.where((ok) => !ok).length,
+          goalReached: () {
+            final today = todayXp(
+              storedDailyXp: after.dailyXp,
+              storedDay: after.dailyXpDate,
+              now: now,
+            );
+            return today >= after.dailyGoalXp && today - xp < after.dailyGoalXp;
+          }(),
         ),
       );
     }
@@ -418,7 +451,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     if (s == null) return LoadingScaffold(error: _error);
     if (s.length == 0) return _EmptyReview(onClose: _close);
     if (_result != null) {
-      return _ResultView(result: _result!, onClose: _close);
+      return _ResultView(
+        result: _result!,
+        onClose: _close,
+        onReview: () =>
+            context.pushReplacement('/practice/review?mode=mistakes'),
+      );
     }
     if (s.isFinished) return const LoadingScaffold();
 
@@ -717,10 +755,17 @@ class _BottomPanel extends ConsumerWidget {
 }
 
 class _ResultView extends ConsumerWidget {
-  const _ResultView({required this.result, required this.onClose});
+  const _ResultView({
+    required this.result,
+    required this.onClose,
+    required this.onReview,
+  });
 
   final _Result result;
   final VoidCallback onClose;
+
+  /// Practise the words this session got wrong.
+  final VoidCallback onReview;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -736,9 +781,11 @@ class _ResultView extends ConsumerWidget {
         'Экзамен сдан — следующий раздел открыт',
       ),
       _Kind.exam => (
-        'Тағы бір рет!',
-        'Для сдачи нужно $examPassScore% правильных ответов. '
-            'Повторите слова раздела и попробуйте снова.',
+        'Жақсы талпыныс!',
+        'Хорошая попытка: вы уже знаете ${result.correct} из ${result.total}. '
+            '${result.toReview > 0 ? 'Повторите ${result.toReview} '
+                      '${plural(result.toReview, 'слово', 'слова', 'слов')} — '
+                      'пара минут, и экзамен пойдёт легче.' : ''}',
       ),
     };
     final minutes = result.seconds ~/ 60;
@@ -817,25 +864,41 @@ class _ResultView extends ConsumerWidget {
                       ],
                       Expanded(
                         child: _ResultStat(
-                          value: Text('${result.score}%'),
-                          label: 'точность',
-                          color: result.score >= examPassScore
-                              ? c.ok
-                              : c.goldText,
-                          border: result.score >= examPassScore
-                              ? c.ok
-                              : AppColors.gold,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ResultStat(
-                          value: Text('$minutes:$seconds'),
-                          label: 'время',
+                          value: Text('${result.words}'),
+                          label: plural(result.words, 'слово', 'слова', 'слов'),
                           color: c.accent,
                           border: c.sky,
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: result.kind == _Kind.exam
+                            ? _ResultStat(
+                                value: Text(
+                                  '${result.correct}/${result.total}',
+                                ),
+                                label: 'верно',
+                                color: c.ok,
+                                border: c.ok,
+                              )
+                            : _ResultStat(
+                                value: Text('${result.fixed}'),
+                                label: 'исправлено',
+                                color: c.ok,
+                                border: c.ok,
+                              ),
+                      ),
+                      if (quiet) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ResultStat(
+                            value: Text('$minutes:$seconds'),
+                            label: 'время',
+                            color: c.goldText,
+                            border: AppColors.gold,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -846,8 +909,31 @@ class _ResultView extends ConsumerWidget {
                     child: _AchievementBanner(achievement: a),
                   ),
                 ],
+                if (result.goalReached) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Цель дня выполнена. На сегодня достаточно — '
+                    'слова лучше запоминаются после отдыха.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: c.muted, fontSize: 15),
+                  ),
+                ],
                 const SizedBox(height: 32),
-                FilledButton(onPressed: onClose, child: const Text('Готово')),
+                if (failedExam && result.toReview > 0) ...[
+                  FilledButton(
+                    onPressed: onReview,
+                    child: const Text('Повторить эти слова'),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                    ),
+                    onPressed: onClose,
+                    child: const Text('Позже'),
+                  ),
+                ] else
+                  FilledButton(onPressed: onClose, child: const Text('Готово')),
               ],
             ),
           ),

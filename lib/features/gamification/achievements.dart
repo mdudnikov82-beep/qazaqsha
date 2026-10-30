@@ -9,7 +9,7 @@ class AchievementFacts {
     required this.streakDays,
     required this.learnedWords,
     required this.totalXp,
-    required this.lastSessionPerfect,
+    this.fixedMistakes = 0,
     this.examsPassed = 0,
   });
 
@@ -17,7 +17,9 @@ class AchievementFacts {
   final int streakDays;
   final int learnedWords;
   final int totalXp;
-  final bool lastSessionPerfect;
+
+  /// Mistakes from the notebook later answered right.
+  final int fixedMistakes;
   final int examsPassed;
 }
 
@@ -53,13 +55,20 @@ final achievements = <Achievement>[
     goal: 1,
     current: (f) => f.quizzesCompleted,
   ),
-  Achievement(
-    id: 'perfect',
-    title: 'Без ошибок',
-    description: 'Пройти урок без единой ошибки',
-    icon: Icons.star_rounded,
-    isEarned: (f) => f.lastSessionPerfect,
-  ),
+  for (final (n, title, icon) in [
+    (10, 'Работа над ошибками', Icons.build_rounded),
+    (50, 'Учусь на ошибках', Icons.handyman_rounded),
+    (100, 'Ошибки — мои учителя', Icons.psychology_rounded),
+  ])
+    Achievement(
+      id: 'fixed_$n',
+      title: title,
+      description: 'Исправить $n ошибок: ответить верно там, где раньше ошибся',
+      icon: icon,
+      isEarned: (f) => f.fixedMistakes >= n,
+      goal: n,
+      current: (f) => f.fixedMistakes,
+    ),
   Achievement(
     id: 'streak_3',
     title: '3 дня подряд',

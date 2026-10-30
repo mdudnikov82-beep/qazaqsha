@@ -58,6 +58,19 @@ class MistakesRepository {
       m.ref,
   ];
 
+  /// How many mistakes were later answered right.
+  Future<int> fixedCount() => _fixed.getSingle();
+
+  Stream<int> watchFixedCount() => _fixed.watchSingle();
+
+  Selectable<int> get _fixed {
+    final n = _db.mistakes.id.count();
+    return (_db.selectOnly(_db.mistakes)
+          ..addColumns([n])
+          ..where(_db.mistakes.resolved.equals(true)))
+        .map((r) => r.read(n)!);
+  }
+
   /// Forgets mistakes that were fixed.
   Future<int> clearResolved() =>
       (_db.delete(_db.mistakes)..where((m) => m.resolved.equals(true))).go();

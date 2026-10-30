@@ -44,7 +44,7 @@ class ProfileScreen extends ConsumerWidget {
       streakDays: streak,
       learnedWords: learned,
       totalXp: s.xp,
-      lastSessionPerfect: false,
+      fixedMistakes: ref.watch(fixedMistakesProvider).value ?? 0,
       examsPassed: examsPassed,
     );
     final accuracy = s.answersTotal == 0
@@ -94,7 +94,9 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     _SectionTitle(
                       'Достижения',
-                      trailing: '${unlocked.length} из ${achievements.length}',
+                      trailing:
+                          '${unlocked.keys.where((id) => achievementById(id) != null).length} '
+                          'из ${achievements.length}',
                     ),
                     // Wrap, not a grid: rows take only the height they need.
                     LayoutBuilder(

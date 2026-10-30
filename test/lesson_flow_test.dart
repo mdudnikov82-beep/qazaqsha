@@ -119,9 +119,10 @@ void main() {
     // 5 choices ×10 + pairs 20 + 3 typed ×15 + 2 reverse choices ×10
     // + 2 sentences ×20 + lesson bonus 20; no extra for a flawless run.
     expect(find.text('+195'), findsOneWidget);
-    expect(find.text('100%'), findsOneWidget);
+    // Words and fixed mistakes instead of an accuracy grade.
+    expect(find.text('исправлено'), findsOneWidget);
+    expect(find.text('100%'), findsNothing);
     expect(find.textContaining('Первые шаги'), findsOneWidget);
-    expect(find.textContaining('Без ошибок'), findsOneWidget);
 
     final stats = await _stats(tester, db);
     expect((stats.xp, stats.streakDays, stats.quizzesCompleted), (195, 1, 1));
@@ -135,7 +136,9 @@ void main() {
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 
-  testWidgets('a wrong answer is asked again and fixing it pays', (tester) async {
+  testWidgets('a wrong answer is asked again and fixing it pays', (
+    tester,
+  ) async {
     final db = await startApp(tester);
     final answers = await _answers(tester, db);
 

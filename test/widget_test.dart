@@ -101,7 +101,7 @@ void main() {
 
     expect(find.text('Жаңа бастаушы · Новичок'), findsOneWidget);
     expect(find.text('Активность'), findsOneWidget);
-    expect(find.text('0 из 9'), findsOneWidget);
+    expect(find.text('0 из 11'), findsOneWidget);
 
     await tester.tap(find.text('Как вас зовут?'));
     await settle(tester);

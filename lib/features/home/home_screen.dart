@@ -95,6 +95,12 @@ class HomeScreen extends ConsumerWidget {
           )
         : left == 0
         ? (BarysMood.proud, 'Все задания на сегодня сделаны — керемет!')
+        : daily >= s.dailyGoalXp
+        ? (
+            BarysMood.proud,
+            'Цель дня выполнена — на сегодня достаточно. Отдохните, '
+                'завтра продолжим.',
+          )
         : (
             BarysMood.hello,
             'Сегодня осталось $left ${plural(left, 'задание', 'задания', 'заданий')} '

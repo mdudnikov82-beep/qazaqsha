@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/data/repositories/dictionary_repository.dart';
 import 'package:qazaqsha/data/repositories/lesson_repository.dart';
+import 'package:qazaqsha/data/repositories/mistakes_repository.dart';
 import 'package:qazaqsha/data/repositories/progress_repository.dart';
 import 'package:qazaqsha/data/repositories/stats_repository.dart';
 import 'package:qazaqsha/features/gamification/achievements.dart';
@@ -66,10 +67,10 @@ void main() {
       streakDays: 3,
       learnedWords: 0,
       totalXp: 50,
-      lastSessionPerfect: true,
+      fixedMistakes: 10,
     );
     final first = await stats.unlockEarned(facts, now);
-    expect(first.map((a) => a.id), ['first_lesson', 'perfect', 'streak_3']);
+    expect(first.map((a) => a.id), ['first_lesson', 'fixed_10', 'streak_3']);
     expect(await stats.unlockEarned(facts, now), isEmpty);
   });
 
@@ -171,5 +172,24 @@ void main() {
     await stats.addStudyTime(45);
     await stats.addStudyTime(0);
     expect((await stats.get()).studySeconds, 345);
+  });
+
+  test('fixed mistakes are counted once each', () async {
+    final notebook = MistakesRepository(db);
+    for (final ref in ['1', '2', '3']) {
+      await notebook.record(
+        kind: MistakeKind.word,
+        ref: ref,
+        prompt: 'p',
+        answer: 'a',
+      );
+    }
+    expect(await notebook.fixedCount(), 0);
+    await notebook.resolve(MistakeKind.word, '1');
+    await notebook.resolve(MistakeKind.word, '1');
+    await notebook.resolve(MistakeKind.word, '2');
+    // A right answer to a task never missed fixes nothing.
+    await notebook.resolve(MistakeKind.word, '9');
+    expect(await notebook.fixedCount(), 2);
   });
 }

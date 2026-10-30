@@ -56,7 +56,7 @@ void main() {
         streakDays: 2,
         learnedWords: 0,
         totalXp: 70,
-        lastSessionPerfect: true,
+        fixedMistakes: 10,
       ),
       day2,
     );
@@ -97,7 +97,7 @@ void main() {
     expect(await other.select(other.dailyActivity).get(), hasLength(2));
     expect(
       (await other.select(other.unlockedAchievements).get()).map((a) => a.id),
-      containsAll(['first_lesson', 'perfect']),
+      containsAll(['first_lesson', 'fixed_10']),
     );
     // The own word came along, with its progress.
     final squirrel = await (other.select(

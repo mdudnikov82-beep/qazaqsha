@@ -134,6 +134,11 @@ final courseProvider = StreamProvider<CourseState>(
   (ref) => ref.watch(lessonRepositoryProvider).watchCourse(),
 );
 
+/// Mistakes later answered right, for the «работа над ошибками» badges.
+final fixedMistakesProvider = StreamProvider<int>(
+  (ref) => ref.watch(mistakesRepositoryProvider).watchFixedCount(),
+);
+
 final unlockedAchievementsProvider = StreamProvider<Map<String, DateTime>>(
   (ref) => ref.watch(statsRepositoryProvider).watchUnlocked(),
 );

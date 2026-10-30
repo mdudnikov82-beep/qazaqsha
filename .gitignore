@@ -52,3 +52,6 @@ app.*.map.json
 
 # Telegram bot token
 /bot/.env
+
+# Review studio: recordings are copied into assets/audio by import.py
+/tools/review/audio/

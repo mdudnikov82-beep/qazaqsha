@@ -2,6 +2,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/speech.dart';
+import '../core/voice.dart';
 import '../features/dialogues/dialogues.dart';
 import '../features/grammar/grammar.dart';
 
@@ -198,6 +199,11 @@ final ruleDoneTodayProvider = StreamProvider<bool>(
 /// A Kazakh voice is installed (speaker buttons show).
 final speechAvailableProvider = FutureProvider<bool>(
   (ref) => ref.watch(speechCheckProvider)(),
+);
+
+/// Native-speaker recordings: Kazakh text → recording key.
+final recordedVoiceProvider = FutureProvider<Map<String, String>>(
+  (ref) => Voice.loadIndex(),
 );
 
 /// How the voice is looked up; tests replace it.

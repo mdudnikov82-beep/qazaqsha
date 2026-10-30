@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/dates.dart';
 import '../../core/speech.dart';
+import '../../core/voice.dart';
 import '../../core/reminders.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/ornament.dart';
@@ -711,15 +712,26 @@ class _Settings extends ConsumerWidget {
           ListTile(
             leading: Icon(Icons.record_voice_over_rounded, color: c.accent),
             title: const Text('Озвучка', style: label),
-            subtitle: Text(switch (ref.watch(speechAvailableProvider).value) {
-              true => 'Казахский голос есть — нажмите, чтобы послушать',
-              false =>
-                'В телефоне нет казахского голоса. Установите синтезатор с '
-                    'казахским языком (например, бесплатный RHVoice) и выберите '
-                    'его в настройках «Синтез речи» — кнопки 🔊 появятся сами.',
-              null => 'Проверяем…',
-            }),
-            onTap: () => Speech.say('Сәлем! Қазақ тілін бірге үйренейік.'),
+            subtitle: Text(
+              '${switch (ref.watch(recordedVoiceProvider).value?.length ?? 0) {
+                0 => '',
+                final n => '$n ${plural(n, 'слово озвучено', 'слова озвучены', 'слов озвучено')} '
+                    'живым голосом носителя. ',
+              }}'
+              '${switch (ref.watch(speechAvailableProvider).value) {
+                true => 'Остальное читает казахский голос телефона — нажмите, чтобы послушать',
+                false => 'Для остальных слов установите синтезатор с казахским '
+                    'языком (например, бесплатный RHVoice) и выберите его в '
+                    'настройках «Синтез речи» — кнопки 🔊 появятся сами.',
+                null => 'Проверяем…',
+              }}',
+            ),
+            onTap: () {
+              final key = ref.read(recordedVoiceProvider).value?['сәлем'];
+              key != null
+                  ? Voice.play(key)
+                  : Speech.say('Сәлем! Қазақ тілін бірге үйренейік.');
+            },
           ),
           ListTile(
             leading: Icon(Icons.abc_rounded, color: c.accent),

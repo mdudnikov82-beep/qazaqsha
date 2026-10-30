@@ -48,6 +48,7 @@ dependencies:
   share_plus: ^13.3.1
   flutter_tts: ^4.2.5
   home_widget: ^0.10.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +67,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/data/
+    - assets/audio/
 
   fonts:
     - family: Nunito

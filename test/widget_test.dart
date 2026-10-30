@@ -344,4 +344,30 @@ void main() {
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('a recorded word gets 🔊 even without a phone voice', (
+    tester,
+  ) async {
+    final db = await startApp(tester);
+    await tester.tap(find.text('Словарь'));
+    await settle(tester);
+
+    Future<void> open(String ru, String kk) async {
+      await tester.enterText(find.byType(TextField), ru);
+      await advanceUntil(tester, () => find.text(kk).evaluate().isNotEmpty);
+      await tester.tap(find.text(kk));
+      await settle(tester);
+    }
+
+    await open('бабушка', 'әже');
+    expect(find.byTooltip('Послушать (живой голос)'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await settle(tester);
+
+    // Not recorded yet, and no phone voice in tests: no button.
+    await open('волк', 'қасқыр');
+    expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

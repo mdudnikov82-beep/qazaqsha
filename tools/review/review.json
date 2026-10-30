@@ -1,0 +1,331 @@
+{
+ "family-0": {
+  "hint": "",
+  "kk": "отбасы",
+  "note": "",
+  "ru": "семья",
+  "status": "ok"
+ },
+ "family-1": {
+  "hint": "",
+  "kk": "ана",
+  "note": "",
+  "ru": "мать",
+  "status": "ok"
+ },
+ "family-10": {
+  "hint": "",
+  "kk": "ата",
+  "note": "",
+  "ru": "дедушка",
+  "status": "ok"
+ },
+ "family-11": {
+  "hint": "",
+  "kk": "күйеу",
+  "note": "",
+  "ru": "муж",
+  "status": "ok"
+ },
+ "family-12": {
+  "hint": "",
+  "kk": "әйел",
+  "note": "",
+  "ru": "жена",
+  "status": "ok"
+ },
+ "family-13": {
+  "hint": "",
+  "kk": "бала",
+  "note": "",
+  "ru": "ребёнок",
+  "status": "ok"
+ },
+ "family-14": {
+  "hint": "",
+  "kk": "немере",
+  "note": "",
+  "ru": "внук",
+  "status": "ok"
+ },
+ "family-15": {
+  "hint": "",
+  "kk": "ата-ана",
+  "note": "",
+  "ru": "родители",
+  "status": "ok"
+ },
+ "family-16": {
+  "hint": "",
+  "kk": "туыс",
+  "note": "",
+  "ru": "родственник",
+  "status": "ok"
+ },
+ "family-17": {
+  "hint": "",
+  "kk": "дос",
+  "note": "",
+  "ru": "друг",
+  "status": "ok"
+ },
+ "family-18": {
+  "hint": "",
+  "kk": "адам",
+  "note": "",
+  "ru": "человек",
+  "status": "ok"
+ },
+ "family-19": {
+  "hint": "",
+  "kk": "ұл бала",
+  "note": "",
+  "ru": "мальчик",
+  "status": "ok"
+ },
+ "family-2": {
+  "hint": "",
+  "kk": "әке",
+  "note": "",
+  "ru": "отец",
+  "status": "ok"
+ },
+ "family-20": {
+  "hint": "",
+  "kk": "қыз бала",
+  "note": "",
+  "ru": "девочка",
+  "status": "ok"
+ },
+ "family-21": {
+  "hint": "",
+  "kk": "көрші",
+  "note": "",
+  "ru": "сосед",
+  "status": "ok"
+ },
+ "family-3": {
+  "hint": "",
+  "kk": "ұл",
+  "note": "",
+  "ru": "сын",
+  "status": "ok"
+ },
+ "family-4": {
+  "hint": "",
+  "kk": "қыз",
+  "note": "",
+  "ru": "дочь",
+  "status": "ok"
+ },
+ "family-5": {
+  "hint": "",
+  "kk": "аға",
+  "note": "",
+  "ru": "старший брат",
+  "status": "ok"
+ },
+ "family-6": {
+  "hint": "",
+  "kk": "іні",
+  "note": "",
+  "ru": "младший брат",
+  "status": "ok"
+ },
+ "family-7": {
+  "hint": "",
+  "kk": "әпке",
+  "note": "",
+  "ru": "старшая сестра",
+  "status": "ok"
+ },
+ "family-8": {
+  "hint": "так говорит девушка; парень говорит «қарындас»",
+  "kk": "сіңлі",
+  "note": "",
+  "ru": "младшая сестра",
+  "status": "ok"
+ },
+ "family-9": {
+  "hint": "",
+  "kk": "әже",
+  "note": "",
+  "ru": "бабушка",
+  "status": "ok"
+ },
+ "greetings-0": {
+  "hint": "вежливо, к старшим или незнакомым",
+  "kk": "сәлеметсіз бе",
+  "note": "",
+  "ru": "здравствуйте",
+  "status": "ok"
+ },
+ "greetings-1": {
+  "hint": "",
+  "kk": "сәлем",
+  "note": "",
+  "ru": "привет",
+  "status": "ok"
+ },
+ "greetings-10": {
+  "hint": "",
+  "kk": "қайырлы таң",
+  "note": "",
+  "ru": "доброе утро",
+  "status": "ok"
+ },
+ "greetings-11": {
+  "hint": "",
+  "kk": "қайырлы күн",
+  "note": "",
+  "ru": "добрый день",
+  "status": "ok"
+ },
+ "greetings-12": {
+  "hint": "",
+  "kk": "қайырлы кеш",
+  "note": "",
+  "ru": "добрый вечер",
+  "status": "ok"
+ },
+ "greetings-13": {
+  "hint": "",
+  "kk": "қайырлы түн",
+  "note": "",
+  "ru": "спокойной ночи",
+  "status": "ok"
+ },
+ "greetings-14": {
+  "hint": "",
+  "kk": "қалайсың?",
+  "note": "",
+  "ru": "как дела?",
+  "status": "ok"
+ },
+ "greetings-15": {
+  "hint": "",
+  "kk": "жақсы",
+  "note": "",
+  "ru": "хорошо",
+  "status": "ok"
+ },
+ "greetings-16": {
+  "hint": "",
+  "kk": "жаман",
+  "note": "",
+  "ru": "плохо",
+  "status": "ok"
+ },
+ "greetings-17": {
+  "hint": "",
+  "kk": "қош келдіңіз",
+  "note": "",
+  "ru": "добро пожаловать",
+  "status": "ok"
+ },
+ "greetings-18": {
+  "hint": "",
+  "kk": "ас болсын",
+  "note": "",
+  "ru": "приятного аппетита",
+  "status": "ok"
+ },
+ "greetings-19": {
+  "hint": "",
+  "kk": "құттықтаймын",
+  "note": "",
+  "ru": "поздравляю",
+  "status": "ok"
+ },
+ "greetings-2": {
+  "hint": "",
+  "kk": "сау болыңыз",
+  "note": "",
+  "ru": "до свидания",
+  "status": "ok"
+ },
+ "greetings-20": {
+  "hint": "",
+  "kk": "сәттілік",
+  "note": "",
+  "ru": "удача",
+  "status": "ok"
+ },
+ "greetings-21": {
+  "hint": "",
+  "kk": "менің атым…",
+  "note": "",
+  "ru": "меня зовут…",
+  "status": "ok"
+ },
+ "greetings-22": {
+  "hint": "",
+  "kk": "мен түсінбеймін",
+  "note": "",
+  "ru": "я не понимаю",
+  "status": "ok"
+ },
+ "greetings-23": {
+  "hint": "",
+  "kk": "ештеңе етпейді",
+  "note": "",
+  "ru": "ничего страшного",
+  "status": "ok"
+ },
+ "greetings-24": {
+  "hint": "",
+  "kk": "жолыңыз болсын",
+  "note": "",
+  "ru": "счастливого пути",
+  "status": "ok"
+ },
+ "greetings-3": {
+  "hint": "",
+  "kk": "сау бол",
+  "note": "",
+  "ru": "пока",
+  "status": "ok"
+ },
+ "greetings-4": {
+  "hint": "",
+  "kk": "рахмет",
+  "note": "",
+  "ru": "спасибо",
+  "status": "ok"
+ },
+ "greetings-5": {
+  "hint": "",
+  "kk": "көп рахмет",
+  "note": "",
+  "ru": "большое спасибо",
+  "status": "ok"
+ },
+ "greetings-6": {
+  "hint": "",
+  "kk": "өтінемін",
+  "note": "",
+  "ru": "пожалуйста (просьба)",
+  "status": "ok"
+ },
+ "greetings-7": {
+  "hint": "",
+  "kk": "кешіріңіз",
+  "note": "",
+  "ru": "извините",
+  "status": "ok"
+ },
+ "greetings-8": {
+  "hint": "",
+  "kk": "иә",
+  "note": "",
+  "ru": "да",
+  "status": "ok"
+ },
+ "greetings-9": {
+  "hint": "",
+  "kk": "жоқ",
+  "note": "",
+  "ru": "нет",
+  "status": "ok"
+ }
+}

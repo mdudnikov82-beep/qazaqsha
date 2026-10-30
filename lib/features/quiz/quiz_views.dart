@@ -130,11 +130,15 @@ class ChoiceView extends StatelessWidget {
   const ChoiceView({
     super.key,
     required this.question,
+    required this.xp,
     required this.picked,
     required this.onPick,
   });
 
   final ChoiceQuestion question;
+
+  /// XP the answer earned, for the flying «+XP».
+  final int xp;
   final int? picked;
   final ValueChanged<int> onPick;
 
@@ -216,7 +220,7 @@ class ChoiceView extends StatelessWidget {
               child: Consumer(
                 builder: (context, ref, _) => ref.watch(quietModeProvider)
                     ? const SizedBox.shrink()
-                    : FlyingXp(xp: xpFor(q), color: c.okText),
+                    : FlyingXp(xp: xp, color: c.okText),
               ),
             ),
         ],

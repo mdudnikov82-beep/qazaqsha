@@ -200,9 +200,27 @@ void main() {
       expect(s.isFinished, isTrue);
       expect(s.totalAnswers, 3);
       expect(s.correctAnswers, 2);
-      expect(s.xp, 10 + 15 ~/ 2);
+      // The fixed mistake earns full points plus the fix bonus.
+      expect(s.xp, 10 + 15 + fixedMistakeXp);
+      expect(s.fixedMistakes, 1);
       expect(s.perfect, isFalse);
       expect(s.wordResults, {3: true, 4: false});
+    });
+
+    test('fix bonus counts for a few mistakes per session only', () {
+      final qs = [for (final w in pool.sublist(2, 6)) TypeQuestion(w)];
+      final s = QuizSession(qs);
+      for (var i = 0; i < 4; i++) {
+        s.answer(correct: false);
+        s.next();
+      }
+      while (!s.isFinished) {
+        s.answer(correct: true);
+        expect(s.lastFixed, isTrue);
+        s.next();
+      }
+      expect(s.fixedMistakes, 4);
+      expect(s.xp, 4 * 15 + fixedMistakeCap * fixedMistakeXp);
     });
 
     test('in an exam a wrong answer is final', () {

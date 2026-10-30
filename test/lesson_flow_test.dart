@@ -86,7 +86,12 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
     fail('Unknown screen');
   }
   await settle(tester);
-  expect(find.text('Дұрыс! Правильно'), findsOneWidget, reason: prompt);
+  // A fixed mistake gets its own title.
+  expect(
+    find.textContaining(RegExp(r'^(Дұрыс!|Исправлено!)')),
+    findsOneWidget,
+    reason: prompt,
+  );
   await tester.tap(find.text('Далее'));
   await settle(tester);
   return prompt;
@@ -112,25 +117,25 @@ void main() {
     }
 
     // 5 choices ×10 + pairs 20 + 3 typed ×15 + 2 reverse choices ×10
-    // + 2 sentences ×20 + lesson bonus 20 + no-mistakes bonus 10.
-    expect(find.text('+205'), findsOneWidget);
+    // + 2 sentences ×20 + lesson bonus 20; no extra for a flawless run.
+    expect(find.text('+195'), findsOneWidget);
     expect(find.text('100%'), findsOneWidget);
     expect(find.textContaining('Первые шаги'), findsOneWidget);
     expect(find.textContaining('Без ошибок'), findsOneWidget);
 
     final stats = await _stats(tester, db);
-    expect((stats.xp, stats.streakDays, stats.quizzesCompleted), (205, 1, 1));
+    expect((stats.xp, stats.streakDays, stats.quizzesCompleted), (195, 1, 1));
 
     await tester.tap(find.text('Готово'));
     await settle(tester);
     // Back home, the next lesson of the topic is offered.
     expect(find.textContaining('урок 2 из 5'), findsOneWidget);
-    expect(find.text('205'), findsOneWidget);
+    expect(find.text('195'), findsOneWidget);
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));
 
-  testWidgets('a wrong answer is asked again and costs XP', (tester) async {
+  testWidgets('a wrong answer is asked again and fixing it pays', (tester) async {
     final db = await startApp(tester);
     final answers = await _answers(tester, db);
 
@@ -175,9 +180,9 @@ void main() {
     }
     expect(prompts.last, missed, reason: 'the missed word comes back last');
 
-    // 205 − 10 for the miss + 5 for the retry − 10 lost no-mistakes bonus.
-    expect(find.text('+190'), findsOneWidget);
-    expect((await _stats(tester, db)).xp, 190);
+    // 195 − 10 for the miss + 10 for the retry + 10 for fixing it.
+    expect(find.text('+205'), findsOneWidget);
+    expect((await _stats(tester, db)).xp, 205);
     final progress = await tester.runAsync(
       () => db.select(db.wordProgress).get(),
     );
@@ -254,8 +259,8 @@ void main() {
     }
 
     // 8 choices ×10 + 4 typed ×15 + pairs 20 + 2 sentences ×20
-    // + exam bonus 50 + no-mistakes bonus 10.
-    expect(find.text('+260'), findsOneWidget);
+    // + exam bonus 50.
+    expect(find.text('+250'), findsOneWidget);
     expect(find.textContaining('Первый экзамен'), findsOneWidget);
 
     await tester.tap(find.text('Готово'));

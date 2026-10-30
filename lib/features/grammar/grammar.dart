@@ -137,9 +137,8 @@ List<GrammarRule> rulesOfPart(List<GrammarGroup> groups, String part) => [
     if (g.part == part) ...g.rules,
 ];
 
-/// XP for one right answer, and the bonus for a rule done without mistakes.
+/// XP for one right answer.
 const grammarXpPerAnswer = 5;
-const grammarPerfectBonus = 10;
 
 /// A rule counts as learned from this score on (percent).
 const grammarPassScore = 75;

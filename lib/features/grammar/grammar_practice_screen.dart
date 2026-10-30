@@ -11,6 +11,7 @@ import '../../core/widgets/gold_button.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../dialogues/dialogues.dart';
+import '../quiz/quiz_session.dart';
 import 'grammar.dart';
 
 /// Exercises of one rule ([ruleId]) or a check-up of a topic ([groupId]).
@@ -68,6 +69,9 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   int _correct = 0;
   final _missed = <GrammarTask>{};
   bool _retrying = false;
+
+  /// Mistakes answered right on the retry round.
+  int _fixed = 0;
   ({int score, int xp})? _result;
 
   /// Open grammar mistakes, as task refs; loaded before the first start.
@@ -112,6 +116,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     _correct = 0;
     _missed.clear();
     _retrying = false;
+    _fixed = 0;
     _result = null;
     _picked = null;
     _options = tasks.first.options(_random);
@@ -142,6 +147,8 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
         } else {
           _missed.add(task);
         }
+      } else if (right) {
+        _fixed++;
       }
     });
   }
@@ -168,7 +175,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     final score = (100 * _correct / _total).round();
     final xp =
         _correct * grammarXpPerAnswer +
-        (_correct == _total ? grammarPerfectBonus : 0);
+        _fixed.clamp(0, fixedMistakeCap) * fixedMistakeXp;
     final now = DateTime.now();
     if (_rule case final rule?) {
       await ref.read(grammarRepositoryProvider).record(rule.id, score, now);

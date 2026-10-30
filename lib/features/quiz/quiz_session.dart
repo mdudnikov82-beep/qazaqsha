@@ -1,8 +1,13 @@
 import 'questions.dart';
 
-/// Bonus XP for finishing a lesson, and for finishing it without mistakes.
+/// Bonus XP for finishing a lesson.
 const lessonBonusXp = 20;
-const perfectBonusXp = 10;
+
+/// Extra XP for a mistake answered right on its second try: fixing an error
+/// is worth more than never making one. Counted for a few per session, so
+/// wrong answers on purpose don't pay.
+const fixedMistakeXp = 10;
+const fixedMistakeCap = 3;
 
 /// Progress through one quiz: score, XP and per-word results.
 /// A wrongly answered question is asked once more at the end, unless
@@ -18,6 +23,13 @@ class QuizSession {
 
   int xp = 0;
   int correctAnswers = 0;
+
+  /// Mistakes answered right on the retry.
+  int fixedMistakes = 0;
+
+  /// XP the latest answer earned, and whether it fixed a mistake.
+  int lastXp = 0;
+  bool lastFixed = false;
   int totalAnswers = 0;
 
   /// wordId → answered correctly every time in this session.
@@ -40,10 +52,17 @@ class QuizSession {
     if (q is IntroCard) return;
 
     totalAnswers++;
+    lastXp = 0;
+    lastFixed = false;
     if (correct) {
       correctAnswers++;
-      // A retry earns half: it still counts, but not like a first try.
-      xp += _requeued.contains(q) ? xpFor(q) ~/ 2 : xpFor(q);
+      lastXp = xpFor(q);
+      if (_requeued.contains(q)) {
+        lastFixed = true;
+        fixedMistakes++;
+        if (fixedMistakes <= fixedMistakeCap) lastXp += fixedMistakeXp;
+      }
+      xp += lastXp;
     } else if (retryMistakes && !_requeued.contains(q)) {
       _requeued.add(q);
       _queue.add(q);

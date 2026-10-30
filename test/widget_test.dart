@@ -229,7 +229,7 @@ void main() {
       tester,
       () => find.text('Правило изучено!').evaluate().isNotEmpty,
     );
-    expect(find.textContaining('+30 XP'), findsOneWidget);
+    expect(find.textContaining('+20 XP'), findsOneWidget);
     final saved = await tester.runAsync(
       () => db.select(db.grammarProgress).getSingle(),
     );

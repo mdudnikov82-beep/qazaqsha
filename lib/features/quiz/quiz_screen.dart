@@ -376,7 +376,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       );
       if (examPassed) xp += examPassBonusXp;
     }
-    if (s.perfect) xp += perfectBonusXp;
 
     await progress.applySession(s.wordResults, now);
     final after = await stats.recordSession(
@@ -485,6 +484,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   IntroCard(:final word) => IntroView(word: word),
                   ChoiceQuestion() => ChoiceView(
                     question: q,
+                    xp: s.lastXp,
                     picked: _picked,
                     onPick: _pick,
                   ),
@@ -517,7 +517,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
             _BottomPanel(
               question: q,
               feedback: _feedback,
-              xp: xpFor(q),
+              xp: s.lastXp,
+              fixed: s.lastFixed,
               canCheck: q is SentenceQuestion
                   ? _built.isNotEmpty
                   : _typed.text.trim().isNotEmpty,
@@ -539,6 +540,7 @@ class _BottomPanel extends ConsumerWidget {
     required this.question,
     required this.feedback,
     required this.xp,
+    required this.fixed,
     required this.canCheck,
     required this.matchMistakes,
     required this.onCheck,
@@ -550,6 +552,7 @@ class _BottomPanel extends ConsumerWidget {
   final Question question;
   final _Feedback feedback;
   final int xp;
+  final bool fixed;
   final bool canCheck;
   final int matchMistakes;
   final VoidCallback onCheck;
@@ -601,6 +604,7 @@ class _BottomPanel extends ConsumerWidget {
 
     final right = feedback == _Feedback.right;
     final (title, details) = switch (feedback) {
+      _Feedback.right when fixed => ('Исправлено! Так и учатся', _answer),
       _Feedback.right => ('Дұрыс! Правильно', _answer),
       _Feedback.almost => (
         'Почти! Обратите внимание на буквы',

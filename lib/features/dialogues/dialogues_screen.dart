@@ -212,7 +212,20 @@ class _DialogueScreenState extends ConsumerState<DialogueScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(d.titleKk),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(d.titleKk),
+            Text(
+              '${d.title} · ${d.lines.length} реплик',
+              style: TextStyle(
+                color: c.muted,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: _allTranslations ? 'Скрыть перевод' : 'Показать перевод',
@@ -231,11 +244,7 @@ class _DialogueScreenState extends ConsumerState<DialogueScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
         children: [
-          Text(
-            d.title,
-            style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           for (final (i, (speaker, kk, ru)) in d.lines.indexed)
             _Bubble(
               speaker: speaker,
@@ -287,78 +296,106 @@ class _Bubble extends StatelessWidget {
     final bg = right ? context.colors.brand : c.surface;
     final fg = right ? Colors.white : c.ink;
     final muted = right ? context.colors.onBrandMuted : c.muted;
-    return Align(
-      alignment: right ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.8,
+    final avatar = ExcludeSemantics(
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: right ? c.accentSoft : c.goldSoft,
+          shape: BoxShape.circle,
         ),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Material(
-            color: bg,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(right ? 18 : 4),
-              bottomRight: Radius.circular(right ? 4 : 18),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+        child: Text(
+          speaker.characters.first.toUpperCase(),
+          style: TextStyle(
+            color: right ? c.accent : c.goldText,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        textDirection: right ? TextDirection.rtl : TextDirection.ltr,
+        children: [
+          avatar,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Align(
+              alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+              child: Material(
+                color: bg,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(right ? 20 : 6),
+                  bottomRight: Radius.circular(right ? 6 : 20),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          speaker,
-                          style: TextStyle(
-                            color: right ? AppColors.gold : c.accent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SpeakButton(kk, size: 18, color: muted),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Wrap(
-                      children: [
-                        for (final token in kk.split(' '))
-                          GestureDetector(
-                            onTap: () => onWord(token),
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: Text(
-                                token,
-                                style: TextStyle(
-                                  color: fg,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: muted.withValues(alpha: 0.4),
-                                  decorationStyle: TextDecorationStyle.dotted,
-                                ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              speaker,
+                              style: TextStyle(
+                                color: right ? AppColors.gold : c.accent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
-                          ),
+                            SpeakButton(kk, size: 18, color: muted),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Wrap(
+                          children: [
+                            for (final token in kk.split(' '))
+                              GestureDetector(
+                                onTap: () => onWord(token),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Text(
+                                    token,
+                                    style: TextStyle(
+                                      color: fg,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: muted.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      decorationStyle:
+                                          TextDecorationStyle.dotted,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        LatinLine(kk, fontSize: 13, color: muted),
+                        if (translated) ...[
+                          const SizedBox(height: 4),
+                          Text(ru, style: TextStyle(color: muted)),
+                        ],
                       ],
                     ),
-                    LatinLine(kk, fontSize: 13, color: muted),
-                    if (translated) ...[
-                      const SizedBox(height: 4),
-                      Text(ru, style: TextStyle(color: muted)),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          const SizedBox(width: 44),
+        ],
       ),
     );
   }

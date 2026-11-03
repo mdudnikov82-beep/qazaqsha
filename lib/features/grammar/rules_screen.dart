@@ -406,6 +406,7 @@ class RuleScreen extends ConsumerWidget {
     final rule = rules[i];
     final score = ref.watch(grammarProgressProvider).value?[rule.id]?.bestScore;
     final c = context.colors;
+    final tint = partColor(group.part);
 
     return Scaffold(
       appBar: AppBar(title: Text('Правило ${rule.number} из ${rules.length}')),
@@ -415,7 +416,7 @@ class RuleScreen extends ConsumerWidget {
           Text(
             group.title.toUpperCase(),
             style: TextStyle(
-              color: c.accent,
+              color: tint,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.5,
@@ -424,7 +425,12 @@ class RuleScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             rule.title,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+              fontSize: 27,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -.3,
+              height: 1.15,
+            ),
           ),
           const SizedBox(height: 12),
           Text(rule.text, style: const TextStyle(fontSize: 16, height: 1.4)),
@@ -444,12 +450,11 @@ class RuleScreen extends ConsumerWidget {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              form,
-                              style: TextStyle(
-                                color: c.accent,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
+                            child: Text.rich(
+                              formSpan(form, tint, c),
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
@@ -480,9 +485,8 @@ class RuleScreen extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                 decoration: BoxDecoration(
-                  color: c.accentSoft,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border(left: BorderSide(color: c.accent, width: 4)),
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,7 +513,7 @@ class RuleScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           GoldButton(
             label: score == null
-                ? 'Упражнения · ${rule.tasks.length} задания'
+                ? '${rule.tasks.length} упражнения · 2 минуты'
                 : 'Ещё раз · лучший $score%',
             icon: Icons.edit_note_rounded,
             onPressed: () => context.push('/rules/${rule.id}/practice'),
@@ -546,4 +550,45 @@ class RuleScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The colour of a part of speech in the rules.
+Color partColor(String part) => switch (part) {
+  'verbs' => const Color(0xFF5B4BC4),
+  'nouns' => AppColors.primary,
+  _ => const Color(0xFFB3366A),
+};
+
+/// «бала → балалар» with the added ending highlighted; other forms as they
+/// are, in [tint].
+TextSpan formSpan(String form, Color tint, AppColors c) {
+  final parts = form.split(' → ');
+  if (parts.length != 2) {
+    return TextSpan(
+      text: form,
+      style: TextStyle(color: tint, fontWeight: FontWeight.w900),
+    );
+  }
+  final (base, derived) = (parts[0], parts[1]);
+  var k = 0;
+  while (k < base.length && k < derived.length && base[k] == derived[k]) {
+    k++;
+  }
+  return TextSpan(
+    children: [
+      TextSpan(
+        text: '$base → ',
+        style: TextStyle(color: c.muted),
+      ),
+      TextSpan(text: derived.substring(0, k)),
+      TextSpan(
+        text: derived.substring(k),
+        style: TextStyle(
+          color: tint,
+          fontWeight: FontWeight.w900,
+          backgroundColor: tint.withValues(alpha: .12),
+        ),
+      ),
+    ],
+  );
 }

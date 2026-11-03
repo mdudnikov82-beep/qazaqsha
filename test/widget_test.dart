@@ -211,7 +211,7 @@ void main() {
     await tester.tap(find.text('Открыть правило'));
     await settle(tester);
     expect(find.text('Правило 1 из 100'), findsOneWidget);
-    await tester.tap(find.text('Упражнения · 4 задания'));
+    await tester.tap(find.text('4 упражнения · 2 минуты'));
     final grammar = parseGrammar(
       File('assets/data/grammar.json').readAsStringSync(),
     );

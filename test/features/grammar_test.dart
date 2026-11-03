@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qazaqsha/app/theme.dart';
+import 'package:qazaqsha/features/grammar/rules_screen.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
 
 void main() {
@@ -53,5 +56,20 @@ void main() {
       wrong: ['a', 'b', 'c'],
     );
     expect(gap.solved, 'Мен барамын.');
+  });
+
+  test('a derived form highlights just the added ending', () {
+    final span = formSpan(
+      'кітап → кітаптар',
+      const Color(0xFF00789A),
+      AppColors.light,
+    );
+    final parts = [for (final c in span.children!) (c as TextSpan).text];
+    expect(parts, ['кітап → ', 'кітап', 'тар']);
+    // A form without an arrow stays whole.
+    expect(
+      formSpan('бару', const Color(0xFF00789A), AppColors.light).text,
+      'бару',
+    );
   });
 }

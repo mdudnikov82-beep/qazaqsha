@@ -97,7 +97,7 @@ class HomeScreen extends ConsumerWidget {
         ? (BarysMood.proud, 'Все задания на сегодня сделаны — керемет!')
         : daily >= s.dailyGoalXp
         ? (
-            BarysMood.proud,
+            BarysMood.resting,
             'Цель дня выполнена — на сегодня достаточно. Отдохните, '
                 'завтра продолжим.',
           )
@@ -134,6 +134,7 @@ class HomeScreen extends ConsumerWidget {
               quiet: s.quietMode,
               name: s.userName,
               mood: mood,
+              outfit: ref.watch(barysOutfitProvider),
               message: message,
               now: now,
             ),
@@ -242,6 +243,7 @@ class _Header extends StatelessWidget {
     required this.quiet,
     required this.name,
     required this.mood,
+    required this.outfit,
     required this.message,
     required this.now,
   });
@@ -252,6 +254,7 @@ class _Header extends StatelessWidget {
   final bool quiet;
   final String? name;
   final BarysMood mood;
+  final BarysOutfit outfit;
   final String message;
   final DateTime now;
 
@@ -327,7 +330,7 @@ class _Header extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Barys(mood: mood, size: 86),
+                    Barys(mood: mood, outfit: outfit, size: 86),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Container(

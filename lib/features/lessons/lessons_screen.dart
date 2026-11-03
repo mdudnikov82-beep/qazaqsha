@@ -220,8 +220,12 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
                               ? cur.at.dx - _currentSize / 2 - 58
                               : cur.at.dx + _currentSize / 2 + 4,
                           top: cur.at.dy - 56,
-                          child: const IgnorePointer(
-                            child: Barys(size: 54, animate: false),
+                          child: IgnorePointer(
+                            child: Barys(
+                              size: 54,
+                              animate: false,
+                              outfit: ref.watch(barysOutfitProvider),
+                            ),
                           ),
                         ),
                       if (selected != null) _bubble(selected, box.maxWidth),

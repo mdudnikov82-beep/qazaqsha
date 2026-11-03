@@ -2,9 +2,11 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/speech.dart';
+import '../core/widgets/barys.dart';
 import '../core/voice.dart';
 import '../features/dialogues/dialogues.dart';
 import '../features/grammar/grammar.dart';
+import '../features/lessons/sections.dart';
 
 import 'database/app_database.dart';
 import 'repositories/backup_repository.dart';
@@ -134,6 +136,17 @@ final progressMapProvider = StreamProvider<Map<int, WordProgressData>>(
 final courseProvider = StreamProvider<CourseState>(
   (ref) => ref.watch(lessonRepositoryProvider).watchCourse(),
 );
+
+/// Barys dresses for the section the learner is in now.
+final barysOutfitProvider = Provider<BarysOutfit>((ref) {
+  final next = ref.watch(courseProvider).value?.next;
+  return BarysOutfit.ofSection(switch (next) {
+    NextLesson(:final topic) => sectionOfCategory(topic.category.id)?.id,
+    NextExam(:final section) => section.section.id,
+    CourseFinished() => courseSections.last.id,
+    null => null,
+  });
+});
 
 /// Mistakes later answered right, for the «работа над ошибками» badges.
 final fixedMistakesProvider = StreamProvider<int>(

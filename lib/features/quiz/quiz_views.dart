@@ -39,6 +39,8 @@ class _Prompt extends StatelessWidget {
         const SizedBox(height: 34),
         Stack(
           clipBehavior: Clip.none,
+          // Full width: the card must not shrink to its word.
+          fit: StackFit.passthrough,
           children: [
             SurfaceCard(
               radius: 26,
@@ -158,7 +160,10 @@ class ChoiceView extends StatelessWidget {
   final int? picked;
   final ValueChanged<int> onPick;
 
-  Widget _option(BuildContext context, int i, String text) {
+  /// Every option tile has this height, whatever its word.
+  static const tileHeight = 128.0;
+
+  Widget _option(BuildContext context, int i, String text, double fontSize) {
     final c = context.colors;
     final q = question;
     final answered = picked != null;
@@ -186,8 +191,9 @@ class ChoiceView extends StatelessWidget {
         alignment: Alignment.topCenter,
         children: [
           AnimatedContainer(
+            width: double.infinity,
             duration: const Duration(milliseconds: 150),
-            constraints: const BoxConstraints(minHeight: 84),
+            height: tileHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               // A darker edge underneath makes the tile look pressable.
@@ -206,7 +212,6 @@ class ChoiceView extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(12, 10, 10, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // The option's number, or how it turned out.
                       Container(
@@ -233,15 +238,16 @@ class ChoiceView extends StatelessWidget {
                                 ),
                               ),
                       ),
-                      const SizedBox(height: 8),
+                      const Spacer(),
                       Text(
                         text,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: fg,
-                          fontSize: text.length > 14 ? 16 : 19,
+                          fontSize: fontSize,
                           fontWeight: FontWeight.w900,
+                          height: 1.15,
                         ),
                       ),
                       if (q.fromRussian) LatinLine(text, fontSize: 12),
@@ -268,6 +274,8 @@ class ChoiceView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final q = question;
+    // One size for all four, so no tile looks bigger than another.
+    final fontSize = q.options.every((o) => o.length <= 12) ? 22.0 : 18.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -286,7 +294,7 @@ class ChoiceView extends StatelessWidget {
                 if (i > row) const SizedBox(width: 12),
                 Expanded(
                   child: i < q.options.length
-                      ? _option(context, i, q.options[i])
+                      ? _option(context, i, q.options[i], fontSize)
                       : const SizedBox.shrink(),
                 ),
               ],

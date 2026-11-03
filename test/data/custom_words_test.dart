@@ -28,9 +28,9 @@ void main() {
     );
 
     final result = await custom.addWords(const [
-      ImportedWord('борсық', 'барсук'),
+      ImportedWord('қарақұйрық', 'джейран'),
       ImportedWord('рахмет', 'спасибо'), // already in the dictionary
-      ImportedWord('тиін', 'белка'),
+      ImportedWord('елік', 'косуля'),
     ]);
     expect((result.added, result.skipped), (2, 1));
 
@@ -44,22 +44,22 @@ void main() {
 
     // A repeat import adds nothing; order continues after existing words.
     final again = await custom.addWords(const [
-      ImportedWord('тиін', 'белка'),
-      ImportedWord('жираф', 'жираф'),
+      ImportedWord('елік', 'косуля'),
+      ImportedWord('тапир', 'тапир'),
     ]);
     expect((again.added, again.skipped), (1, 1));
     expect((await custom.words()).map((w) => w.kk), [
-      'борсық',
-      'тиін',
-      'жираф',
+      'қарақұйрық',
+      'елік',
+      'тапир',
     ]);
-    expect((await dictionary.search('барсу')).single.kk, 'борсық');
+    expect((await dictionary.search('джейр')).single.kk, 'қарақұйрық');
   });
 
   test('own words never enter the course ladder', () async {
-    await custom.addWords(const [ImportedWord('тиін', 'белка')]);
+    await custom.addWords(const [ImportedWord('елік', 'косуля')]);
     final course = await LessonRepository(db, dictionary).watchCourse().first;
-    expect(course.topics, hasLength(97));
+    expect(course.topics, hasLength(180));
     expect(
       course.topics.map((t) => t.category.id),
       isNot(contains(customCategoryId)),
@@ -67,7 +67,7 @@ void main() {
   });
 
   test('deleting an own word removes its progress too', () async {
-    await custom.addWords(const [ImportedWord('тиін', 'белка')]);
+    await custom.addWords(const [ImportedWord('елік', 'косуля')]);
     final word = (await custom.words()).single;
     final progress = ProgressRepository(db);
     await progress.applySession({word.id: true}, DateTime(2026, 10, 28));
@@ -90,7 +90,7 @@ void main() {
     expect(isOwnSet(work), isTrue);
     expect(isOwnSet('custom'), isTrue);
     expect(isOwnSet('family'), isFalse);
-    await custom.addWords(const [ImportedWord('тиін', 'белка')]);
+    await custom.addWords(const [ImportedWord('елік', 'косуля')]);
     final r = await custom.addWords(const [
       ImportedWord('кеңсе қызметкері', 'офисный работник'),
       ImportedWord('жоспар', 'план'), // in the dictionary

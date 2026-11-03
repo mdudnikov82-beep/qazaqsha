@@ -287,7 +287,7 @@ void main() {
     // Russian-first line on purpose: the app should flip it.
     await tester.enterText(
       find.widgetWithText(TextField, 'кітап — книга\nқалам — ручка'),
-      'тиін — белка\nбарсук — борсық\nрахмет — спасибо',
+      'елік — косуля\nджейран — қарақұйрық\nрахмет — спасибо',
     );
     await tester.pump();
     await tester.tap(find.text('Показать слова'));
@@ -295,7 +295,7 @@ void main() {
     expect(find.text('Найдено пар: 3'), findsOneWidget);
     // The Russian-first lines were flipped: Kazakh word first.
     expect(
-      find.textContaining('борсық — барсук', findRichText: true),
+      find.textContaining('қарақұйрық — джейран', findRichText: true),
       findsOneWidget,
     );
     // «рахмет» is already in the built-in dictionary: switched off.
@@ -303,10 +303,10 @@ void main() {
 
     await tester.tap(find.text('Добавить 2'));
     // The word list reloads from the database right after saving.
-    await advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
+    await advanceUntil(tester, () => find.text('елік').evaluate().isNotEmpty);
     expect(find.text('Добавлено слов: 2'), findsOneWidget);
-    expect(find.text('тиін'), findsOneWidget);
-    expect(find.text('борсық'), findsOneWidget);
+    expect(find.text('елік'), findsOneWidget);
+    expect(find.text('қарақұйрық'), findsOneWidget);
 
     await tester.tap(find.text('Тренировать'));
     await settle(tester);
@@ -318,7 +318,7 @@ void main() {
   testWidgets('a shared link becomes a new named set', (tester) async {
     final db = await startApp(tester);
     final code = encodeWords(const [
-      ImportedWord('тиін', 'белка'),
+      ImportedWord('елік', 'косуля'),
       ImportedWord('қасқыр', 'волк'), // in the dictionary already
     ], title: 'Лес');
     GoRouter.of(tester.element(find.text('Главная'))).go('/import?w=$code');
@@ -327,7 +327,7 @@ void main() {
     expect(find.text('«Лес»'), findsOneWidget);
     expect(find.text('Название набора'), findsOneWidget);
     await tester.tap(find.text('Добавить 1'));
-    await advanceUntil(tester, () => find.text('тиін').evaluate().isNotEmpty);
+    await advanceUntil(tester, () => find.text('елік').evaluate().isNotEmpty);
     expect(find.text('Лес'), findsWidgets); // the set's screen
     final sets = await tester.runAsync(() => db.select(db.categories).get());
     expect(sets!.where((c) => c.titleRu == 'Лес'), hasLength(1));

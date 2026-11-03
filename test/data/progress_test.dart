@@ -104,6 +104,14 @@ void main() {
       11,
       11,
       11,
+      11,
+      11,
+      10,
+      9,
+      11,
+      13,
+      10,
+      8,
     ]);
     expect(course.next, isA<NextLesson>());
 

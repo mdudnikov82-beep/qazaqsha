@@ -6,6 +6,8 @@ import '../../app/theme.dart';
 import '../../core/dates.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/barys.dart';
+import '../../core/widgets/bead_progress.dart';
+import '../../core/widgets/speak_button.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/ornament.dart';
 import '../../core/widgets/confetti.dart';
@@ -445,6 +447,34 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
   // --- UI ----------------------------------------------------------------
 
+  /// The section colour of this session and a line saying what it is:
+  /// «Наследие степи · Юрта · урок 2».
+  (Color, String) _whereAmI(AppColors c) {
+    if (widget.isExam) {
+      final section = sectionById(widget.sectionId!);
+      return (section?.color ?? c.brand, 'Экзамен · ${section?.title ?? ''}');
+    }
+    if (widget.isLesson) {
+      final section = sectionOfCategory(widget.categoryId!);
+      final topic = ref
+          .watch(categoriesProvider)
+          .value
+          ?.where((t) => t.category.id == widget.categoryId)
+          .firstOrNull
+          ?.category
+          .titleRu;
+      return (
+        section?.color ?? c.brand,
+        [
+          ?section?.title,
+          ?topic,
+          'урок ${widget.lessonIndex! + 1}',
+        ].join(' · '),
+      );
+    }
+    return (c.brand, widget.isCustom ? 'Свои слова' : 'Повторение');
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = _session;
@@ -462,6 +492,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
     final c = context.colors;
     final q = s.current;
+    final (accent, where) = _whereAmI(c);
+    final motion = !reduceMotion(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -477,17 +509,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(end: s.progress),
-                      duration: reduceMotion(context)
-                          ? Duration.zero
-                          : const Duration(milliseconds: 450),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, v, _) => ProgressBar(
-                        value: v,
-                        height: 14,
-                        semanticsLabel: 'Прогресс урока',
-                      ),
+                    child: BeadProgress(
+                      done: s.position,
+                      total: s.length,
+                      color: accent,
+                      semanticsLabel: 'Прогресс урока',
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -515,41 +541,76 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  where.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: accent == c.brand ? c.accent : accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+              ),
+            ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-                child: switch (q) {
-                  IntroCard(:final word) => IntroView(word: word),
-                  ChoiceQuestion() => ChoiceView(
-                    question: q,
-                    xp: s.lastXp,
-                    picked: _picked,
-                    onPick: _pick,
-                  ),
-                  TypeQuestion() => TypeView(
-                    question: q,
-                    controller: _typed,
-                    verdict: _verdict,
-                    onSubmit: _checkTyped,
-                  ),
-                  MatchQuestion() => MatchView(
-                    key: ObjectKey(q),
-                    question: q,
-                    onComplete: _matched,
-                  ),
-                  SentenceQuestion() => SentenceView(
-                    question: q,
-                    built: _built,
-                    locked: _feedback != _Feedback.none,
-                    reaction: switch (_feedback) {
-                      _Feedback.none => Reaction.none,
-                      _Feedback.right => Reaction.pop,
-                      _ => Reaction.shake,
-                    },
-                    onAdd: (i) => setState(() => _built.add(i)),
-                    onRemove: (pos) => setState(() => _built.removeAt(pos)),
-                  ),
-                },
+              // The next task slides in from the right.
+              child: AnimatedSwitcher(
+                duration: motion
+                    ? const Duration(milliseconds: 280)
+                    : Duration.zero,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) => SlideTransition(
+                  position: Tween(
+                    begin: const Offset(.25, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                layoutBuilder: (current, previous) =>
+                    current ?? const SizedBox.shrink(),
+                child: SingleChildScrollView(
+                  key: ValueKey(s.position),
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                  child: switch (q) {
+                    IntroCard(:final word) => IntroView(word: word),
+                    ChoiceQuestion() => ChoiceView(
+                      question: q,
+                      xp: s.lastXp,
+                      picked: _picked,
+                      onPick: _pick,
+                    ),
+                    TypeQuestion() => TypeView(
+                      question: q,
+                      controller: _typed,
+                      verdict: _verdict,
+                      onSubmit: _checkTyped,
+                    ),
+                    MatchQuestion() => MatchView(
+                      key: ObjectKey(q),
+                      question: q,
+                      onComplete: _matched,
+                    ),
+                    SentenceQuestion() => SentenceView(
+                      question: q,
+                      built: _built,
+                      locked: _feedback != _Feedback.none,
+                      reaction: switch (_feedback) {
+                        _Feedback.none => Reaction.none,
+                        _Feedback.right => Reaction.pop,
+                        _ => Reaction.shake,
+                      },
+                      onAdd: (i) => setState(() => _built.add(i)),
+                      onRemove: (pos) => setState(() => _built.removeAt(pos)),
+                    ),
+                  },
+                ),
               ),
             ),
             _BottomPanel(
@@ -597,6 +658,13 @@ class _BottomPanel extends ConsumerWidget {
   final VoidCallback onNext;
   final bool retriesMistakes;
   final int combo;
+
+  /// The Kazakh answer to play back, if there is one.
+  String? get _spoken => switch (question) {
+    ChoiceQuestion(:final word) || TypeQuestion(:final word) => word.kk,
+    SentenceQuestion(:final sentence) => sentence.kk,
+    _ => null,
+  };
 
   String get _answer => switch (question) {
     ChoiceQuestion(:final answer, :final word, :final fromRussian) =>
@@ -659,7 +727,7 @@ class _BottomPanel extends ConsumerWidget {
             : 'Правильно: $_answer.',
       ),
     };
-    final fg = right ? c.okText : c.badText;
+    final fg = right ? c.okText : c.goldText;
     // Kazakh praise for a run of right answers.
     final praise = !right || combo < 3
         ? null
@@ -672,19 +740,28 @@ class _BottomPanel extends ConsumerWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: right ? c.okSoft : c.badSoft,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: right ? c.okSoft : c.goldSoft,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                Icon(
-                  right ? Icons.check_circle_rounded : Icons.info_rounded,
-                  color: fg,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: right ? AppColors.okButton : AppColors.tryButton,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    right ? Icons.check_rounded : Icons.lightbulb_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     title,
@@ -719,6 +796,31 @@ class _BottomPanel extends ConsumerWidget {
                 style: TextStyle(color: fg, fontWeight: FontWeight.w700),
               ),
             ],
+            if (!right && q is SentenceQuestion) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  'В казахском глагол обычно стоит в конце предложения.',
+                  style: TextStyle(color: c.ink, fontSize: 14, height: 1.35),
+                ),
+              ),
+            ],
+            if (!right && retriesMistakes && q is! MatchQuestion && !quiet) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Исправите в конце — получите +$fixedMistakeXp XP',
+                style: TextStyle(
+                  color: fg,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
             if (praise != null) ...[
               const SizedBox(height: 6),
               Row(
@@ -737,15 +839,31 @@ class _BottomPanel extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 14),
-            FilledButton(
-              autofocus: true,
-              style: FilledButton.styleFrom(
-                backgroundColor: right
-                    ? AppColors.okButton
-                    : AppColors.badButton,
-              ),
-              onPressed: onNext,
-              child: Text(right ? 'Далее' : 'Понятно'),
+            Row(
+              children: [
+                if (_spoken case final kk?) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: SpeakButton(kk, size: 28, color: fg),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: FilledButton(
+                    autofocus: true,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: right
+                          ? AppColors.okButton
+                          : AppColors.tryButton,
+                    ),
+                    onPressed: onNext,
+                    child: Text(right ? 'Далее' : 'Понятно'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -38,6 +38,9 @@ class AppColors extends ThemeExtension<AppColors> {
   static const okButton = Color(0xFF1B7F4E);
   static const badButton = Color(0xFFB3261E);
 
+  /// «Not yet» after a wrong answer: warm amber, not alarm red.
+  static const tryButton = Color(0xFF9A5B00);
+
   final Color bg;
   final Color surface;
   final Color ink;

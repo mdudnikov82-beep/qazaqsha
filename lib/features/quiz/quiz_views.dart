@@ -5,6 +5,7 @@ import '../../data/providers.dart';
 import '../../app/theme.dart';
 import '../../core/kazakh_letters.dart';
 import '../../core/motion.dart';
+import '../../core/widgets/barys.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/latin_line.dart';
 import '../../core/widgets/speak_button.dart';
@@ -35,31 +36,46 @@ class _Prompt extends StatelessWidget {
           task,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 20),
-        SurfaceCard(
-          radius: 22,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: c.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+        const SizedBox(height: 34),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            SurfaceCard(
+              radius: 26,
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 70),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: c.muted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    text,
+                    key: promptKey,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                text,
-                key: promptKey,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                ),
+            ),
+            const Positioned(
+              right: 8,
+              top: -30,
+              child: ExcludeSemantics(
+                child: Barys(mood: BarysMood.thinking, size: 72),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -156,9 +172,9 @@ class ChoiceView extends StatelessWidget {
       if (gotIt) reaction = Reaction.pop;
     } else if (answered && i == picked) {
       (bg, border, fg, icon) = (
-        c.badSoft,
-        c.bad,
-        c.badText,
+        c.goldSoft,
+        AppColors.tryButton,
+        c.goldText,
         Icons.close_rounded,
       );
       reaction = Reaction.shake;
@@ -171,7 +187,7 @@ class ChoiceView extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            height: 72,
+            constraints: const BoxConstraints(minHeight: 84),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               // A darker edge underneath makes the tile look pressable.
@@ -187,27 +203,48 @@ class ChoiceView extends StatelessWidget {
               child: InkWell(
                 onTap: answered ? null : () => onPick(i),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (icon != null) ...[
-                        Icon(icon, color: fg, size: 20),
-                        const SizedBox(width: 6),
-                      ],
-                      Flexible(
-                        child: Text(
-                          text,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: fg,
-                            fontSize: text.length > 14 ? 16 : 20,
-                            fontWeight: FontWeight.w800,
-                          ),
+                      // The option's number, or how it turned out.
+                      Container(
+                        width: 26,
+                        height: 26,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: icon != null ? border : null,
+                          border: icon != null
+                              ? null
+                              : Border.all(color: c.line, width: 2),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: icon != null
+                            ? Icon(icon, color: Colors.white, size: 17)
+                            : ExcludeSemantics(
+                                child: Text(
+                                  '${i + 1}',
+                                  style: TextStyle(
+                                    color: c.muted,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        text,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: fg,
+                          fontSize: text.length > 14 ? 16 : 19,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
+                      if (q.fromRussian) LatinLine(text, fontSize: 12),
                     ],
                   ),
                 ),

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/dates.dart';
-import '../../core/widgets/common.dart';
 import '../../core/widgets/latin_line.dart';
 import '../../core/widgets/speak_button.dart';
 import '../../data/database/app_database.dart';
@@ -12,10 +11,10 @@ import '../../data/providers.dart';
 import '../../data/repositories/custom_words_repository.dart';
 import '../custom_words/import_screen.dart' show EditedPair, PairDialog;
 import '../custom_words/word_import.dart';
-import '../../data/repositories/progress_repository.dart';
 import '../gamification/progress_rules.dart';
 import '../lessons/sections.dart';
 import '../quiz/quiz_engine.dart';
+import '../quiz/srs.dart';
 
 /// The word card: translation, topic and lesson, an example sentence,
 /// how it is going, and actions.
@@ -110,9 +109,10 @@ class _WordSheet extends ConsumerWidget {
                       Text(
                         word.kk,
                         style: const TextStyle(
-                          fontSize: 34,
+                          fontSize: 40,
                           fontWeight: FontWeight.w900,
-                          height: 1.15,
+                          letterSpacing: -.6,
+                          height: 1.1,
                         ),
                       ),
                       LatinLine(word.kk, fontSize: 18),
@@ -124,7 +124,6 @@ class _WordSheet extends ConsumerWidget {
                     ],
                   ),
                 ),
-                SpeakButton(word.kk, size: 30),
                 IconButton.filledTonal(
                   tooltip: fav ? 'Убрать из избранного' : 'В избранное',
                   onPressed: () => ref
@@ -141,6 +140,8 @@ class _WordSheet extends ConsumerWidget {
               const SizedBox(height: 10),
               Text(note, style: const TextStyle(fontSize: 15)),
             ],
+            const SizedBox(height: 14),
+            ListenButton(word.kk),
             const SizedBox(height: 14),
             Wrap(
               spacing: 8,
@@ -179,8 +180,8 @@ class _WordSheet extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      example.kk,
+                    Text.rich(
+                      _highlight(example.kk, word.kk, c.goldSoft),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -193,20 +194,41 @@ class _WordSheet extends ConsumerWidget {
             ],
             if (p != null && p.status != LearningStatus.fresh) ...[
               const SizedBox(height: 16),
-              Row(
+              _MemorySteps(
+                box: p.box,
+                correct: p.correctCount,
+                next: switch (p.nextReviewAt) {
+                  final next? => _when(next, now),
+                  null => null,
+                },
+              ),
+            ],
+            if (!isCustom && topicWords.length > 1) ...[
+              const SizedBox(height: 16),
+              Text(
+                'ИЗ ТОЙ ЖЕ ТЕМЫ',
+                style: TextStyle(
+                  color: c.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .6,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  _Fact('${p.correctCount}', 'верно', c.okText),
-                  _Fact('${p.wrongCount}', 'ошибок', c.badText),
-                  _Fact('${accuracyOf(p)}%', 'точность', c.accent),
+                  for (final w in _neighbours(topicWords, index))
+                    ActionChip(
+                      label: Text('${w.kk} · ${w.ru}'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        showWordSheet(parent, w);
+                      },
+                    ),
                 ],
               ),
-              if (p.nextReviewAt case final next?) ...[
-                const SizedBox(height: 10),
-                Text(
-                  'Следующее повторение: ${_when(next, now)}',
-                  style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
-                ),
-              ],
             ],
             const SizedBox(height: 18),
             OutlinedButton.icon(
@@ -276,6 +298,45 @@ class _WordSheet extends ConsumerWidget {
     }
   }
 
+  /// Up to three words next to [index] in its topic.
+  static List<Word> _neighbours(List<Word> topic, int index) {
+    final start = (index - 1).clamp(
+      0,
+      (topic.length - 4).clamp(0, topic.length),
+    );
+    return [
+      for (final (i, w) in topic.indexed)
+        if (i >= start && i != index) w,
+    ].take(3).toList();
+  }
+
+  /// [text] with the word [kk] (with any ending) on a highlight.
+  static TextSpan _highlight(String text, String kk, Color mark) {
+    final stem = kk.toLowerCase().replaceAll(RegExp(r'[?!.…]'), '').trim();
+    final spans = <InlineSpan>[];
+    var marked = false;
+    for (final m in RegExp(
+      r'[^\s,.!?—–:;«»"]+|[\s,.!?—–:;«»"]+',
+    ).allMatches(text)) {
+      final t = m[0]!;
+      final hit =
+          !marked &&
+          stem.isNotEmpty &&
+          !stem.contains(' ') &&
+          (stem.length >= 3
+              ? t.toLowerCase().startsWith(stem)
+              : t.toLowerCase() == stem);
+      marked |= hit;
+      spans.add(
+        TextSpan(
+          text: t,
+          style: hit ? TextStyle(backgroundColor: mark) : null,
+        ),
+      );
+    }
+    return TextSpan(children: spans);
+  }
+
   static String _when(DateTime next, DateTime now) {
     final days = daysBetween(now, next);
     if (days <= 0) return 'сегодня';
@@ -324,38 +385,80 @@ class _Chip extends StatelessWidget {
   );
 }
 
-class _Fact extends StatelessWidget {
-  const _Fact(this.value, this.label, this.color);
+/// Five steps of memory (spaced-repetition boxes), filled as a word is
+/// remembered for longer.
+class _MemorySteps extends StatelessWidget {
+  const _MemorySteps({required this.box, required this.correct, this.next});
 
-  final String value;
-  final String label;
-  final Color color;
+  final int box;
+  final int correct;
+  final String? next;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: SurfaceCard(
-        color: context.colors.bg,
-        radius: 14,
-        padding: const EdgeInsets.symmetric(vertical: 10),
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final steps = reviewIntervals.length - 1;
+    return Semantics(
+      label: 'Память: ступень ${box.clamp(0, steps)} из $steps',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.bg,
+          borderRadius: BorderRadius.circular(18),
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Память',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                  ),
+                ),
+                if (next != null)
+                  Text(
+                    'повторим $next',
+                    style: TextStyle(
+                      color: c.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+              ],
             ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                for (var i = 0; i < steps; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: Container(
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: i < box ? c.ok : c.line,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
             Text(
-              label,
-              style: TextStyle(color: context.colors.muted, fontSize: 12),
+              'Ступень ${box.clamp(0, steps)} из $steps · верно $correct '
+              '${plural(correct, 'раз', 'раза', 'раз')}',
+              style: TextStyle(
+                color: c.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }

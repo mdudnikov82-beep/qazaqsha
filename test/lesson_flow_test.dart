@@ -166,7 +166,8 @@ void main() {
               text != right &&
               text != missed &&
               text != 'по-русски' &&
-              text != 'по-казахски',
+              text != 'по-казахски' &&
+              int.tryParse(text) == null, // the options' numbers
         );
     await tester.tap(find.text(wrongOption));
     await settle(tester);

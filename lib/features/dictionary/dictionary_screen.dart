@@ -121,22 +121,59 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                   icon: const Icon(Icons.playlist_add_rounded),
                 ),
               ],
-              bottom: TextField(
-                controller: _search,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  hintText: 'По-русски или қазақша',
-                  filled: true,
-                  fillColor: context.colors.surface,
-                  suffixIcon: _search.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Очистить',
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: _search.clear,
+              bottom: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _search,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      hintText: 'По-русски или қазақша',
+                      filled: true,
+                      fillColor: context.colors.surface,
+                      suffixIcon: _search.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Очистить',
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: _search.clear,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      for (final l in 'әғқңөұүһі'.split(''))
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Material(
+                              color: Colors.white.withValues(alpha: .16),
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () => _type(l),
+                                child: SizedBox(
+                                  height: 38,
+                                  child: Center(
+                                    child: Text(
+                                      l,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                ),
+                    ],
+                  ),
+                ],
               ),
             ),
             if (q.isEmpty)
@@ -166,6 +203,18 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Puts a Kazakh letter at the cursor of the search field.
+  void _type(String letter) {
+    final v = _search.value;
+    final sel = v.selection.isValid
+        ? v.selection
+        : TextSelection.collapsed(offset: v.text.length);
+    _search.value = TextEditingValue(
+      text: v.text.replaceRange(sel.start, sel.end, letter),
+      selection: TextSelection.collapsed(offset: sel.start + letter.length),
     );
   }
 
@@ -392,14 +441,16 @@ class _Topics extends ConsumerWidget {
         if (isOwnSet(x.category.id)) x,
     ];
 
-    Widget grid(List<CategoryWithCount> list, Color color) => GridView.count(
-      crossAxisCount: 2,
+    Widget grid(List<CategoryWithCount> list, Color color) => GridView(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        mainAxisExtent: 128,
+      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.5,
       children: [
         for (final x in list)
           _TopicTile(
@@ -416,36 +467,58 @@ class _Topics extends ConsumerWidget {
         WordOfDayCard(word: today, onTap: () => showWordSheet(context, today)),
         for (final (i, s) in courseSections.indexed) ...[
           const SizedBox(height: 22),
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: s.color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'РАЗДЕЛ ${i + 1} · ${s.titleKk.toUpperCase()}',
-                  style: TextStyle(
-                    color: c.muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+          Semantics(
+            header: true,
+            label: 'Раздел ${i + 1}: ${s.title}',
+            excludeSemantics: true,
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: s.color,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    '${i + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    s.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    s.titleKk,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: c.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            s.title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           grid([for (final id in s.categoryIds) ?byId[id]], s.color),
         ],
         const SizedBox(height: 22),
@@ -515,45 +588,37 @@ class _TopicTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    categoryIcon(cat.icon),
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const Spacer(),
-                SizedBox.square(
-                  dimension: 30,
-                  child: CircularProgressIndicator(
-                    value: total == 0 ? 0 : learned / total,
-                    strokeWidth: 4,
-                    color: color,
-                    backgroundColor: c.track,
-                  ),
-                ),
-              ],
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(categoryIcon(cat.icon), color: color, size: 22),
             ),
             const Spacer(),
             Text(
-              cat.titleKk,
+              cat.titleRu,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
             ),
             Text(
-              '${cat.titleRu} · $total',
+              '${cat.titleKk} · $learned из $total',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: c.muted, fontSize: 13),
+              style: TextStyle(
+                color: c.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ProgressBar(
+              value: total == 0 ? 0 : learned / total,
+              height: 6,
+              color: color,
             ),
           ],
         ),

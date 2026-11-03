@@ -131,7 +131,14 @@ void main() {
     await tester.tap(find.text('Словарь'));
     await settle(tester);
     expect(find.text('КҮННІҢ СӨЗІ · СЛОВО ДНЯ'), findsOneWidget);
-    expect(find.text('РАЗДЕЛ 1 · НЕГІЗДЕР'), findsOneWidget);
+    expect(find.text('Негіздер'), findsOneWidget);
+    // The letter buttons type Kazakh letters into the search.
+    await tester.tap(find.text('қ'));
+    await settle(tester);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'қ',
+    );
 
     await tester.enterText(find.byType(TextField), 'волк');
     await settle(tester);

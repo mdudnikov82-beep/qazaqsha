@@ -89,18 +89,26 @@ class _BeadPainter extends CustomPainter {
           canvas.drawCircle(o, r, fill..color = color);
         } else if (i != current) {
           canvas.drawCircle(o, r - 1, fill..color = surface);
-          canvas.drawCircle(o, r - 1, ring
-            ..color = track
-            ..strokeWidth = 2.5);
+          canvas.drawCircle(
+            o,
+            r - 1,
+            ring
+              ..color = track
+              ..strokeWidth = 2.5,
+          );
         }
       }
     }
     if (done < total) {
       final o = Offset(at, y);
       canvas.drawCircle(o, r + 2, fill..color = surface);
-      canvas.drawCircle(o, r + 2, ring
-        ..color = AppColors.gold
-        ..strokeWidth = 3.5);
+      canvas.drawCircle(
+        o,
+        r + 2,
+        ring
+          ..color = AppColors.gold
+          ..strokeWidth = 3.5,
+      );
     }
   }
 

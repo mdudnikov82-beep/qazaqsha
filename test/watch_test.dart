@@ -69,6 +69,9 @@ void main() {
     expect(offset(), 0);
 
     final words = (await tester.runAsync(() => db.select(db.words).get()))!;
+    // A long word of the day can push the button below the round edge.
+    await tester.ensureVisible(find.text('Тренировка'));
+    await tester.pump();
     await tester.tap(find.text('Тренировка'));
     await advanceUntil(tester, () => find.text('1 / 5').evaluate().isNotEmpty);
 

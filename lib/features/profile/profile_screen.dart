@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/dates.dart';
+import '../../core/motion.dart';
 import '../../core/speech.dart';
 import '../../core/voice.dart';
 import '../../core/reminders.dart';
+import '../../core/widgets/barys.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/ornament.dart';
 import '../../data/database/app_database.dart';
@@ -48,9 +50,8 @@ class ProfileScreen extends ConsumerWidget {
       fixedMistakes: ref.watch(fixedMistakesProvider).value ?? 0,
       examsPassed: examsPassed,
     );
-    final accuracy = s.answersTotal == 0
-        ? '—'
-        : '${(100 * s.answersCorrect / s.answersTotal).round()}%';
+    final c = context.colors;
+    final lessonsDone = ref.watch(courseProvider).value?.lessonsDone ?? 0;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -68,22 +69,46 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     _StatsGrid(
                       tiles: [
+                        if (!s.quietMode) ...[
+                          (
+                            Icons.local_fire_department_rounded,
+                            c.flame,
+                            '$streak',
+                            'дней подряд',
+                          ),
+                          (
+                            Icons.emoji_events_rounded,
+                            c.goldText,
+                            '${s.bestStreak}',
+                            'лучшая серия',
+                          ),
+                        ],
                         (
-                          Icons.local_fire_department_rounded,
-                          '$streak',
-                          'дней подряд',
+                          Icons.menu_book_rounded,
+                          c.accent,
+                          '$learned',
+                          'слов выучено',
                         ),
                         (
-                          Icons.emoji_events_rounded,
-                          '${s.bestStreak}',
-                          'лучшая серия',
+                          Icons.auto_fix_high_rounded,
+                          c.okText,
+                          '${facts.fixedMistakes}',
+                          'исправлено',
                         ),
-                        (Icons.menu_book_rounded, '$learned', 'слов выучено'),
-                        (
-                          Icons.track_changes_rounded,
-                          accuracy,
-                          'правильных ответов',
-                        ),
+                        if (s.quietMode) ...[
+                          (
+                            Icons.school_rounded,
+                            c.sky,
+                            '$lessonsDone',
+                            'уроков пройдено',
+                          ),
+                          (
+                            Icons.timer_rounded,
+                            c.goldText,
+                            formatStudyTime(s.studySeconds),
+                            'время занятий',
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -172,25 +197,15 @@ class _Header extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        color: AppColors.gold,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          width: 3,
-                        ),
-                      ),
-                      alignment: Alignment.center,
+                    _LevelAvatar(
+                      level: level,
                       child: Text(
                         name == null
                             ? 'Ә'
                             : name.characters.first.toUpperCase(),
                         style: const TextStyle(
                           color: AppColors.onGold,
-                          fontSize: 32,
+                          fontSize: 30,
                           fontWeight: FontWeight.w900,
                           height: 1,
                         ),
@@ -249,9 +264,14 @@ class _Header extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    Barys(
+                      mood: BarysMood.hello,
+                      outfit: ref.watch(barysOutfitProvider),
+                      size: 72,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
@@ -272,13 +292,6 @@ class _Header extends ConsumerWidget {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                ProgressBar(
-                  value: level.fraction,
-                  color: AppColors.gold,
-                  trackColor: Colors.white.withValues(alpha: 0.2),
-                  semanticsLabel: 'До уровня ${level.level + 1}',
                 ),
               ],
             ),
@@ -309,20 +322,79 @@ class _Header extends ConsumerWidget {
   }
 }
 
+/// The avatar inside a gold ring that fills up towards the next level.
+class _LevelAvatar extends StatelessWidget {
+  const _LevelAvatar({required this.level, required this.child});
+
+  final LevelProgress level;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: 78,
+    child: Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Positioned.fill(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: level.fraction),
+            duration: reduceMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => CircularProgressIndicator(
+              value: v,
+              semanticsLabel: 'До уровня ${level.level + 1}',
+              strokeWidth: 5,
+              strokeCap: StrokeCap.round,
+              color: AppColors.gold,
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+            ),
+          ),
+        ),
+        Container(
+          width: 62,
+          height: 62,
+          decoration: const BoxDecoration(
+            color: AppColors.gold,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: child,
+        ),
+        Positioned(
+          right: -4,
+          bottom: -2,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${level.level}',
+              style: TextStyle(
+                color: context.colors.brand,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _StatsGrid extends StatelessWidget {
   const _StatsGrid({required this.tiles});
 
-  final List<(IconData, String, String)> tiles;
+  final List<(IconData, Color, String, String)> tiles;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final colors = [
-      (c.flame, c.goldSoft),
-      (c.goldText, c.goldSoft),
-      (c.accent, c.accentSoft),
-      (c.okText, c.okSoft),
-    ];
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -332,7 +404,7 @@ class _StatsGrid extends StatelessWidget {
       crossAxisSpacing: 10,
       childAspectRatio: 2.2,
       children: [
-        for (final (i, (icon, value, label)) in tiles.indexed)
+        for (final (icon, color, value, label) in tiles)
           Semantics(
             label: '$label: $value',
             excludeSemantics: true,
@@ -341,15 +413,7 @@ class _StatsGrid extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: colors[i].$2,
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Icon(icon, color: colors[i].$1, size: 22),
-                  ),
+                  TintIcon(icon, color: color, size: 40),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -518,9 +582,9 @@ class _Badge extends StatelessWidget {
                     : null,
               ),
               child: Icon(
-                unlocked ? achievement.icon : Icons.lock_rounded,
+                achievement.icon,
                 color: unlocked ? c.goldText : c.lockIcon,
-                size: unlocked ? 30 : 24,
+                size: 30,
               ),
             ),
             const SizedBox(height: 6),
@@ -710,7 +774,7 @@ class _Settings extends ConsumerWidget {
           ),
           Divider(color: c.line, height: 16),
           ListTile(
-            leading: Icon(Icons.record_voice_over_rounded, color: c.accent),
+            leading: TintIcon(Icons.record_voice_over_rounded, color: c.okText),
             title: const Text('Озвучка', style: label),
             subtitle: Text(
               '${switch (ref.watch(recordedVoiceProvider).value?.length ?? 0) {
@@ -734,7 +798,7 @@ class _Settings extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: Icon(Icons.abc_rounded, color: c.accent),
+            leading: TintIcon(Icons.abc_rounded, color: c.sky),
             title: const Text('Латиница', style: label),
             subtitle: Text(
               stats.showLatin
@@ -745,7 +809,10 @@ class _Settings extends ConsumerWidget {
             onTap: () => context.push('/latin'),
           ),
           SwitchListTile(
-            secondary: Icon(Icons.self_improvement_rounded, color: c.accent),
+            secondary: TintIcon(
+              Icons.self_improvement_rounded,
+              color: c.goldText,
+            ),
             title: const Text('Тихий режим', style: label),
             subtitle: const Text(
               'Без серии, очков и недельной цели — просто учёба в своём темпе. '
@@ -755,7 +822,7 @@ class _Settings extends ConsumerWidget {
             onChanged: repo.setQuietMode,
           ),
           SwitchListTile(
-            secondary: Icon(Icons.vibration_rounded, color: c.accent),
+            secondary: TintIcon(Icons.vibration_rounded, color: c.accent),
             title: const Text('Вибрация', style: label),
             subtitle: const Text('При ответах в упражнениях'),
             value: stats.hapticsEnabled,
@@ -763,9 +830,9 @@ class _Settings extends ConsumerWidget {
           ),
           if (Reminders.supported) ...[
             SwitchListTile(
-              secondary: Icon(
+              secondary: TintIcon(
                 Icons.notifications_active_rounded,
-                color: c.accent,
+                color: c.flame,
               ),
               title: const Text('Напоминание', style: label),
               subtitle: Text(
@@ -780,7 +847,7 @@ class _Settings extends ConsumerWidget {
             ),
             if (stats.reminderEnabled)
               ListTile(
-                leading: Icon(Icons.schedule_rounded, color: c.accent),
+                leading: TintIcon(Icons.schedule_rounded, color: c.flame),
                 title: const Text('Время напоминания', style: label),
                 trailing: Text(
                   clock(stats.reminderMinutes),
@@ -849,7 +916,7 @@ class _DataCard extends ConsumerWidget {
       child: Column(
         children: [
           ListTile(
-            leading: Icon(Icons.cloud_upload_rounded, color: c.accent),
+            leading: TintIcon(Icons.cloud_upload_rounded, color: c.accent),
             title: const Text('Сохранить прогресс', style: label),
             subtitle: const Text(
               'Скопировать код, чтобы перенести на другой телефон или в веб-версию',
@@ -857,13 +924,13 @@ class _DataCard extends ConsumerWidget {
             onTap: () => _export(context, ref),
           ),
           ListTile(
-            leading: Icon(Icons.cloud_download_rounded, color: c.accent),
+            leading: TintIcon(Icons.cloud_download_rounded, color: c.accent),
             title: const Text('Восстановить из кода', style: label),
             subtitle: const Text('Вставить сохранённый код'),
             onTap: () => _import(context, ref),
           ),
           ListTile(
-            leading: Icon(Icons.restart_alt_rounded, color: c.bad),
+            leading: TintIcon(Icons.restart_alt_rounded, color: c.bad),
             title: Text(
               'Сбросить прогресс',
               style: label.copyWith(color: c.bad),

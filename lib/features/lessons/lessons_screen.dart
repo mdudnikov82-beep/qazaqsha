@@ -22,7 +22,7 @@ const _stepSize = 60.0;
 const _currentSize = 76.0;
 const _bannerHeight = 88.0;
 const _examSize = 72.0;
-const _bubbleWidth = 190.0;
+const _bubbleWidth = 214.0;
 
 enum _StepState { done, current, locked }
 
@@ -122,8 +122,36 @@ class LessonsScreen extends ConsumerStatefulWidget {
 
 class _LessonsScreenState extends ConsumerState<LessonsScreen> {
   final _currentKey = GlobalKey();
+  final _sectionKeys = <String, GlobalKey>{};
   String? _selected;
   bool _scrolled = false;
+
+  /// The current step is scrolled out of view: offer a way back.
+  bool _away = false;
+
+  GlobalKey _sectionKey(String id) => _sectionKeys[id] ??= GlobalKey();
+
+  void _jumpTo(GlobalKey key, {double alignment = 0.4}) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: alignment,
+      duration: reduceMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  bool _onScroll(ScrollNotification n) {
+    final box = _currentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return false;
+    final y = box.localToGlobal(Offset.zero).dy;
+    final away = y < 0 || y > MediaQuery.sizeOf(context).height - 80;
+    if (away != _away) setState(() => _away = away);
+    return false;
+  }
 
   /// Brings the current step into view once, when the ladder first shows.
   void _scrollToCurrentOnce() {
@@ -143,7 +171,20 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
       return LoadingScaffold(error: course.error ?? stats.error);
     }
 
+    final quiet = stats.value!.quietMode;
     return Scaffold(
+      floatingActionButton: _away
+          ? FloatingActionButton.extended(
+              onPressed: () => _jumpTo(_currentKey),
+              backgroundColor: AppColors.gold,
+              foregroundColor: AppColors.onGold,
+              icon: const Icon(Icons.my_location_rounded),
+              label: const Text(
+                'К уроку',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            )
+          : null,
       appBar: AppBar(
         title: const Text('Жол картасы'),
         actions: [
@@ -155,86 +196,99 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _LevelCard(xp: stats.value!.xp),
-            const SizedBox(height: 18),
-            LayoutBuilder(
-              builder: (context, box) {
-                final ladder = _Ladder.build(course.value!, box.maxWidth);
-                _scrollToCurrentOnce();
-                final selected =
-                    ladder.steps.where((s) => s.key == _selected).firstOrNull ??
-                    ladder.current;
-                return SizedBox(
-                  height: ladder.height,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _LandscapePainter(
-                            ladder.zones,
-                            ground: context.colors.bg,
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _TrackPainter(
-                            ladder.tracks,
-                            dotColor: context.colors.line,
-                          ),
-                        ),
-                      ),
-                      for (final (s, top) in ladder.banners)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          top: top,
-                          height: _bannerHeight,
-                          child: _SectionBanner(section: s),
-                        ),
-                      for (final step in ladder.steps)
-                        if (step.index == 0) _topicChip(step, box.maxWidth),
-                      for (final step in ladder.steps)
-                        Positioned(
-                          left: step.at.dx - _sizeOf(step) / 2,
-                          top: step.at.dy - _sizeOf(step) / 2,
-                          child: _StepNode(
-                            key: step.state == _StepState.current
-                                ? _currentKey
-                                : null,
-                            step: step,
-                            onTap: () => _tapStep(step),
-                          ),
-                        ),
-                      for (final (s, at, current) in ladder.exams)
-                        _examNode(s, at, current, box.maxWidth),
-                      if (ladder.current case final cur?)
-                        Positioned(
-                          left: cur.at.dx > box.maxWidth / 2
-                              ? cur.at.dx - _currentSize / 2 - 58
-                              : cur.at.dx + _currentSize / 2 + 4,
-                          top: cur.at.dy - 56,
-                          child: IgnorePointer(
-                            child: Barys(
-                              size: 54,
-                              animate: false,
-                              outfit: ref.watch(barysOutfitProvider),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScroll,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _CourseCard(
+                course: course.value!,
+                xp: stats.value!.xp,
+                onSection: (id) => _jumpTo(_sectionKey(id), alignment: 0.05),
+              ),
+              const SizedBox(height: 18),
+              LayoutBuilder(
+                builder: (context, box) {
+                  final ladder = _Ladder.build(course.value!, box.maxWidth);
+                  _scrollToCurrentOnce();
+                  final selected =
+                      ladder.steps
+                          .where((s) => s.key == _selected)
+                          .firstOrNull ??
+                      ladder.current;
+                  return SizedBox(
+                    height: ladder.height,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _LandscapePainter(
+                              ladder.zones,
+                              ground: context.colors.bg,
                             ),
                           ),
                         ),
-                      if (selected != null) _bubble(selected, box.maxWidth),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _TrackPainter(
+                              ladder.tracks,
+                              dotColor: context.colors.line,
+                            ),
+                          ),
+                        ),
+                        for (final (s, top) in ladder.banners)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: top,
+                            height: _bannerHeight,
+                            child: _SectionBanner(
+                              key: _sectionKey(s.section.id),
+                              section: s,
+                            ),
+                          ),
+                        for (final step in ladder.steps)
+                          if (step.index == 0) _topicChip(step, box.maxWidth),
+                        for (final step in ladder.steps)
+                          Positioned(
+                            left: step.at.dx - _sizeOf(step) / 2,
+                            top: step.at.dy - _sizeOf(step) / 2,
+                            child: _StepNode(
+                              key: step.state == _StepState.current
+                                  ? _currentKey
+                                  : null,
+                              step: step,
+                              onTap: () => _tapStep(step),
+                            ),
+                          ),
+                        for (final (s, at, current) in ladder.exams)
+                          _examNode(s, at, current, box.maxWidth),
+                        if (ladder.current case final cur?)
+                          Positioned(
+                            left: cur.at.dx > box.maxWidth / 2
+                                ? cur.at.dx - _currentSize / 2 - 58
+                                : cur.at.dx + _currentSize / 2 + 4,
+                            top: cur.at.dy - 56,
+                            child: IgnorePointer(
+                              child: Barys(
+                                size: 54,
+                                animate: false,
+                                outfit: ref.watch(barysOutfitProvider),
+                              ),
+                            ),
+                          ),
+                        if (selected != null)
+                          _bubble(selected, box.maxWidth, quiet: quiet),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -260,11 +314,14 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
     final c = context.colors;
     final t = first.topic;
     final onRight = first.at.dx < width / 2;
+    final tint = t.unlocked ? first.color : c.muted;
     final chip = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      constraints: const BoxConstraints(maxWidth: 170),
+      padding: const EdgeInsets.fromLTRB(5, 5, 12, 6),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tint.withValues(alpha: 0.25), width: 1.5),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4),
         ],
@@ -272,18 +329,62 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            categoryIcon(t.category.icon),
-            size: 16,
-            color: t.unlocked ? first.color : c.muted,
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(tint.withValues(alpha: 0.14), c.surface),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              t.completed ? Icons.check_rounded : categoryIcon(t.category.icon),
+              size: 18,
+              color: tint,
+            ),
           ),
-          const SizedBox(width: 6),
-          Text(
-            '${t.category.titleKk} · ${t.lessonsDone}/${t.lessonCount}',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: t.unlocked ? c.ink : c.muted,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t.category.titleKk,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: t.unlocked ? c.ink : c.muted,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                if (t.lessonCount > 10)
+                  Text(
+                    '${t.lessonsDone} / ${t.lessonCount}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: c.muted,
+                    ),
+                  )
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < t.lessonCount; i++)
+                        Container(
+                          width: 7,
+                          height: 7,
+                          margin: const EdgeInsets.only(right: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: i < t.lessonsDone ? tint : c.track,
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
             ),
           ),
         ],
@@ -291,7 +392,7 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
     );
     final gap = _stepSize / 2 + 12;
     return Positioned(
-      top: first.at.dy - 15,
+      top: first.at.dy - 21,
       left: onRight ? first.at.dx + gap : null,
       right: onRight ? null : width - first.at.dx + gap,
       child: chip,
@@ -378,24 +479,30 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
     );
   }
 
-  Widget _bubble(_Step step, double width) {
+  Widget _bubble(_Step step, double width, {required bool quiet}) {
+    final c = context.colors;
     final r = _sizeOf(step) / 2;
     // On the side with more room, the arrow pointing at the node.
     final onRight = step.at.dx < width / 2;
+    // As wide as the free side allows, so it never covers the node.
+    final room = onRight ? width - step.at.dx - r - 12 : step.at.dx - r - 12;
+    final bubbleWidth = room.clamp(170.0, _bubbleWidth);
     final left = onRight
         ? step.at.dx + r + 12
-        : step.at.dx - r - 12 - _bubbleWidth;
+        : step.at.dx - r - 12 - bubbleWidth;
     final current = step.state == _StepState.current;
-    final path = '/lesson/${step.topic.category.id}/${step.index}';
+    final t = step.topic;
+    final path = '/lesson/${t.category.id}/${step.index}';
+    final border = BorderSide(color: step.color, width: 2);
     return Positioned(
-      left: left.clamp(0, width - _bubbleWidth),
-      top: step.at.dy - 52,
-      width: _bubbleWidth,
+      left: left.clamp(0, width - bubbleWidth),
+      top: step.at.dy - 54,
+      width: bubbleWidth,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            top: 44,
+            top: 46,
             left: onRight ? -7 : null,
             right: onRight ? null : -7,
             child: Transform.rotate(
@@ -403,18 +510,27 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
               child: Container(
                 width: 16,
                 height: 16,
-                color: const Color(0xFF13232E),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  border: Border(
+                    left: onRight ? border : BorderSide.none,
+                    bottom: onRight ? border : BorderSide.none,
+                    top: onRight ? BorderSide.none : border,
+                    right: onRight ? BorderSide.none : border,
+                  ),
+                ),
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF13232E),
-              borderRadius: BorderRadius.circular(18),
+              color: c.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.fromBorderSide(border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: step.color.withValues(alpha: 0.25),
                   blurRadius: 24,
                   offset: const Offset(0, 10),
                 ),
@@ -425,17 +541,19 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  step.topic.category.titleKk,
-                  style: const TextStyle(
-                    color: Color(0xFF9DB0BB),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                  t.category.titleRu.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: step.color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 Text(
-                  'Урок ${step.index + 1} из ${step.topic.lessonCount}',
+                  'Урок ${step.index + 1} из ${t.lessonCount}',
                   style: const TextStyle(
-                    color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
@@ -443,8 +561,8 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
                 const SizedBox(height: 8),
                 FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: AppColors.onGold,
+                    backgroundColor: current ? AppColors.gold : c.track,
+                    foregroundColor: current ? AppColors.onGold : c.ink,
                     minimumSize: const Size(0, 40),
                     textStyle: const TextStyle(
                       fontFamily: 'Nunito',
@@ -453,8 +571,15 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
                     ),
                   ),
                   onPressed: () => context.push(path),
-                  child: Text(
-                    current ? 'Начать · +$lessonBonusXp XP' : 'Повторить',
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      !current
+                          ? 'Повторить'
+                          : quiet
+                          ? 'Начать'
+                          : 'Начать · +$lessonBonusXp XP',
+                    ),
                   ),
                 ),
               ],
@@ -620,7 +745,14 @@ class _StepNodeState extends State<_StepNode>
         size: _stepSize,
         color: c.track,
         shadow: c.line,
-        child: Icon(Icons.lock_rounded, color: c.lockIcon, size: 22),
+        child: Text(
+          '${s.index + 1}',
+          style: TextStyle(
+            color: c.lockIcon,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
       ),
     };
 
@@ -655,12 +787,13 @@ class _Disc extends StatelessWidget {
       shape: BoxShape.circle,
       boxShadow: [BoxShadow(color: shadow, offset: const Offset(0, 5))],
     ),
+    alignment: Alignment.center,
     child: child,
   );
 }
 
 class _SectionBanner extends StatelessWidget {
-  const _SectionBanner({required this.section});
+  const _SectionBanner({super.key, required this.section});
 
   final SectionState section;
 
@@ -760,14 +893,21 @@ class _SectionBanner extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    '$done / $total',
-                    style: TextStyle(
-                      color: fg,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                  if (s.examPassed)
+                    const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: AppColors.gold,
+                      size: 28,
+                    )
+                  else
+                    Text(
+                      '$done / $total',
+                      style: TextStyle(
+                        color: fg,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -778,59 +918,127 @@ class _SectionBanner extends StatelessWidget {
   }
 }
 
-class _LevelCard extends StatelessWidget {
-  const _LevelCard({required this.xp});
+/// The whole course at a glance: level, and a bead per section that
+/// scrolls the map to it.
+class _CourseCard extends StatelessWidget {
+  const _CourseCard({
+    required this.course,
+    required this.xp,
+    required this.onSection,
+  });
 
+  final CourseState course;
   final int xp;
+  final ValueChanged<String> onSection;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final level = LevelProgress.fromXp(xp);
+    final sections = course.sections;
+    final here = switch (course.next) {
+      NextLesson(:final topic) => sectionOfCategory(topic.category.id),
+      NextExam(:final section) => section.section,
+      CourseFinished() => null,
+    };
+    final number = here == null
+        ? sections.length
+        : courseSections.indexOf(here) + 1;
     return SurfaceCard(
-      radius: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.gold,
-            foregroundColor: AppColors.onGold,
-            child: Text(
-              '${level.level}',
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              children: [
-                Row(
+          Row(
+            children: [
+              SizedBox.square(
+                dimension: 46,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Уровень ${level.level}',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                    Positioned.fill(
+                      child: CircularProgressIndicator(
+                        value: level.fraction,
+                        strokeWidth: 4,
+                        color: AppColors.gold,
+                        backgroundColor: c.track,
+                        strokeCap: StrokeCap.round,
                       ),
                     ),
                     Text(
+                      '${level.level}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      here == null
+                          ? 'Курс пройден'
+                          : 'Раздел $number из ${sections.length}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      'Уровень ${level.level} · '
                       '${level.xpIntoLevel} / ${level.xpForLevel} XP',
                       style: TextStyle(
                         color: c.muted,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                ProgressBar(
-                  value: level.fraction,
-                  height: 8,
-                  color: AppColors.gold,
-                  semanticsLabel: 'До следующего уровня',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (final (i, s) in sections.indexed) ...[
+                if (i > 0) const SizedBox(width: 3),
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    label: 'Раздел ${i + 1}, ${s.section.title}',
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onSection(s.section.id),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Container(
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: s.examPassed
+                                ? s.section.color
+                                : s.unlocked
+                                ? s.section.color.withValues(alpha: 0.35)
+                                : c.track,
+                            borderRadius: BorderRadius.circular(6),
+                            border: s.section == here
+                                ? Border.all(color: AppColors.gold, width: 2.5)
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
-            ),
+            ],
           ),
         ],
       ),

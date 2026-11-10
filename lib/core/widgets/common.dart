@@ -259,6 +259,29 @@ class Pill extends StatelessWidget {
 }
 
 /// White (dark: slate) rounded card used across screens.
+/// An icon on a soft square of its own colour.
+class TintIcon extends StatelessWidget {
+  const TintIcon(this.icon, {super.key, required this.color, this.size = 38});
+
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: Color.alphaBlend(
+        color.withValues(alpha: 0.14),
+        context.colors.surface,
+      ),
+      borderRadius: BorderRadius.circular(size / 3),
+    ),
+    child: Icon(icon, color: color, size: size * 0.55),
+  );
+}
+
 class SurfaceCard extends StatelessWidget {
   const SurfaceCard({
     super.key,

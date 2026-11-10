@@ -14,6 +14,7 @@ import '../../core/motion.dart';
 import '../../core/dates.dart';
 import '../../core/home_widget_sync.dart';
 import '../../core/widgets/barys.dart';
+import '../../core/widgets/bead_progress.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
 import '../../core/widgets/ornament.dart';
@@ -208,7 +209,7 @@ class HomeScreen extends ConsumerWidget {
                   _StatsRow(
                     learnedWords: learned,
                     studySeconds: s.studySeconds,
-                    mistakes: s.answersTotal - s.answersCorrect,
+                    fixed: ref.watch(fixedMistakesProvider).value ?? 0,
                     lessonsDone: course.value!.lessonsDone,
                   ),
                 ],
@@ -399,6 +400,7 @@ class _TodayTasks extends StatelessWidget {
     final r = rule;
     final tasks = [
       (
+        Icons.school_rounded,
         lessonDone,
         'Пройти урок',
         lessonDone ? 'Готово на сегодня' : 'Следующий урок на тропе',
@@ -406,6 +408,7 @@ class _TodayTasks extends StatelessWidget {
         lessonPath,
       ),
       (
+        Icons.replay_rounded,
         due == 0,
         due == 0
             ? 'Повторение'
@@ -417,6 +420,7 @@ class _TodayTasks extends StatelessWidget {
         due == 0 ? null : '/practice/review',
       ),
       (
+        Icons.menu_book_rounded,
         ruleDone,
         'Одно правило',
         ruleDone
@@ -431,43 +435,89 @@ class _TodayTasks extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 8),
-          child: Text(
-            'Задания дня',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Задания дня',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+              ),
+              for (final t in tasks)
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(left: 4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: t.$2 ? c.ok : c.track,
+                  ),
+                ),
+            ],
           ),
         ),
         SurfaceCard(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             children: [
-              for (final (i, (done, title, sub, ring, path))
+              for (final (i, (icon, done, title, sub, ring, path))
                   in tasks.indexed) ...[
-                if (i > 0) Divider(height: 1, color: c.line, indent: 58),
+                if (i > 0) Divider(height: 1, color: c.line, indent: 72),
                 Semantics(
                   label: '$title: ${done ? 'выполнено' : 'не выполнено'}',
                   child: ListTile(
                     onTap: done || path == null
                         ? null
                         : () => context.push(path),
-                    leading: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: done ? c.ok : null,
-                        border: done
-                            ? null
-                            : Border.all(color: ring, width: 2.5),
+                    leading: SizedBox.square(
+                      dimension: 40,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: done
+                                  ? c.okSoft
+                                  : Color.alphaBlend(
+                                      ring.withValues(alpha: 0.16),
+                                      c.surface,
+                                    ),
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                icon,
+                                size: 22,
+                                color: done ? c.okText : ring,
+                              ),
+                            ),
+                          ),
+                          if (done)
+                            Positioned(
+                              right: -4,
+                              bottom: -4,
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: c.ok,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: c.surface,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      child: done
-                          ? const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            )
-                          : null,
                     ),
                     title: Text(
                       title,
@@ -727,6 +777,13 @@ class _ContinueCard extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: soft, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -739,15 +796,41 @@ class _ContinueCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'СЕЙЧАС',
-                      style: TextStyle(
-                        color: c.accent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
+                    Row(
+                      children: [
+                        if (number > 0) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$number',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          'СЕЙЧАС',
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       label,
                       style: TextStyle(
@@ -769,23 +852,12 @@ class _ContinueCard extends StatelessWidget {
             ],
           ),
           if (next case NextLesson(:final topic)) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             ExcludeSemantics(
-              child: Row(
-                children: [
-                  for (var i = 0; i < topic.lessonCount; i++) ...[
-                    if (i > 0) const SizedBox(width: 4),
-                    Expanded(
-                      child: Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: i < topic.lessonsDone ? color : c.track,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+              child: BeadProgress(
+                done: topic.lessonsDone,
+                total: topic.lessonCount,
+                color: color,
               ),
             ),
           ],
@@ -812,13 +884,13 @@ class _StatsRow extends StatelessWidget {
   const _StatsRow({
     required this.learnedWords,
     required this.studySeconds,
-    required this.mistakes,
+    required this.fixed,
     required this.lessonsDone,
   });
 
   final int learnedWords;
   final int studySeconds;
-  final int mistakes;
+  final int fixed;
   final int lessonsDone;
 
   @override
@@ -839,11 +911,17 @@ class _StatsRow extends StatelessWidget {
         formatStudyTime(studySeconds),
         'время занятий',
       ),
-      (Icons.close_rounded, c.badText, c.badSoft, '$mistakes', 'ошибок всего'),
       (
-        Icons.check_rounded,
+        Icons.auto_fix_high_rounded,
         c.okText,
         c.okSoft,
+        '$fixed',
+        'исправлено ошибок',
+      ),
+      (
+        Icons.school_rounded,
+        c.sky,
+        Color.alphaBlend(c.sky.withValues(alpha: 0.14), c.surface),
         '$lessonsDone',
         'уроков пройдено',
       ),

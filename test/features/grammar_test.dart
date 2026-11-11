@@ -13,13 +13,13 @@ void main() {
   );
   final rules = [for (final g in groups) ...g.rules];
 
-  test('200 rules: 100 verbs, 50 nouns, 50 other; numbered per part', () {
-    expect(groups, hasLength(20));
-    expect(rules.map((r) => r.id).toSet(), hasLength(200));
+  test('350 rules: 150 verbs, 90 nouns, 110 other; numbered per part', () {
+    expect(groups, hasLength(35));
+    expect(rules.map((r) => r.id).toSet(), hasLength(350));
     for (final (part, count) in [
-      ('verbs', 100),
-      ('nouns', 50),
-      ('other', 50),
+      ('verbs', 150),
+      ('nouns', 90),
+      ('other', 110),
     ]) {
       final own = rulesOfPart(groups, part);
       expect(own, hasLength(count), reason: part);

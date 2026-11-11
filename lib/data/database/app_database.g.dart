@@ -1929,6 +1929,32 @@ class $UserStatsTable extends UserStats
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _checkUpdatesMeta = const VerificationMeta(
+    'checkUpdates',
+  );
+  @override
+  late final GeneratedColumn<bool> checkUpdates = GeneratedColumn<bool>(
+    'check_updates',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("check_updates" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _skippedUpdateMeta = const VerificationMeta(
+    'skippedUpdate',
+  );
+  @override
+  late final GeneratedColumn<String> skippedUpdate = GeneratedColumn<String>(
+    'skipped_update',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _reminderMinutesMeta = const VerificationMeta(
     'reminderMinutes',
   );
@@ -1967,6 +1993,8 @@ class $UserStatsTable extends UserStats
     palette,
     showLatin,
     quietMode,
+    checkUpdates,
+    skippedUpdate,
     reminderMinutes,
   ];
   @override
@@ -2146,6 +2174,24 @@ class $UserStatsTable extends UserStats
         quietMode.isAcceptableOrUnknown(data['quiet_mode']!, _quietModeMeta),
       );
     }
+    if (data.containsKey('check_updates')) {
+      context.handle(
+        _checkUpdatesMeta,
+        checkUpdates.isAcceptableOrUnknown(
+          data['check_updates']!,
+          _checkUpdatesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('skipped_update')) {
+      context.handle(
+        _skippedUpdateMeta,
+        skippedUpdate.isAcceptableOrUnknown(
+          data['skipped_update']!,
+          _skippedUpdateMeta,
+        ),
+      );
+    }
     if (data.containsKey('reminder_minutes')) {
       context.handle(
         _reminderMinutesMeta,
@@ -2264,6 +2310,14 @@ class $UserStatsTable extends UserStats
         DriftSqlType.bool,
         data['${effectivePrefix}quiet_mode'],
       )!,
+      checkUpdates: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}check_updates'],
+      )!,
+      skippedUpdate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skipped_update'],
+      ),
       reminderMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}reminder_minutes'],
@@ -2329,6 +2383,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
   /// Quiet mode: no streak, XP or weekly-goal pressure on screen.
   final bool quietMode;
 
+  /// Look for a newer release on GitHub when the app starts (Android).
+  final bool checkUpdates;
+
+  /// A release the user said «later» to; it is not offered again.
+  final String? skippedUpdate;
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   final int reminderMinutes;
   const UserStat({
@@ -2356,6 +2416,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     required this.palette,
     required this.showLatin,
     required this.quietMode,
+    required this.checkUpdates,
+    this.skippedUpdate,
     required this.reminderMinutes,
   });
   @override
@@ -2401,6 +2463,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     }
     map['show_latin'] = Variable<bool>(showLatin);
     map['quiet_mode'] = Variable<bool>(quietMode);
+    map['check_updates'] = Variable<bool>(checkUpdates);
+    if (!nullToAbsent || skippedUpdate != null) {
+      map['skipped_update'] = Variable<String>(skippedUpdate);
+    }
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     return map;
   }
@@ -2439,6 +2505,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       palette: Value(palette),
       showLatin: Value(showLatin),
       quietMode: Value(quietMode),
+      checkUpdates: Value(checkUpdates),
+      skippedUpdate: skippedUpdate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(skippedUpdate),
       reminderMinutes: Value(reminderMinutes),
     );
   }
@@ -2477,6 +2547,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       ),
       showLatin: serializer.fromJson<bool>(json['showLatin']),
       quietMode: serializer.fromJson<bool>(json['quietMode']),
+      checkUpdates: serializer.fromJson<bool>(json['checkUpdates']),
+      skippedUpdate: serializer.fromJson<String?>(json['skippedUpdate']),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
     );
   }
@@ -2512,6 +2584,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       ),
       'showLatin': serializer.toJson<bool>(showLatin),
       'quietMode': serializer.toJson<bool>(quietMode),
+      'checkUpdates': serializer.toJson<bool>(checkUpdates),
+      'skippedUpdate': serializer.toJson<String?>(skippedUpdate),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
     };
   }
@@ -2541,6 +2615,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     AppPalette? palette,
     bool? showLatin,
     bool? quietMode,
+    bool? checkUpdates,
+    Value<String?> skippedUpdate = const Value.absent(),
     int? reminderMinutes,
   }) => UserStat(
     id: id ?? this.id,
@@ -2569,6 +2645,10 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     palette: palette ?? this.palette,
     showLatin: showLatin ?? this.showLatin,
     quietMode: quietMode ?? this.quietMode,
+    checkUpdates: checkUpdates ?? this.checkUpdates,
+    skippedUpdate: skippedUpdate.present
+        ? skippedUpdate.value
+        : this.skippedUpdate,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
   );
   UserStat copyWithCompanion(UserStatsCompanion data) {
@@ -2627,6 +2707,12 @@ class UserStat extends DataClass implements Insertable<UserStat> {
       palette: data.palette.present ? data.palette.value : this.palette,
       showLatin: data.showLatin.present ? data.showLatin.value : this.showLatin,
       quietMode: data.quietMode.present ? data.quietMode.value : this.quietMode,
+      checkUpdates: data.checkUpdates.present
+          ? data.checkUpdates.value
+          : this.checkUpdates,
+      skippedUpdate: data.skippedUpdate.present
+          ? data.skippedUpdate.value
+          : this.skippedUpdate,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -2660,6 +2746,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           ..write('palette: $palette, ')
           ..write('showLatin: $showLatin, ')
           ..write('quietMode: $quietMode, ')
+          ..write('checkUpdates: $checkUpdates, ')
+          ..write('skippedUpdate: $skippedUpdate, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -2691,6 +2779,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
     palette,
     showLatin,
     quietMode,
+    checkUpdates,
+    skippedUpdate,
     reminderMinutes,
   ]);
   @override
@@ -2721,6 +2811,8 @@ class UserStat extends DataClass implements Insertable<UserStat> {
           other.palette == this.palette &&
           other.showLatin == this.showLatin &&
           other.quietMode == this.quietMode &&
+          other.checkUpdates == this.checkUpdates &&
+          other.skippedUpdate == this.skippedUpdate &&
           other.reminderMinutes == this.reminderMinutes);
 }
 
@@ -2749,6 +2841,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
   final Value<AppPalette> palette;
   final Value<bool> showLatin;
   final Value<bool> quietMode;
+  final Value<bool> checkUpdates;
+  final Value<String?> skippedUpdate;
   final Value<int> reminderMinutes;
   const UserStatsCompanion({
     this.id = const Value.absent(),
@@ -2775,6 +2869,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.palette = const Value.absent(),
     this.showLatin = const Value.absent(),
     this.quietMode = const Value.absent(),
+    this.checkUpdates = const Value.absent(),
+    this.skippedUpdate = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   UserStatsCompanion.insert({
@@ -2802,6 +2898,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     this.palette = const Value.absent(),
     this.showLatin = const Value.absent(),
     this.quietMode = const Value.absent(),
+    this.checkUpdates = const Value.absent(),
+    this.skippedUpdate = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
   });
   static Insertable<UserStat> custom({
@@ -2829,6 +2927,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Expression<int>? palette,
     Expression<bool>? showLatin,
     Expression<bool>? quietMode,
+    Expression<bool>? checkUpdates,
+    Expression<String>? skippedUpdate,
     Expression<int>? reminderMinutes,
   }) {
     return RawValuesInsertable({
@@ -2856,6 +2956,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       if (palette != null) 'palette': palette,
       if (showLatin != null) 'show_latin': showLatin,
       if (quietMode != null) 'quiet_mode': quietMode,
+      if (checkUpdates != null) 'check_updates': checkUpdates,
+      if (skippedUpdate != null) 'skipped_update': skippedUpdate,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
     });
   }
@@ -2885,6 +2987,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     Value<AppPalette>? palette,
     Value<bool>? showLatin,
     Value<bool>? quietMode,
+    Value<bool>? checkUpdates,
+    Value<String?>? skippedUpdate,
     Value<int>? reminderMinutes,
   }) {
     return UserStatsCompanion(
@@ -2912,6 +3016,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
       palette: palette ?? this.palette,
       showLatin: showLatin ?? this.showLatin,
       quietMode: quietMode ?? this.quietMode,
+      checkUpdates: checkUpdates ?? this.checkUpdates,
+      skippedUpdate: skippedUpdate ?? this.skippedUpdate,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     );
   }
@@ -2995,6 +3101,12 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
     if (quietMode.present) {
       map['quiet_mode'] = Variable<bool>(quietMode.value);
     }
+    if (checkUpdates.present) {
+      map['check_updates'] = Variable<bool>(checkUpdates.value);
+    }
+    if (skippedUpdate.present) {
+      map['skipped_update'] = Variable<String>(skippedUpdate.value);
+    }
     if (reminderMinutes.present) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
     }
@@ -3028,6 +3140,8 @@ class UserStatsCompanion extends UpdateCompanion<UserStat> {
           ..write('palette: $palette, ')
           ..write('showLatin: $showLatin, ')
           ..write('quietMode: $quietMode, ')
+          ..write('checkUpdates: $checkUpdates, ')
+          ..write('skippedUpdate: $skippedUpdate, ')
           ..write('reminderMinutes: $reminderMinutes')
           ..write(')'))
         .toString();
@@ -6689,6 +6803,8 @@ typedef $$UserStatsTableCreateCompanionBuilder = UserStatsCompanion Function({
   Value<AppPalette> palette,
   Value<bool> showLatin,
   Value<bool> quietMode,
+  Value<bool> checkUpdates,
+  Value<String?> skippedUpdate,
   Value<int> reminderMinutes,
 });
 typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
@@ -6716,6 +6832,8 @@ typedef $$UserStatsTableUpdateCompanionBuilder = UserStatsCompanion Function({
   Value<AppPalette> palette,
   Value<bool> showLatin,
   Value<bool> quietMode,
+  Value<bool> checkUpdates,
+  Value<String?> skippedUpdate,
   Value<int> reminderMinutes,
 });
 
@@ -6847,6 +6965,16 @@ class $$UserStatsTableFilterComposer
 
   ColumnFilters<bool> get quietMode => $composableBuilder(
     column: $table.quietMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get checkUpdates => $composableBuilder(
+    column: $table.checkUpdates,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skippedUpdate => $composableBuilder(
+    column: $table.skippedUpdate,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6985,6 +7113,16 @@ class $$UserStatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get checkUpdates => $composableBuilder(
+    column: $table.checkUpdates,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get skippedUpdate => $composableBuilder(
+    column: $table.skippedUpdate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => ColumnOrderings(column),
@@ -7102,6 +7240,16 @@ class $$UserStatsTableAnnotationComposer
   GeneratedColumn<bool> get quietMode =>
       $composableBuilder(column: $table.quietMode, builder: (column) => column);
 
+  GeneratedColumn<bool> get checkUpdates => $composableBuilder(
+    column: $table.checkUpdates,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get skippedUpdate => $composableBuilder(
+    column: $table.skippedUpdate,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
     builder: (column) => column,
@@ -7160,6 +7308,8 @@ class $$UserStatsTableTableManager
                 Value<AppPalette> palette = const Value.absent(),
                 Value<bool> showLatin = const Value.absent(),
                 Value<bool> quietMode = const Value.absent(),
+                Value<bool> checkUpdates = const Value.absent(),
+                Value<String?> skippedUpdate = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion(
                 id: id,
@@ -7186,6 +7336,8 @@ class $$UserStatsTableTableManager
                 palette: palette,
                 showLatin: showLatin,
                 quietMode: quietMode,
+                checkUpdates: checkUpdates,
+                skippedUpdate: skippedUpdate,
                 reminderMinutes: reminderMinutes,
               ),
           createCompanionCallback:
@@ -7214,6 +7366,8 @@ class $$UserStatsTableTableManager
                 Value<AppPalette> palette = const Value.absent(),
                 Value<bool> showLatin = const Value.absent(),
                 Value<bool> quietMode = const Value.absent(),
+                Value<bool> checkUpdates = const Value.absent(),
+                Value<String?> skippedUpdate = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
               }) => UserStatsCompanion.insert(
                 id: id,
@@ -7240,6 +7394,8 @@ class $$UserStatsTableTableManager
                 palette: palette,
                 showLatin: showLatin,
                 quietMode: quietMode,
+                checkUpdates: checkUpdates,
+                skippedUpdate: skippedUpdate,
                 reminderMinutes: reminderMinutes,
               ),
           withReferenceMapper: (p0) => p0

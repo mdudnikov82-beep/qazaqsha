@@ -155,6 +155,13 @@ class StatsRepository {
     );
   }
 
+  Future<void> setCheckUpdates(bool on) =>
+      _write(UserStatsCompanion(checkUpdates: Value(on)));
+
+  /// Don't offer this release again.
+  Future<void> skipUpdate(String version) =>
+      _write(UserStatsCompanion(skippedUpdate: Value(version)));
+
   Future<void> setHaptics(bool on) =>
       _write(UserStatsCompanion(hapticsEnabled: Value(on)));
 

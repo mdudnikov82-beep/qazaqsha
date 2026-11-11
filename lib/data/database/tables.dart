@@ -122,6 +122,12 @@ class UserStats extends Table {
   /// Quiet mode: no streak, XP or weekly-goal pressure on screen.
   BoolColumn get quietMode => boolean().withDefault(const Constant(false))();
 
+  /// Look for a newer release on GitHub when the app starts (Android).
+  BoolColumn get checkUpdates => boolean().withDefault(const Constant(true))();
+
+  /// A release the user said «later» to; it is not offered again.
+  TextColumn get skippedUpdate => text().nullable()();
+
   /// Daily reminder time, minutes after midnight (19:00 by default).
   IntColumn get reminderMinutes =>
       integer().withDefault(const Constant(19 * 60))();

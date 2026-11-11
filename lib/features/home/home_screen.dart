@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../dictionary/word_of_day.dart';
@@ -13,6 +14,7 @@ import '../dictionary/word_sheet.dart';
 import '../../core/motion.dart';
 import '../../core/dates.dart';
 import '../../core/home_widget_sync.dart';
+import '../../core/updates.dart';
 import '../../core/widgets/barys.dart';
 import '../../core/widgets/bead_progress.dart';
 import '../../core/widgets/common.dart';
@@ -144,6 +146,11 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (ref.watch(availableUpdateProvider).value case final u?
+                      when u.version != s.skippedUpdate) ...[
+                    _UpdateCard(update: u),
+                    const SizedBox(height: 18),
+                  ],
                   RiseIn(
                     child: _ContinueCard(
                       next: next,
@@ -1048,4 +1055,78 @@ class _Shortcut extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// «A new version is out»: download it, or hide it until the next one.
+class _UpdateCard extends ConsumerWidget {
+  const _UpdateCard({required this.update});
+
+  final AppUpdate update;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    return SurfaceCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 6, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TintIcon(Icons.system_update_rounded, color: c.sky, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Вышла версия ${update.version}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Обновление бесплатное, прогресс сохранится.',
+                      style: TextStyle(color: c.muted, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Позже',
+                icon: Icon(Icons.close_rounded, color: c.muted),
+                onPressed: () => ref
+                    .read(statsRepositoryProvider)
+                    .skipUpdate(update.version),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Скачать'),
+                onPressed: () => launchUrl(
+                  update.apk ?? update.page,
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              TextButton(
+                child: const Text('Что нового'),
+                onPressed: () => launchUrl(
+                  update.page,
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

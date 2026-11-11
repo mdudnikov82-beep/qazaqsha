@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/dates.dart';
 import '../../core/motion.dart';
+import '../../core/updates.dart';
 import '../../core/speech.dart';
 import '../../core/voice.dart';
 import '../../core/reminders.dart';
@@ -828,6 +829,17 @@ class _Settings extends ConsumerWidget {
             value: stats.hapticsEnabled,
             onChanged: repo.setHaptics,
           ),
+          if (Updates.supported)
+            SwitchListTile(
+              secondary: TintIcon(Icons.system_update_rounded, color: c.sky),
+              title: const Text('Проверять обновления', style: label),
+              subtitle: Text(
+                'Сейчас версия ${ref.watch(_versionProvider).value ?? '…'}. '
+                'Раз при запуске спросим GitHub, нет ли новой',
+              ),
+              value: stats.checkUpdates,
+              onChanged: repo.setCheckUpdates,
+            ),
           if (Reminders.supported) ...[
             SwitchListTile(
               secondary: TintIcon(
@@ -1232,3 +1244,7 @@ class _PalettePicker extends ConsumerWidget {
     );
   }
 }
+
+final _versionProvider = FutureProvider<String>(
+  (ref) => Updates.currentVersion(),
+);

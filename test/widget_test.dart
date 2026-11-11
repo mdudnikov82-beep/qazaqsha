@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qazaqsha/core/updates.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/features/dialogues/dialogues.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
@@ -317,6 +318,31 @@ void main() {
     await tester.enterText(find.byType(TextField), 'волк');
     await settle(tester);
     expect(find.textContaining('qasqyr', findRichText: true), findsOneWidget);
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('a newer release shows a card that «later» hides for good', (
+    tester,
+  ) async {
+    final db = await startApp(
+      tester,
+      update: AppUpdate(
+        version: '9.0.0',
+        page: Uri.parse('https://example.org/release'),
+      ),
+    );
+    await settle(tester);
+    expect(find.text('Вышла версия 9.0.0'), findsOneWidget);
+    expect(find.text('Скачать'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Позже'));
+    await settle(tester);
+    expect(find.text('Вышла версия 9.0.0'), findsNothing);
+    final saved = await tester.runAsync(
+      () => db.select(db.userStats).getSingle(),
+    );
+    expect(saved!.skippedUpdate, '9.0.0');
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

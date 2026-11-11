@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qazaqsha/core/updates.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/data/providers.dart';
 import 'package:qazaqsha/main.dart';
@@ -17,6 +18,7 @@ import 'helpers.dart';
 Future<AppDatabase> startApp(
   WidgetTester tester, {
   bool keepWelcome = false,
+  AppUpdate? update,
 }) async {
   tester.view.physicalSize = const Size(420, 2000);
   tester.view.devicePixelRatio = 1;
@@ -38,6 +40,7 @@ Future<AppDatabase> startApp(
           () => File('assets/data/grammar.json').readAsString(),
         ),
         speechCheckProvider.overrideWithValue(() async => false),
+        updateCheckProvider.overrideWithValue(() async => update),
         dialoguesSourceProvider.overrideWithValue(
           () => File('assets/data/dialogues.json').readAsString(),
         ),

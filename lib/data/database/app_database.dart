@@ -48,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -132,6 +132,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 15) {
         // Dictionary v5: 3010 → 4310 words in eight more course sections.
         await _addNewSeed();
+      }
+      if (from < 16) {
+        await m.addColumn(userStats, userStats.checkUpdates);
+        await m.addColumn(userStats, userStats.skippedUpdate);
       }
     },
     beforeOpen: (details) async {

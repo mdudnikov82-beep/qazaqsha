@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Only to ask GitHub whether a newer release is out (can be switched
+         off in the profile). Learning itself works offline. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>

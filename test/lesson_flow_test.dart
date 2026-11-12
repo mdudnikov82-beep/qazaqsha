@@ -57,6 +57,23 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
     await tester.enterText(find.byType(TextField), a.ruToKk[prompt]!);
     await tester.pump();
     await tester.tap(find.text('Проверить'));
+  } else if (find.text('Напишите, что услышали').evaluate().isNotEmpty) {
+    final q = tester.widget<TypeView>(find.byType(TypeView)).question;
+    prompt = q.word.ru;
+    await tester.enterText(find.byType(TextField), q.word.kk);
+    await tester.pump();
+    await tester.tap(find.text('Проверить'));
+  } else if (find.text('Найдите ошибку').evaluate().isNotEmpty) {
+    final q = tester.widget<FixView>(find.byType(FixView)).question;
+    prompt = _prompt(tester);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(fixTilesKey),
+            matching: find.byType(InkWell),
+          )
+          .at(q.wrongIndex),
+    );
   } else if (find.text('Соедините пары').evaluate().isNotEmpty) {
     prompt = 'pairs';
     for (final MapEntry(key: ru, value: kk) in a.ruToKk.entries) {

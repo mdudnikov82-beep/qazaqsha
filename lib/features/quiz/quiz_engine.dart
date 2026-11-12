@@ -45,28 +45,78 @@ class QuizEngine {
   final Random _random;
 
   /// Intro cards → Russian→Kazakh choices → pairs → mixed practice →
-  /// up to [sentencesPerLesson] "build the sentence" tasks from [sentences].
+  /// up to [sentencesPerLesson] sentence tasks from [sentences]: build one,
+  /// then find the mistake in another.
   /// [pool] supplies wrong options; same-category words are preferred.
+  /// One typing task becomes a dictation if a word is [audible].
   List<Question> buildLesson({
     required List<Word> lessonWords,
     required List<Word> pool,
     List<Sentence> sentences = const [],
     bool withIntro = true,
+    bool Function(Word word)? audible,
   }) {
     final mixed = <Question>[];
+    var dictation = false;
     for (final (i, w) in lessonWords.indexed) {
       // Alternate typing and reverse choice; typing needs a typeable word.
       final type = i.isEven && isTypeable(w.kk);
-      mixed.add(type ? TypeQuestion(w) : _choice(w, pool, fromRussian: false));
+      final listen = type && !dictation && (audible?.call(w) ?? false);
+      dictation |= listen;
+      mixed.add(
+        type
+            ? TypeQuestion(w, listen: listen)
+            : _choice(w, pool, fromRussian: false),
+      );
     }
+    final picked = _shuffled(sentences).take(sentencesPerLesson).toList();
     return [
       if (withIntro) ...lessonWords.map(IntroCard.new),
       ..._shuffled(lessonWords.map((w) => _choice(w, pool, fromRussian: true))),
       if (lessonWords.length >= 3) MatchQuestion(_shuffled(lessonWords)),
       ..._shuffled(mixed),
-      for (final s in _shuffled(sentences).take(sentencesPerLesson))
-        _sentence(s, sentences, pool),
+      for (final (i, s) in picked.indexed)
+        (i == 1 ? _fix(s, sentences, pool) : null) ??
+            _sentence(s, sentences, pool),
     ];
+  }
+
+  /// The sentence with one word (of 3+ letters) swapped for a word from
+  /// another sentence or the dictionary. Null if the sentence is too short.
+  FixQuestion? _fix(Sentence s, List<Sentence> others, List<Word> pool) {
+    final tokens = sentenceTokens(s.kk);
+    final spots = [
+      for (final (i, t) in tokens.indexed)
+        if (t.length >= 3) i,
+    ];
+    if (tokens.length < 3 || spots.isEmpty) return null;
+    final at = spots[_random.nextInt(spots.length)];
+    final taken = tokens.map(normalizeAnswer).toSet();
+    final right = tokens[at];
+    // Similar length reads as a believable slip, not an obvious odd one.
+    final candidates = _shuffled([
+      for (final o in others)
+        if (o.id != s.id) ...sentenceTokens(o.kk),
+      for (final w in pool)
+        if (!w.kk.contains(' ') && isTypeable(w.kk)) w.kk,
+    ]).where((c) => !taken.contains(normalizeAnswer(c))).toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort(
+      (a, b) => (a.length - right.length).abs().compareTo(
+        (b.length - right.length).abs(),
+      ),
+    );
+    var wrong = candidates.first;
+    final capital = right[0] != right[0].toLowerCase();
+    wrong = capital
+        ? wrong[0].toUpperCase() + wrong.substring(1)
+        : wrong.toLowerCase();
+    return FixQuestion(
+      sentence: s,
+      tokens: [...tokens]..[at] = wrong,
+      wrongIndex: at,
+      right: right,
+    );
   }
 
   /// The sentence's own words plus [extraTiles] decoys taken from other

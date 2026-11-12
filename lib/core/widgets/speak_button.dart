@@ -6,6 +6,24 @@ import '../../data/providers.dart';
 import '../speech.dart';
 import '../voice.dart';
 
+/// Says a Kazakh word: a native speaker's recording if there is one,
+/// otherwise the phone voice. Tests replace it.
+final sayProvider = Provider<void Function(String kazakh)>((ref) {
+  return (kazakh) {
+    final recorded = ref
+        .read(recordedVoiceProvider)
+        .value?[Voice.normalize(kazakh)];
+    recorded != null ? Voice.play(recorded) : Speech.say(kazakh);
+  };
+});
+
+/// Whether [sayProvider] has a voice for this word right now.
+bool canSay(WidgetRef ref, String kazakh) =>
+    (ref.read(speechAvailableProvider).value ?? false) ||
+    (ref.read(recordedVoiceProvider).value ?? const {}).containsKey(
+      Voice.normalize(kazakh),
+    );
+
 /// 🔊 next to a Kazakh word or sentence: a native speaker's recording if
 /// there is one, otherwise the device voice; nothing if neither exists.
 class SpeakButton extends ConsumerWidget {

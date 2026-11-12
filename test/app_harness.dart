@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazaqsha/core/updates.dart';
+import 'package:qazaqsha/core/widgets/speak_button.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/data/providers.dart';
 import 'package:qazaqsha/main.dart';
@@ -41,6 +42,8 @@ Future<AppDatabase> startApp(
         ),
         speechCheckProvider.overrideWithValue(() async => false),
         updateCheckProvider.overrideWithValue(() async => update),
+        // No audio plugins in tests.
+        sayProvider.overrideWithValue((_) {}),
         dialoguesSourceProvider.overrideWithValue(
           () => File('assets/data/dialogues.json').readAsString(),
         ),

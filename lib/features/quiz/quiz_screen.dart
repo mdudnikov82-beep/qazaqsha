@@ -200,6 +200,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           lessonWords: words,
           pool: pool,
           sentences: sentences,
+          audible: (w) => canSay(ref, w.kk),
           withIntro: words.any(
             (w) =>
                 (progress[w.id]?.status ?? LearningStatus.fresh) ==
@@ -341,6 +342,31 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     _session!.answer(correct: correct);
     _react(correct);
     setState(() => _feedback = correct ? _Feedback.right : _Feedback.wrong);
+  }
+
+  void _pickFix(int i) {
+    final q = _session!.current as FixQuestion;
+    if (_feedback != _Feedback.none) return;
+    final correct = i == q.wrongIndex;
+    final mistakes = ref.read(mistakesRepositoryProvider);
+    final id = '${q.sentence.id}';
+    if (correct) {
+      mistakes.resolve(MistakeKind.sentence, id);
+    } else {
+      mistakes.record(
+        kind: MistakeKind.sentence,
+        ref: id,
+        prompt: q.sentence.ru,
+        answer: q.sentence.kk,
+        given: q.tokens.join(' '),
+      );
+    }
+    _session!.answer(correct: correct);
+    _react(correct);
+    setState(() {
+      _picked = i;
+      _feedback = correct ? _Feedback.right : _Feedback.wrong;
+    });
   }
 
   void _matched(Set<int> mistakes) {
@@ -609,6 +635,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                       onAdd: (i) => setState(() => _built.add(i)),
                       onRemove: (pos) => setState(() => _built.removeAt(pos)),
                     ),
+                    FixQuestion() => FixView(
+                      question: q,
+                      picked: _picked,
+                      onPick: _pickFix,
+                    ),
                   },
                 ),
               ),
@@ -662,7 +693,8 @@ class _BottomPanel extends ConsumerWidget {
   /// The Kazakh answer to play back, if there is one.
   String? get _spoken => switch (question) {
     ChoiceQuestion(:final word) || TypeQuestion(:final word) => word.kk,
-    SentenceQuestion(:final sentence) => sentence.kk,
+    SentenceQuestion(:final sentence) ||
+    FixQuestion(:final sentence) => sentence.kk,
     _ => null,
   };
 
@@ -671,6 +703,13 @@ class _BottomPanel extends ConsumerWidget {
       fromRussian ? '$answer — ${word.ru}' : '${word.kk} — $answer',
     TypeQuestion(:final word) => '${word.kk} — ${word.ru}',
     SentenceQuestion(:final sentence) => '${sentence.kk} — ${sentence.ru}',
+    FixQuestion(
+      :final sentence,
+      :final tokens,
+      :final wrongIndex,
+      :final right,
+    ) =>
+      '«${tokens[wrongIndex]}» → «$right». ${sentence.kk}',
     _ => '',
   };
 
@@ -697,12 +736,11 @@ class _BottomPanel extends ConsumerWidget {
             color: c.track,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Text(
-            q is MatchQuestion
-                ? 'Нажмите слово слева, затем его пару'
-                : 'Нажмите на вариант ответа',
-            style: TextStyle(color: c.muted, fontWeight: FontWeight.w800),
-          ),
+          child: Text(switch (q) {
+            MatchQuestion() => 'Нажмите слово слева, затем его пару',
+            FixQuestion() => 'Нажмите на неправильное слово',
+            _ => 'Нажмите на вариант ответа',
+          }, style: TextStyle(color: c.muted, fontWeight: FontWeight.w800)),
         ),
       };
       return Padding(padding: const EdgeInsets.all(20), child: child);

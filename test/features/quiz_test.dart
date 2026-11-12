@@ -91,6 +91,24 @@ void main() {
       expect(noIntro.whereType<IntroCard>(), isEmpty);
     });
 
+    test('one typing task becomes a dictation when the word has a voice', () {
+      final heard = engine.buildLesson(
+        lessonWords: pool.sublist(2, 6),
+        pool: pool,
+        audible: (_) => true,
+      );
+      expect(
+        heard.whereType<TypeQuestion>().where((q) => q.listen),
+        hasLength(1),
+      );
+      final silent = engine.buildLesson(
+        lessonWords: pool.sublist(2, 6),
+        pool: pool,
+        audible: (_) => false,
+      );
+      expect(silent.whereType<TypeQuestion>().where((q) => q.listen), isEmpty);
+    });
+
     test('lessons end with sentence tasks: own words plus 2 decoys', () {
       const sentences = [
         Sentence(
@@ -119,8 +137,24 @@ void main() {
           sentences: sentences,
         );
         final tasks = lesson.whereType<SentenceQuestion>().toList();
-        expect(tasks, hasLength(sentencesPerLesson));
-        expect(lesson.last, isA<SentenceQuestion>());
+        final fixes = lesson.whereType<FixQuestion>().toList();
+        expect(tasks.length + fixes.length, sentencesPerLesson);
+        expect(tasks, isNotEmpty);
+        expect(lesson.last, anyOf(isA<SentenceQuestion>(), isA<FixQuestion>()));
+        for (final f in fixes) {
+          final own = sentenceTokens(f.sentence.kk);
+          // Exactly one word differs, it is a real mistake, and the right
+          // word is the one it replaced.
+          expect(f.tokens, hasLength(own.length));
+          for (var i = 0; i < own.length; i++) {
+            if (i != f.wrongIndex) expect(f.tokens[i], own[i]);
+          }
+          expect(f.right, own[f.wrongIndex]);
+          expect(
+            own.map((x) => x.toLowerCase()),
+            isNot(contains(f.tokens[f.wrongIndex].toLowerCase())),
+          );
+        }
         for (final t in tasks) {
           final own = sentenceTokens(t.sentence.kk);
           expect(t.tiles, containsAll(own));

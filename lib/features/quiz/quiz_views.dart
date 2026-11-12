@@ -344,11 +344,14 @@ class TypeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Prompt(
-          task: 'Напишите по-казахски',
-          label: 'по-русски',
-          text: question.word.ru,
-        ),
+        if (question.listen)
+          _ListenPrompt(kazakh: question.word.kk)
+        else
+          _Prompt(
+            task: 'Напишите по-казахски',
+            label: 'по-русски',
+            text: question.word.ru,
+          ),
         const SizedBox(height: 20),
         ReactionBox(
           reaction: switch (verdict) {
@@ -412,6 +415,202 @@ class TypeView extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Dictation: the word is said once when the task opens; the big button
+/// says it again.
+class _ListenPrompt extends ConsumerStatefulWidget {
+  const _ListenPrompt({required this.kazakh});
+
+  final String kazakh;
+
+  @override
+  ConsumerState<_ListenPrompt> createState() => _ListenPromptState();
+}
+
+class _ListenPromptState extends ConsumerState<_ListenPrompt> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _say();
+    });
+  }
+
+  void _say() => ref.read(sayProvider)(widget.kazakh);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Напишите, что услышали',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: Material(
+            color: c.brand,
+            shape: const CircleBorder(),
+            child: InkWell(
+              key: listenKey,
+              customBorder: const CircleBorder(),
+              onTap: _say,
+              child: const SizedBox(
+                width: 112,
+                height: 112,
+                child: Icon(
+                  Icons.volume_up_rounded,
+                  color: Colors.white,
+                  size: 56,
+                  semanticLabel: 'Послушать ещё раз',
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Нажмите, чтобы послушать ещё раз',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+  }
+}
+
+/// The replay button of a dictation, for tests.
+const listenKey = Key('quiz-listen');
+
+/// Tap the wrong word of a Kazakh sentence. Once answered, the wrong word
+/// is struck through and the right one is shown next to it.
+class FixView extends StatelessWidget {
+  const FixView({
+    super.key,
+    required this.question,
+    required this.picked,
+    required this.onPick,
+  });
+
+  final FixQuestion question;
+  final int? picked;
+  final ValueChanged<int> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final done = picked != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Prompt(
+          task: 'Найдите ошибку',
+          label: 'по-русски',
+          text: question.sentence.ru,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Одно казахское слово здесь неправильное. Нажмите на него.',
+          style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 14),
+        ReactionBox(
+          reaction: !done
+              ? Reaction.none
+              : picked == question.wrongIndex
+              ? Reaction.pop
+              : Reaction.shake,
+          child: Wrap(
+            key: fixTilesKey,
+            spacing: 8,
+            runSpacing: 10,
+            children: [
+              for (final (i, text) in question.tokens.indexed)
+                _FixTile(
+                  text: text,
+                  fix: done && i == question.wrongIndex ? question.right : null,
+                  missed: done && i == picked && i != question.wrongIndex,
+                  onTap: done ? null : () => onPick(i),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The word tiles of a «find the mistake» task, for tests.
+const fixTilesKey = Key('quiz-fix-tiles');
+
+class _FixTile extends StatelessWidget {
+  const _FixTile({
+    required this.text,
+    required this.onTap,
+    this.fix,
+    this.missed = false,
+  });
+
+  final String text;
+  final VoidCallback? onTap;
+
+  /// The right word, shown once the answer is in.
+  final String? fix;
+
+  /// The tile picked by mistake.
+  final bool missed;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final style = TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w800,
+      color: c.ink,
+    );
+    final border = fix != null
+        ? c.ok
+        : missed
+        ? c.bad
+        : c.line;
+    return Material(
+      color: fix != null ? c.okSoft : c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: border, width: 2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: fix == null
+              ? Text(text, style: style)
+              : Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: text,
+                        style: style.copyWith(
+                          color: c.muted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                      const TextSpan(text: '  '),
+                      TextSpan(
+                        text: fix,
+                        style: style.copyWith(color: c.okText),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }

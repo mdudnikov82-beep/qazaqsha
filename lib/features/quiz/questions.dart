@@ -40,11 +40,13 @@ class ChoiceQuestion extends Question {
   List<Word> get words => [word];
 }
 
-/// Type the Kazakh word for a Russian prompt.
+/// Type the Kazakh word for a Russian prompt or, with [listen], for what
+/// is heard (dictation).
 class TypeQuestion extends Question {
-  const TypeQuestion(this.word);
+  const TypeQuestion(this.word, {this.listen = false});
 
   final Word word;
+  final bool listen;
 
   @override
   List<Word> get words => [word];
@@ -73,6 +75,28 @@ class SentenceQuestion extends Question {
   List<Word> get words => const [];
 }
 
+/// Find the one wrong word in a Kazakh sentence; the Russian is the key.
+class FixQuestion extends Question {
+  const FixQuestion({
+    required this.sentence,
+    required this.tokens,
+    required this.wrongIndex,
+    required this.right,
+  });
+
+  final Sentence sentence;
+
+  /// The sentence's words with [wrongIndex] swapped for a wrong one.
+  final List<String> tokens;
+  final int wrongIndex;
+
+  /// The word that belongs at [wrongIndex].
+  final String right;
+
+  @override
+  List<Word> get words => const [];
+}
+
 /// XP for a correctly answered question.
 int xpFor(Question q) => switch (q) {
   IntroCard() => 0,
@@ -80,4 +104,5 @@ int xpFor(Question q) => switch (q) {
   TypeQuestion() => 15,
   MatchQuestion() => 20,
   SentenceQuestion() => 20,
+  FixQuestion() => 20,
 };

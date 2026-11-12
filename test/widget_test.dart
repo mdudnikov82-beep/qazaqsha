@@ -7,6 +7,7 @@ import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/features/dialogues/dialogues.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
 import 'package:qazaqsha/features/home/week_card.dart';
+import 'package:qazaqsha/features/quiz/quiz_views.dart';
 
 import 'app_harness.dart';
 
@@ -219,11 +220,32 @@ void main() {
     // The exercises load the dialogues file too: real I/O.
     await advanceUntil(
       tester,
-      () => grammar.first.rules.first.tasks.any(
-        (t) => find.text(t.question).evaluate().isNotEmpty,
-      ),
+      () =>
+          find.text('Найдите ошибку').evaluate().isNotEmpty ||
+          grammar.first.rules.first.tasks.any(
+            (t) => find.text(t.question).evaluate().isNotEmpty,
+          ),
     );
+    var fixes = 0;
     for (var i = 0; i < 4; i++) {
+      if (find.text('Найдите ошибку').evaluate().isNotEmpty) {
+        // One task asks to tap the wrong word instead.
+        fixes++;
+        final tiles = tester.widget<FixTiles>(find.byType(FixTiles));
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byKey(fixTilesKey),
+                matching: find.byType(InkWell),
+              )
+              .at(tiles.wrongIndex),
+        );
+        await settle(tester);
+        expect(find.textContaining('Дұрыс!'), findsOneWidget);
+        await tester.tap(find.text('Дальше'));
+        await settle(tester);
+        continue;
+      }
       // Tasks come shuffled: find the one on screen by its question.
       final task = grammar.first.rules.first.tasks.firstWhere(
         (t) => find.text(t.question).evaluate().isNotEmpty,
@@ -237,6 +259,7 @@ void main() {
       tester,
       () => find.text('Правило изучено!').evaluate().isNotEmpty,
     );
+    expect(fixes, grammarFixesPerRule);
     expect(find.textContaining('+20 XP'), findsOneWidget);
     final saved = await tester.runAsync(
       () => db.select(db.grammarProgress).getSingle(),

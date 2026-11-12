@@ -8,6 +8,46 @@ import 'package:qazaqsha/features/grammar/rules_screen.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
 
 void main() {
+  test('every exercise works as «find the mistake» with each wrong option', () {
+    final groups = parseGrammar(
+      File('assets/data/grammar.json').readAsStringSync(),
+    );
+    var count = 0;
+    final gapless = <String>[];
+    for (final g in groups) {
+      for (final r in g.rules) {
+        // Questions without a gap («Сколько падежей?») stay as choices.
+        // Only the word-order rules have no gaps at all.
+        final gapped = r.tasks.where(
+          (t) => '___'.allMatches(t.question).length == 1,
+        );
+        if (gapped.isEmpty) gapless.add(r.id);
+        for (final t in r.tasks) {
+          if (!gapped.contains(t)) {
+            expect(grammarFix(t, t.wrong.first), isNull);
+            continue;
+          }
+          for (final w in t.wrong) {
+            final f = grammarFix(t, w);
+            expect(f, isNotNull, reason: t.question);
+            count++;
+            // Putting the right word back gives the solved sentence, and
+            // the shown word really differs from it.
+            final fixed = [...f!.tokens]..[f.at] = f.right;
+            expect(fixed.join(' '), t.solved, reason: t.question);
+            expect(
+              f.tokens[f.at].toLowerCase(),
+              isNot(f.right.toLowerCase()),
+              reason: t.question,
+            );
+          }
+        }
+      }
+    }
+    expect(count, (1400 - 27) * 3);
+    expect(gapless, ['w001', 'w003', 'w004']);
+  });
+
   final groups = parseGrammar(
     File('assets/data/grammar.json').readAsStringSync(),
   );

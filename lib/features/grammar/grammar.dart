@@ -131,6 +131,26 @@ List<GrammarGroup> parseGrammar(String json) {
   ];
 }
 
+/// A task turned into «find the mistake»: the gap filled with [wrong].
+/// The tile at [at] is the mistake, [right] is what belongs there.
+typedef GrammarFix = ({List<String> tokens, int at, String right});
+
+/// Null if the task has no single gap to fill.
+GrammarFix? grammarFix(GrammarTask task, String wrong) {
+  if ('___'.allMatches(task.question).length != 1) return null;
+  final parts = task.question.split(' ');
+  final at = parts.indexWhere((p) => p.contains('___'));
+  return (
+    tokens: [...parts]..[at] = parts[at].replaceFirst('___', wrong),
+    at: at,
+    right: parts[at].replaceFirst('___', task.answer),
+  );
+}
+
+/// «Find the mistake» tasks: 1 of a rule's exercises, 3 of a topic check.
+const grammarFixesPerRule = 1;
+const grammarFixesPerGroup = 3;
+
 /// Rules of one part, in order.
 List<GrammarRule> rulesOfPart(List<GrammarGroup> groups, String part) => [
   for (final g in groups)

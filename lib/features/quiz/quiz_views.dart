@@ -504,7 +504,6 @@ class FixView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final done = picked != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -519,28 +518,59 @@ class FixView extends StatelessWidget {
           style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 14),
-        ReactionBox(
-          reaction: !done
-              ? Reaction.none
-              : picked == question.wrongIndex
-              ? Reaction.pop
-              : Reaction.shake,
-          child: Wrap(
-            key: fixTilesKey,
-            spacing: 8,
-            runSpacing: 10,
-            children: [
-              for (final (i, text) in question.tokens.indexed)
-                _FixTile(
-                  text: text,
-                  fix: done && i == question.wrongIndex ? question.right : null,
-                  missed: done && i == picked && i != question.wrongIndex,
-                  onTap: done ? null : () => onPick(i),
-                ),
-            ],
-          ),
+        FixTiles(
+          tokens: question.tokens,
+          wrongIndex: question.wrongIndex,
+          right: question.right,
+          picked: picked,
+          onPick: onPick,
         ),
       ],
+    );
+  }
+}
+
+/// A sentence as word tiles, one of them wrong: tap it. Once [picked], the
+/// wrong word is struck through with the [right] one next to it.
+class FixTiles extends StatelessWidget {
+  const FixTiles({
+    super.key,
+    required this.tokens,
+    required this.wrongIndex,
+    required this.right,
+    required this.picked,
+    required this.onPick,
+  });
+
+  final List<String> tokens;
+  final int wrongIndex;
+  final String right;
+  final int? picked;
+  final ValueChanged<int> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = picked != null;
+    return ReactionBox(
+      reaction: !done
+          ? Reaction.none
+          : picked == wrongIndex
+          ? Reaction.pop
+          : Reaction.shake,
+      child: Wrap(
+        key: fixTilesKey,
+        spacing: 8,
+        runSpacing: 10,
+        children: [
+          for (final (i, text) in tokens.indexed)
+            _FixTile(
+              text: text,
+              fix: done && i == wrongIndex ? right : null,
+              missed: done && i == picked && i != wrongIndex,
+              onTap: done ? null : () => onPick(i),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -12,6 +12,7 @@ import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../dialogues/dialogues.dart';
 import '../quiz/quiz_session.dart';
+import '../quiz/quiz_views.dart' show FixTiles;
 import 'grammar.dart';
 
 /// Exercises of one rule ([ruleId]) or a check-up of a topic ([groupId]).
@@ -74,6 +75,15 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   int _fixed = 0;
   ({int score, int xp})? _result;
 
+  /// Tasks shown as «find the mistake» on the first round.
+  final _fixes = <GrammarTask, GrammarFix>{};
+
+  /// The tile tapped in a «find the mistake» task.
+  int? _pickedTile;
+
+  /// The current task's «find the mistake» form, if it has one.
+  GrammarFix? get _fix => _index < _total ? _fixes[_queue![_index]] : null;
+
   /// Open grammar mistakes, as task refs; loaded before the first start.
   List<String>? _mistakeRefs;
 
@@ -111,6 +121,18 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     }
     _queue = tasks;
     _total = tasks.length;
+    _fixes.clear();
+    _pickedTile = null;
+    final fixes = widget.ruleId != null
+        ? grammarFixesPerRule
+        : widget.groupId != null
+        ? grammarFixesPerGroup
+        : 0;
+    for (final t in tasks) {
+      if (_fixes.length == fixes) break;
+      final wrong = t.wrong[_random.nextInt(t.wrong.length)];
+      if (grammarFix(t, wrong) case final f?) _fixes[t] = f;
+    }
     if (tasks.isEmpty) return;
     _index = 0;
     _correct = 0;
@@ -122,10 +144,21 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     _options = tasks.first.options(_random);
   }
 
+  void _pickTile(int i) {
+    if (_pickedTile != null) return;
+    final fix = _fix!;
+    _pickedTile = i;
+    _answer(right: i == fix.at, given: fix.tokens[i]);
+  }
+
   void _pick(String option) {
     if (_picked != null) return;
+    _picked = option;
+    _answer(right: option == _queue![_index].answer, given: option);
+  }
+
+  void _answer({required bool right, required String given}) {
     final task = _queue![_index];
-    final right = option == task.answer;
     right ? Haptics.success() : Haptics.error();
     final notebook = ref.read(mistakesRepositoryProvider);
     if (right) {
@@ -136,11 +169,10 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
         ref: task.ref,
         prompt: task.question,
         answer: task.answer,
-        given: option,
+        given: given,
       );
     }
     setState(() {
-      _picked = option;
       if (_index < _total) {
         if (right) {
           _correct++;
@@ -164,6 +196,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
       setState(() {
         _index++;
         _picked = null;
+        _pickedTile = null;
         _options = queue[_index].options(_random);
       });
       return;
@@ -223,8 +256,9 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
 
     final c = context.colors;
     final task = _queue![_index];
-    final answered = _picked != null;
-    final right = _picked == task.answer;
+    final fix = _fix;
+    final answered = _picked != null || _pickedTile != null;
+    final right = fix != null ? _pickedTile == fix.at : _picked == task.answer;
 
     return Scaffold(
       appBar: AppBar(
@@ -257,42 +291,65 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              Text(
-                task.hint.isEmpty ? 'Выберите ответ' : task.hint,
-                style: TextStyle(color: c.muted, fontSize: 15),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                answered ? task.solved : task.question,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  height: 1.3,
+              if (fix != null) ...[
+                const Text(
+                  'Найдите ошибку',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
                 ),
-              ),
-              const SizedBox(height: 24),
-              for (final o in _options) ...[
-                ReactionBox(
-                  reaction: !answered
-                      ? Reaction.none
-                      : o == task.answer
-                      ? Reaction.pop
-                      : o == _picked
-                      ? Reaction.shake
-                      : Reaction.none,
-                  child: _Option(
-                    text: o,
-                    state: !answered
-                        ? _OptionState.idle
-                        : o == task.answer
-                        ? _OptionState.right
-                        : o == _picked
-                        ? _OptionState.wrong
-                        : _OptionState.dim,
-                    onTap: () => _pick(o),
+                const SizedBox(height: 6),
+                Text(
+                  task.hint.isEmpty
+                      ? 'Одно слово здесь неправильное. Нажмите на него.'
+                      : '${task.hint}\nОдно слово здесь неправильное. '
+                            'Нажмите на него.',
+                  style: TextStyle(color: c.muted, fontSize: 15),
+                ),
+                const SizedBox(height: 16),
+                FixTiles(
+                  tokens: fix.tokens,
+                  wrongIndex: fix.at,
+                  right: fix.right,
+                  picked: _pickedTile,
+                  onPick: _pickTile,
+                ),
+              ] else ...[
+                Text(
+                  task.hint.isEmpty ? 'Выберите ответ' : task.hint,
+                  style: TextStyle(color: c.muted, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  answered ? task.solved : task.question,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 24),
+                for (final o in _options) ...[
+                  ReactionBox(
+                    reaction: !answered
+                        ? Reaction.none
+                        : o == task.answer
+                        ? Reaction.pop
+                        : o == _picked
+                        ? Reaction.shake
+                        : Reaction.none,
+                    child: _Option(
+                      text: o,
+                      state: !answered
+                          ? _OptionState.idle
+                          : o == task.answer
+                          ? _OptionState.right
+                          : o == _picked
+                          ? _OptionState.wrong
+                          : _OptionState.dim,
+                      onTap: () => _pick(o),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
               ],
               const Spacer(),
               if (answered)
@@ -307,9 +364,15 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          right
-                              ? 'Дұрыс! Правильно'
-                              : 'Қате. Правильно: ${task.answer}',
+                          switch ((right, fix)) {
+                            (true, null) => 'Дұрыс! Правильно',
+                            (true, final f?) =>
+                              'Дұрыс! «${f.tokens[f.at]}» → «${f.right}»',
+                            (false, null) => 'Қате. Правильно: ${task.answer}',
+                            (false, final f?) =>
+                              'Қате. Ошибка была тут: «${f.tokens[f.at]}» → '
+                                  '«${f.right}»',
+                          },
                           style: TextStyle(
                             color: right ? c.okText : c.badText,
                             fontSize: 17,

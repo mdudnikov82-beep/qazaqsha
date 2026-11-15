@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/gamification/album_screen.dart';
 import '../features/custom_words/import_screen.dart';
 import '../features/dialogues/dialogues_screen.dart';
 import '../features/dictionary/dictionary_screen.dart';
@@ -114,6 +115,7 @@ GoRouter createRouter({
       ],
     ),
     GoRoute(path: '/latin', builder: (context, state) => const LatinScreen()),
+    GoRoute(path: '/album', builder: (context, state) => const AlbumScreen()),
     GoRoute(
       path: '/mistakes',
       builder: (context, state) => const MistakesScreen(),

@@ -5,6 +5,8 @@ import '../core/speech.dart';
 import '../core/widgets/barys.dart';
 import '../core/voice.dart';
 import '../features/dialogues/dialogues.dart';
+import '../features/gamification/collection.dart';
+import '../features/gamification/quests.dart';
 import '../features/grammar/grammar.dart';
 import '../features/lessons/sections.dart';
 
@@ -16,6 +18,7 @@ import 'repositories/grammar_repository.dart';
 import 'repositories/lesson_repository.dart';
 import 'repositories/mistakes_repository.dart';
 import 'repositories/progress_repository.dart';
+import 'repositories/quest_repository.dart';
 import 'repositories/stats_repository.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -147,6 +150,72 @@ final barysOutfitProvider = Provider<BarysOutfit>((ref) {
     null => null,
   });
 });
+
+final questRepositoryProvider = Provider<QuestRepository>(
+  (ref) => QuestRepository(ref.watch(appDatabaseProvider)),
+);
+
+/// This week's quest counters.
+final weekCountsProvider = StreamProvider<Map<QuestKey, int>>(
+  (ref) => ref.watch(questRepositoryProvider).watchWeek(DateTime.now()),
+);
+
+/// Words of each topic by how well they are known, for the topic stars.
+final topicMasteryProvider = Provider<Map<String, TopicMastery>>((ref) {
+  final words = ref.watch(allWordsProvider).value;
+  final progress = ref.watch(progressMapProvider).value;
+  if (words == null || progress == null) return const {};
+  return masteryOf(words, progress);
+});
+
+/// Word count of each topic.
+final topicSizesProvider = Provider<Map<String, int>>(
+  (ref) => {
+    for (final c in ref.watch(categoriesProvider).value ?? const [])
+      c.category.id: c.wordCount,
+  },
+);
+
+/// Words with the «learned» status, for the pasture picture.
+final learnedWordsProvider = Provider<int>(
+  (ref) =>
+      ref
+          .watch(progressMapProvider)
+          .value
+          ?.values
+          .where((p) => p.status == LearningStatus.learned)
+          .length ??
+      0,
+);
+
+/// Weekly quests done over all weeks; refreshed with this week's counts.
+final questsDoneProvider = FutureProvider<int>((ref) {
+  ref.watch(weekCountsProvider);
+  return ref.watch(questRepositoryProvider).completedTotal();
+});
+
+/// Topics with all three stars.
+final threeStarTopicsProvider = Provider<int>((ref) {
+  final course = ref.watch(courseProvider).value;
+  if (course == null) return 0;
+  return threeStarTopics(
+    course,
+    ref.watch(topicMasteryProvider),
+    ref.watch(topicSizesProvider),
+  );
+});
+
+/// Topics finished, for the album.
+final finishedTopicsProvider = Provider<int>(
+  (ref) =>
+      ref
+          .watch(courseProvider)
+          .value
+          ?.topics
+          .where((t) => t.completed)
+          .length ??
+      0,
+);
 
 /// Mistakes later answered right, for the «работа над ошибками» badges.
 final fixedMistakesProvider = StreamProvider<int>(

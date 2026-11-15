@@ -19,43 +19,98 @@ const promptKey = Key('quiz-prompt');
 /// The bank of unused tiles in a "build the sentence" task, for tests.
 const tileBankKey = Key('quiz-tile-bank');
 
+/// The lesson's colour (its course section), for the task views.
+class QuizTint extends InheritedWidget {
+  const QuizTint({super.key, required this.color, required super.child});
+
+  final Color color;
+
+  static Color of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<QuizTint>()?.color ??
+      context.colors.accent;
+
+  @override
+  bool updateShouldNotify(QuizTint old) => old.color != color;
+}
+
+/// «What to do» above every task: a tinted icon and the instruction.
+class TaskHeader extends StatelessWidget {
+  const TaskHeader(this.text, this.icon, {super.key});
+
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      TintIcon(icon, color: QuizTint.of(context), size: 36),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+      ),
+    ],
+  );
+}
+
 class _Prompt extends StatelessWidget {
-  const _Prompt({required this.task, required this.label, required this.text});
+  const _Prompt({
+    required this.task,
+    required this.icon,
+    required this.label,
+    required this.text,
+  });
 
   final String task;
+  final IconData icon;
   final String label;
   final String text;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final tint = QuizTint.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          task,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-        ),
+        TaskHeader(task, icon),
         const SizedBox(height: 34),
         Stack(
           clipBehavior: Clip.none,
           // Full width: the card must not shrink to its word.
           fit: StackFit.passthrough,
           children: [
-            SurfaceCard(
-              radius: 26,
+            Container(
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+              decoration: BoxDecoration(
+                color: c.surface,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: tint.withValues(alpha: .35),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: tint.withValues(alpha: .12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(right: 70),
                     child: Text(
-                      label,
+                      label.toUpperCase(),
                       style: TextStyle(
-                        color: c.muted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        color: tint,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .6,
                       ),
                     ),
                   ),
@@ -92,50 +147,101 @@ class IntroView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final tint = QuizTint.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Новое слово',
-          style: TextStyle(
-            color: c.accent,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        const TaskHeader('Новое слово', Icons.auto_awesome_rounded),
         const SizedBox(height: 20),
-        SurfaceCard(
-          radius: 24,
-          padding: const EdgeInsets.all(28),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: tint.withValues(alpha: .35), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: tint.withValues(alpha: .12),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                word.kk,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w900,
+              // The Kazakh word on a band of the section's colour.
+              Container(
+                color: Color.alphaBlend(tint.withValues(alpha: .10), c.surface),
+                padding: const EdgeInsets.fromLTRB(20, 26, 20, 14),
+                child: Column(
+                  children: [
+                    Text(
+                      word.kk,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.ink,
+                        fontSize: 40,
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
+                      ),
+                    ),
+                    LatinLine(
+                      word.kk,
+                      fontSize: 18,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    SpeakButton(word.kk, size: 32, color: tint),
+                  ],
                 ),
               ),
-              LatinLine(word.kk, fontSize: 18, textAlign: TextAlign.center),
-              SpeakButton(word.kk, size: 32),
-              const SizedBox(height: 8),
-              Text(
-                word.ru,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: c.muted, fontSize: 20),
-              ),
-              if (word.note case final note?) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: c.goldSoft,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(note, textAlign: TextAlign.center),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+                child: Column(
+                  children: [
+                    Text(
+                      'ПО-РУССКИ',
+                      style: TextStyle(
+                        color: tint,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .6,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      word.ru,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (word.note case final note?) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: c.goldSoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lightbulb_rounded,
+                              color: c.goldText,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(note)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -281,6 +387,7 @@ class ChoiceView extends StatelessWidget {
       children: [
         _Prompt(
           task: 'Выберите перевод',
+          icon: Icons.translate_rounded,
           label: q.fromRussian ? 'по-русски' : 'по-казахски',
           text: q.prompt,
         ),
@@ -349,6 +456,7 @@ class TypeView extends StatelessWidget {
         else
           _Prompt(
             task: 'Напишите по-казахски',
+            icon: Icons.keyboard_rounded,
             label: 'по-русски',
             text: question.word.ru,
           ),
@@ -447,14 +555,11 @@ class _ListenPromptState extends ConsumerState<_ListenPrompt> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Напишите, что услышали',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-        ),
+        const TaskHeader('Напишите, что услышали', Icons.hearing_rounded),
         const SizedBox(height: 24),
         Center(
           child: Material(
-            color: c.brand,
+            color: QuizTint.of(context),
             shape: const CircleBorder(),
             child: InkWell(
               key: listenKey,
@@ -509,6 +614,7 @@ class FixView extends StatelessWidget {
       children: [
         _Prompt(
           task: 'Найдите ошибку',
+          icon: Icons.search_rounded,
           label: 'по-русски',
           text: question.sentence.ru,
         ),
@@ -680,6 +786,7 @@ class SentenceView extends StatelessWidget {
       children: [
         _Prompt(
           task: 'Соберите предложение',
+          icon: Icons.view_week_rounded,
           label: 'по-русски',
           text: question.sentence.ru,
         ),
@@ -824,10 +931,7 @@ class _MatchViewState extends State<MatchView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Соедините пары',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-        ),
+        const TaskHeader('Соедините пары', Icons.link_rounded),
         const SizedBox(height: 20),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,

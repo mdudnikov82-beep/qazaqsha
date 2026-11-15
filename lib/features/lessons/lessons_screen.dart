@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../gamification/collection.dart';
 import '../../app/theme.dart';
 import '../../core/motion.dart';
 import '../../core/widgets/barys.dart';
@@ -166,6 +167,9 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
   @override
   Widget build(BuildContext context) {
     final course = ref.watch(courseProvider);
+    // Topic stars change as words get learned.
+    ref.watch(topicMasteryProvider);
+    ref.watch(topicSizesProvider);
     final stats = ref.watch(statsProvider);
     if (course.value == null || stats.value == null) {
       return LoadingScaffold(error: course.error ?? stats.error);
@@ -315,6 +319,11 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
     final t = first.topic;
     final onRight = first.at.dx < width / 2;
     final tint = t.unlocked ? first.color : c.muted;
+    final stars = topicStars(
+      t,
+      ref.read(topicMasteryProvider)[t.category.id],
+      ref.read(topicSizesProvider)[t.category.id] ?? 0,
+    );
     final chip = Container(
       constraints: const BoxConstraints(maxWidth: 170),
       padding: const EdgeInsets.fromLTRB(5, 5, 12, 6),
@@ -359,7 +368,24 @@ class _LessonsScreenState extends ConsumerState<LessonsScreen> {
                   ),
                 ),
                 const SizedBox(height: 3),
-                if (t.lessonCount > 10)
+                if (t.completed)
+                  // Finished topics show their mastery: 1–3 stars.
+                  Semantics(
+                    label: 'Звёзд: $stars из 3',
+                    excludeSemantics: true,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < 3; i++)
+                          Icon(
+                            Icons.star_rounded,
+                            size: 14,
+                            color: i < stars ? AppColors.gold : c.track,
+                          ),
+                      ],
+                    ),
+                  )
+                else if (t.lessonCount > 10)
                   Text(
                     '${t.lessonsDone} / ${t.lessonCount}',
                     style: TextStyle(

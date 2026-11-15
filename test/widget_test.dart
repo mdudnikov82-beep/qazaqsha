@@ -6,10 +6,15 @@ import 'package:qazaqsha/core/updates.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/features/dialogues/dialogues.dart';
 import 'package:qazaqsha/features/grammar/grammar.dart';
+import 'package:qazaqsha/features/gamification/achievements.dart';
 import 'package:qazaqsha/features/home/week_card.dart';
 import 'package:qazaqsha/features/quiz/quiz_views.dart';
 
 import 'app_harness.dart';
+
+/// A grammar or dialogue task is on screen when all its options are.
+bool _onScreen(GrammarTask t) =>
+    [t.answer, ...t.wrong].every((o) => find.text(o).evaluate().isNotEmpty);
 
 void main() {
   testWidgets('home shows the first lesson and tabs switch', (tester) async {
@@ -36,6 +41,10 @@ void main() {
     expect(find.text('Тема оформления'), findsOneWidget);
     // Colour themes beyond the first open with levels.
     await tester.ensureVisible(find.text('Тянь-Шань'));
+    await tester.pump();
+    // Keep it clear of the bottom navigation bar.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+    await tester.pump();
     await tester.tap(find.text('Тянь-Шань'));
     await tester.pump();
     expect(find.textContaining('откроется на уровне 5'), findsOneWidget);
@@ -44,6 +53,8 @@ void main() {
     // Theme switches within a single frame, without waiting for the database.
     Brightness brightness() =>
         Theme.of(tester.element(find.text('Тема оформления'))).brightness;
+    await tester.ensureVisible(find.text('Тёмная'));
+    await tester.pump();
     await tester.tap(find.text('Тёмная'));
     await tester.pump();
     expect(brightness(), Brightness.dark);
@@ -103,7 +114,7 @@ void main() {
 
     expect(find.text('Жаңа бастаушы · Новичок'), findsOneWidget);
     expect(find.text('Активность'), findsOneWidget);
-    expect(find.text('0 из 11'), findsOneWidget);
+    expect(find.text('0 из ${achievements.length}'), findsOneWidget);
 
     await tester.tap(find.text('Как вас зовут?'));
     await settle(tester);
@@ -222,9 +233,7 @@ void main() {
       tester,
       () =>
           find.text('Найдите ошибку').evaluate().isNotEmpty ||
-          grammar.first.rules.first.tasks.any(
-            (t) => find.text(t.question).evaluate().isNotEmpty,
-          ),
+          grammar.first.rules.first.tasks.any(_onScreen),
     );
     var fixes = 0;
     for (var i = 0; i < 4; i++) {
@@ -247,9 +256,7 @@ void main() {
         continue;
       }
       // Tasks come shuffled: find the one on screen by its question.
-      final task = grammar.first.rules.first.tasks.firstWhere(
-        (t) => find.text(t.question).evaluate().isNotEmpty,
-      );
+      final task = grammar.first.rules.first.tasks.firstWhere(_onScreen);
       await tester.tap(find.text(task.answer));
       await settle(tester);
       await tester.tap(find.text('Дальше'));
@@ -288,14 +295,9 @@ void main() {
     final meet = parseDialogues(
       File('assets/data/dialogues.json').readAsStringSync(),
     ).first;
-    await advanceUntil(
-      tester,
-      () => meet.tasks.any((t) => find.text(t.question).evaluate().isNotEmpty),
-    );
+    await advanceUntil(tester, () => meet.tasks.any(_onScreen));
     for (var i = 0; i < 4; i++) {
-      final task = meet.tasks.firstWhere(
-        (t) => find.text(t.question).evaluate().isNotEmpty,
-      );
+      final task = meet.tasks.firstWhere(_onScreen);
       await tester.tap(find.text(task.answer));
       await settle(tester);
       await tester.tap(find.text('Дальше'));

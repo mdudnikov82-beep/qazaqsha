@@ -346,6 +346,48 @@ const courseSections = [
       'ph_subjects',
     ],
   ),
+  CourseSection(
+    id: 'school5',
+    title: 'Школьная жизнь',
+    titleKk: 'Мектеп өмірі',
+    color: Color(0xFFB71C1C),
+    categoryIds: [
+      'school_building',
+      'in_class',
+      'grades',
+      'school_people',
+      'clubs',
+      'ph_class',
+    ],
+  ),
+  CourseSection(
+    id: 'fun5',
+    title: 'Игры и увлечения',
+    titleKk: 'Ойындар мен әуестіктер',
+    color: Color(0xFF5E35B1),
+    categoryIds: [
+      'game_world',
+      'yard_games',
+      'crafts',
+      'pe_class',
+      'tales',
+      'ph_play',
+    ],
+  ),
+  CourseSection(
+    id: 'me5',
+    title: 'Я, друзья и интернет',
+    titleKk: 'Мен, достар және интернет',
+    color: Color(0xFF37474F),
+    categoryIds: [
+      'daily_me',
+      'coding',
+      'safe_net',
+      'character_me',
+      'pocket_money',
+      'ph_friends',
+    ],
+  ),
 ];
 
 /// Share of right answers needed to pass a section exam, in percent.

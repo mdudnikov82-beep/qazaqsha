@@ -187,6 +187,41 @@ class AppColors extends ThemeExtension<AppColors> {
         bg: d ? const Color(0xFF0B0A1A) : null,
         surface: d ? const Color(0xFF17152E) : null,
       ),
+      AppPalette.tulip => base.copyWith(
+        brand: const Color(0xFFA3214A),
+        brandDeep: const Color(0xFF7E1838),
+        onBrandMuted: const Color(0xFFF8D7E1),
+        accent: d ? const Color(0xFFF59BB6) : const Color(0xFFA3214A),
+        accentSoft: d ? const Color(0xFF3D1220) : const Color(0xFFFBE5EC),
+        sky: d ? const Color(0xFFEF6F96) : const Color(0xFFD9466F),
+      ),
+      AppPalette.autumn => base.copyWith(
+        brand: const Color(0xFFA63D17),
+        brandDeep: const Color(0xFF802E10),
+        onBrandMuted: const Color(0xFFF8DDCF),
+        accent: d ? const Color(0xFFF4A882) : const Color(0xFFA63D17),
+        accentSoft: d ? const Color(0xFF3A1A0D) : const Color(0xFFFBE9DF),
+        sky: d ? const Color(0xFFEE8A5A) : const Color(0xFFDB6A34),
+      ),
+      AppPalette.wormwood => base.copyWith(
+        brand: const Color(0xFF4A6650),
+        brandDeep: const Color(0xFF384F3D),
+        onBrandMuted: const Color(0xFFDCE9DE),
+        accent: d ? const Color(0xFFA9CDB0) : const Color(0xFF4A6650),
+        accentSoft: d ? const Color(0xFF1A2B1E) : const Color(0xFFE8F0E9),
+        sky: d ? const Color(0xFF86B990) : const Color(0xFF6E9A77),
+        bg: d ? null : const Color(0xFFF5F7F2),
+      ),
+      AppPalette.cosmos => base.copyWith(
+        brand: const Color(0xFF5B2A86),
+        brandDeep: const Color(0xFF431F63),
+        onBrandMuted: const Color(0xFFE6D8F5),
+        accent: d ? const Color(0xFFD1A8FF) : const Color(0xFF5B2A86),
+        accentSoft: d ? const Color(0xFF2A1640) : const Color(0xFFF1E8FB),
+        sky: d ? const Color(0xFFB57CF2) : const Color(0xFF8E4FD1),
+        bg: d ? const Color(0xFF0C0716) : null,
+        surface: d ? const Color(0xFF1A1229) : null,
+      ),
     };
   }
 
@@ -232,6 +267,10 @@ const paletteInfo = <AppPalette, ({String title, int level})>{
   AppPalette.tianshan: (title: 'Тянь-Шань', level: 5),
   AppPalette.nauryz: (title: 'Наурыз', level: 7),
   AppPalette.night: (title: 'Түн · Ночь', level: 10),
+  AppPalette.tulip: (title: 'Қызғалдақ · Тюльпан', level: 12),
+  AppPalette.autumn: (title: 'Күз · Осень', level: 14),
+  AppPalette.wormwood: (title: 'Жусан · Полынь', level: 16),
+  AppPalette.cosmos: (title: 'Ғарыш · Космос', level: 20),
 };
 
 abstract final class AppTheme {

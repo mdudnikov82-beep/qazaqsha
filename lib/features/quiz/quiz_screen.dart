@@ -14,6 +14,9 @@ import '../../core/widgets/confetti.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/stats_repository.dart';
+import '../gamification/album_screen.dart';
+import '../gamification/collection.dart';
+import '../gamification/quests.dart';
 import '../gamification/achievements.dart';
 import '../gamification/progress_rules.dart';
 import '../review/review_mode.dart';
@@ -94,6 +97,7 @@ class _Result {
     this.total = 0,
     this.toReview = 0,
     this.goalReached = false,
+    this.newCard,
   });
 
   final _Kind kind;
@@ -114,6 +118,9 @@ class _Result {
 
   /// This session completed today's goal.
   final bool goalReached;
+
+  /// A card of the album this session opened.
+  final AlbumCard? newCard;
 }
 
 /// Longest time one session can add to the study total.
@@ -150,6 +157,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   int? _picked;
   TypedVerdict? _verdict;
   Set<int>? _matchMistakes;
+
+  /// Right dictations and found mistakes, for the weekly quests.
+  int _dictations = 0;
+  int _fixesFound = 0;
 
   /// Indices into the current [SentenceQuestion.tiles], in tapped order.
   final List<int> _built = [];
@@ -309,6 +320,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     if (_typed.text.trim().isEmpty || _verdict != null) return;
     final verdict = checkTyped(_typed.text, q.word.kk);
     _note(verdict == TypedVerdict.correct, q.word, given: _typed.text.trim());
+    if (q.listen && verdict == TypedVerdict.correct) _dictations++;
     _session!.answer(correct: verdict == TypedVerdict.correct);
     _react(verdict == TypedVerdict.correct);
     setState(() {
@@ -348,6 +360,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     final q = _session!.current as FixQuestion;
     if (_feedback != _Feedback.none) return;
     final correct = i == q.wrongIndex;
+    if (correct) _fixesFound++;
     final mistakes = ref.read(mistakesRepositoryProvider);
     final id = '${q.sentence.id}';
     if (correct) {
@@ -407,6 +420,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
     var xp = s.xp;
     var examPassed = false;
+    final cardsBefore = cardsOpen(ref.read(finishedTopicsProvider));
     if (widget.isLesson) {
       xp += lessonBonusXp;
       await lessons.completeLesson(
@@ -433,6 +447,22 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       now: now,
       studySeconds: _studySeconds,
     );
+    final quests = ref.read(questRepositoryProvider);
+    await quests.add(switch (_kind) {
+      _Kind.lesson => QuestKey.lessons,
+      _Kind.review || _Kind.custom => QuestKey.reviews,
+      _Kind.exam => QuestKey.lessons,
+    }, now);
+    await quests.add(QuestKey.dictations, now, _dictations);
+    await quests.add(QuestKey.fixes, now, _fixesFound);
+    await quests.add(QuestKey.fixed, now, s.fixedMistakes);
+    await quests.add(QuestKey.seconds, now, _studySeconds);
+    final course = await lessons.watchCourse().first;
+    final cards = cardsOpen(course.topics.where((t) => t.completed).length);
+    final mastery = masteryOf(
+      await ref.read(allWordsProvider.future),
+      await progress.watchAll().first,
+    );
     final unlocked = await stats.unlockEarned(
       AchievementFacts(
         quizzesCompleted: after.quizzesCompleted,
@@ -441,6 +471,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         totalXp: after.xp,
         fixedMistakes: await ref.read(mistakesRepositoryProvider).fixedCount(),
         examsPassed: await lessons.examsPassed(),
+        albumCards: cards,
+        questsDone: await quests.completedTotal(),
+        threeStarTopics: threeStarTopics(
+          course,
+          mastery,
+          ref.read(topicSizesProvider),
+        ),
       ),
       now,
     );
@@ -458,6 +495,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           correct: s.correctAnswers,
           total: s.totalAnswers,
           toReview: s.wordResults.values.where((ok) => !ok).length,
+          newCard: cards > cardsBefore ? albumCards[cards - 1] : null,
           goalReached: () {
             final today = todayXp(
               storedDailyXp: after.dailyXp,
@@ -601,46 +639,49 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                 ),
                 layoutBuilder: (current, previous) =>
                     current ?? const SizedBox.shrink(),
-                child: SingleChildScrollView(
+                child: QuizTint(
                   key: ValueKey(s.position),
-                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                  child: switch (q) {
-                    IntroCard(:final word) => IntroView(word: word),
-                    ChoiceQuestion() => ChoiceView(
-                      question: q,
-                      xp: s.lastXp,
-                      picked: _picked,
-                      onPick: _pick,
-                    ),
-                    TypeQuestion() => TypeView(
-                      question: q,
-                      controller: _typed,
-                      verdict: _verdict,
-                      onSubmit: _checkTyped,
-                    ),
-                    MatchQuestion() => MatchView(
-                      key: ObjectKey(q),
-                      question: q,
-                      onComplete: _matched,
-                    ),
-                    SentenceQuestion() => SentenceView(
-                      question: q,
-                      built: _built,
-                      locked: _feedback != _Feedback.none,
-                      reaction: switch (_feedback) {
-                        _Feedback.none => Reaction.none,
-                        _Feedback.right => Reaction.pop,
-                        _ => Reaction.shake,
-                      },
-                      onAdd: (i) => setState(() => _built.add(i)),
-                      onRemove: (pos) => setState(() => _built.removeAt(pos)),
-                    ),
-                    FixQuestion() => FixView(
-                      question: q,
-                      picked: _picked,
-                      onPick: _pickFix,
-                    ),
-                  },
+                  color: accent == c.brand ? c.accent : accent,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                    child: switch (q) {
+                      IntroCard(:final word) => IntroView(word: word),
+                      ChoiceQuestion() => ChoiceView(
+                        question: q,
+                        xp: s.lastXp,
+                        picked: _picked,
+                        onPick: _pick,
+                      ),
+                      TypeQuestion() => TypeView(
+                        question: q,
+                        controller: _typed,
+                        verdict: _verdict,
+                        onSubmit: _checkTyped,
+                      ),
+                      MatchQuestion() => MatchView(
+                        key: ObjectKey(q),
+                        question: q,
+                        onComplete: _matched,
+                      ),
+                      SentenceQuestion() => SentenceView(
+                        question: q,
+                        built: _built,
+                        locked: _feedback != _Feedback.none,
+                        reaction: switch (_feedback) {
+                          _Feedback.none => Reaction.none,
+                          _Feedback.right => Reaction.pop,
+                          _ => Reaction.shake,
+                        },
+                        onAdd: (i) => setState(() => _built.add(i)),
+                        onRemove: (pos) => setState(() => _built.removeAt(pos)),
+                      ),
+                      FixQuestion() => FixView(
+                        question: q,
+                        picked: _picked,
+                        onPick: _pickFix,
+                      ),
+                    },
+                  ),
                 ),
               ),
             ),
@@ -1058,6 +1099,52 @@ class _ResultView extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (result.newCard case final card?) ...[
+                  const SizedBox(height: 12),
+                  RiseIn(
+                    delay: const Duration(milliseconds: 500),
+                    child: SurfaceCard(
+                      onTap: () => showCardSheet(context, card),
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Text(
+                            card.emoji,
+                            style: const TextStyle(fontSize: 40),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'НОВАЯ КАРТОЧКА В АЛЬБОМЕ',
+                                  style: TextStyle(
+                                    color: c.accent,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  '${card.kk} · ${card.ru}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                Text(
+                                  'Нажмите, чтобы прочитать',
+                                  style: TextStyle(color: c.muted),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 for (final (i, a) in result.newAchievements.indexed) ...[
                   const SizedBox(height: 12),
                   RiseIn(

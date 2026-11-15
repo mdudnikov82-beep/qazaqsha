@@ -38,8 +38,33 @@ Future<_Answers> _answers(WidgetTester tester, AppDatabase db) async {
 String _prompt(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(promptKey)).data!;
 
+/// Screens a lesson or exam can show.
+const _titles = [
+  'Новое слово',
+  'Выберите перевод',
+  'Напишите по-казахски',
+  'Напишите, что услышали',
+  'Найдите ошибку',
+  'Соедините пары',
+  'Соберите предложение',
+  'Сабақ аяқталды!',
+  'Емтихан тапсырылды!',
+];
+
+bool _finished() =>
+    find.text('Сабақ аяқталды!').evaluate().isNotEmpty ||
+    find.text('Емтихан тапсырылды!').evaluate().isNotEmpty;
+
+/// Loading a task or the result takes a few real-time database reads.
+Future<void> _waitTask(WidgetTester tester) => advanceUntil(
+  tester,
+  () => _titles.any((t) => find.text(t).evaluate().isNotEmpty),
+);
+
 /// Answers whatever task is on screen correctly. Returns the prompt.
 Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
+  await _waitTask(tester);
+  if (_finished()) return null;
   if (find.text('Новое слово').evaluate().isNotEmpty) {
     await tester.tap(find.text('Дальше'));
     await settle(tester);
@@ -111,6 +136,7 @@ Future<String?> _answerRight(WidgetTester tester, _Answers a) async {
   );
   await tester.tap(find.text('Далее'));
   await settle(tester);
+  await _waitTask(tester);
   return prompt;
 }
 
@@ -125,7 +151,7 @@ void main() {
     final answers = await _answers(tester, db);
 
     await tester.tap(find.text('Начать урок'));
-    await settle(tester);
+    await _waitTask(tester);
 
     var steps = 0;
     while (find.text('Сабақ аяқталды!').evaluate().isEmpty) {
@@ -160,7 +186,7 @@ void main() {
     final answers = await _answers(tester, db);
 
     await tester.tap(find.text('Начать урок'));
-    await settle(tester);
+    await _waitTask(tester);
     while (find.text('Новое слово').evaluate().isNotEmpty) {
       await _answerRight(tester, answers);
     }
@@ -270,7 +296,7 @@ void main() {
     );
 
     await tester.tap(find.text('Сдать экзамен'));
-    await settle(tester);
+    await _waitTask(tester);
     expect(find.text('Новое слово'), findsNothing);
 
     var steps = 0;

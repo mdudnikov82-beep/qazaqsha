@@ -21,11 +21,11 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('seeds 4310 words in 180 categories', () async {
-    expect(await repo.wordCount(), 4310);
+  test('seeds 4880 words in 198 categories', () async {
+    expect(await repo.wordCount(), 4880);
 
     final categories = await repo.categories();
-    expect(categories, hasLength(180));
+    expect(categories, hasLength(198));
     expect(categories.first.category.id, 'greetings');
     expect(categories.every((c) => c.wordCount > 0), isTrue);
   });
@@ -47,7 +47,7 @@ void main() {
 
   test('seeds 430 sentences, every topic has some', () async {
     final all = await db.select(db.sentences).get();
-    expect(all, hasLength(430));
+    expect(all, hasLength(484));
     for (final c in await repo.categories()) {
       final own = await repo.sentencesInCategory(c.category.id);
       expect(own.length, greaterThanOrEqualTo(2), reason: c.category.id);
@@ -99,8 +99,8 @@ void main() {
       await old.addNewSeed();
       await old.addNewSeed(); // running twice adds nothing more
 
-      expect(await oldRepo.wordCount(), 4310);
-      expect(await old.select(old.sentences).get(), hasLength(430));
+      expect(await oldRepo.wordCount(), 4880);
+      expect(await old.select(old.sentences).get(), hasLength(484));
       expect((await oldRepo.search('волк')).single.id, wolf.id);
       final progress = await old.select(old.wordProgress).getSingle();
       expect((progress.wordId, progress.correctCount), (wolf.id, 3));
@@ -109,7 +109,7 @@ void main() {
         for (final c in await oldRepo.categories()) c.category.id,
       ];
       expect(topics.indexOf('phrases'), greaterThan(topics.indexOf('culture')));
-      expect(topics.last, 'ph_subjects');
+      expect(topics.last, 'ph_friends');
       final shopping = await oldRepo.wordsInCategory('shopping');
       expect(shopping.first.ru, 'цена');
     },

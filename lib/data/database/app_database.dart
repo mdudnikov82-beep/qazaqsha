@@ -32,6 +32,7 @@ Future<String> _loadSentencesFromAssets() =>
     DailyActivity,
     GrammarProgress,
     Mistakes,
+    WeeklyCounts,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -48,7 +49,7 @@ class AppDatabase extends _$AppDatabase {
   final SeedLoader _loadSentences;
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -136,6 +137,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 16) {
         await m.addColumn(userStats, userStats.checkUpdates);
         await m.addColumn(userStats, userStats.skippedUpdate);
+      }
+      if (from < 17) {
+        // Dictionary v6: 4310 → 4880 words in three sections for schoolkids.
+        await _addNewSeed();
+        await m.createTable(weeklyCounts);
       }
     },
     beforeOpen: (details) async {

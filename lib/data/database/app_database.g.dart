@@ -5144,6 +5144,265 @@ class MistakesCompanion extends UpdateCompanion<Mistake> {
   }
 }
 
+class $WeeklyCountsTable extends WeeklyCounts
+    with TableInfo<$WeeklyCountsTable, WeeklyCount> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WeeklyCountsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _weekMeta = const VerificationMeta('week');
+  @override
+  late final GeneratedColumn<DateTime> week = GeneratedColumn<DateTime>(
+    'week',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<int> value = GeneratedColumn<int>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [week, key, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'weekly_counts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WeeklyCount> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('week')) {
+      context.handle(
+        _weekMeta,
+        week.isAcceptableOrUnknown(data['week']!, _weekMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_weekMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {week, key};
+  @override
+  WeeklyCount map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WeeklyCount(
+      week: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}week'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}value'],
+      )!,
+    );
+  }
+
+  @override
+  $WeeklyCountsTable createAlias(String alias) {
+    return $WeeklyCountsTable(attachedDatabase, alias);
+  }
+}
+
+class WeeklyCount extends DataClass implements Insertable<WeeklyCount> {
+  /// Monday of the week, as a UTC date (see weekOf).
+  final DateTime week;
+  final String key;
+  final int value;
+  const WeeklyCount({
+    required this.week,
+    required this.key,
+    required this.value,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['week'] = Variable<DateTime>(week);
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<int>(value);
+    return map;
+  }
+
+  WeeklyCountsCompanion toCompanion(bool nullToAbsent) {
+    return WeeklyCountsCompanion(
+      week: Value(week),
+      key: Value(key),
+      value: Value(value),
+    );
+  }
+
+  factory WeeklyCount.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WeeklyCount(
+      week: serializer.fromJson<DateTime>(json['week']),
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<int>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'week': serializer.toJson<DateTime>(week),
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<int>(value),
+    };
+  }
+
+  WeeklyCount copyWith({DateTime? week, String? key, int? value}) =>
+      WeeklyCount(
+        week: week ?? this.week,
+        key: key ?? this.key,
+        value: value ?? this.value,
+      );
+  WeeklyCount copyWithCompanion(WeeklyCountsCompanion data) {
+    return WeeklyCount(
+      week: data.week.present ? data.week.value : this.week,
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyCount(')
+          ..write('week: $week, ')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(week, key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WeeklyCount &&
+          other.week == this.week &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class WeeklyCountsCompanion extends UpdateCompanion<WeeklyCount> {
+  final Value<DateTime> week;
+  final Value<String> key;
+  final Value<int> value;
+  final Value<int> rowid;
+  const WeeklyCountsCompanion({
+    this.week = const Value.absent(),
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WeeklyCountsCompanion.insert({
+    required DateTime week,
+    required String key,
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : week = Value(week),
+       key = Value(key);
+  static Insertable<WeeklyCount> custom({
+    Expression<DateTime>? week,
+    Expression<String>? key,
+    Expression<int>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (week != null) 'week': week,
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WeeklyCountsCompanion copyWith({
+    Value<DateTime>? week,
+    Value<String>? key,
+    Value<int>? value,
+    Value<int>? rowid,
+  }) {
+    return WeeklyCountsCompanion(
+      week: week ?? this.week,
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (week.present) {
+      map['week'] = Variable<DateTime>(week.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<int>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyCountsCompanion(')
+          ..write('week: $week, ')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5161,6 +5420,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $MistakesTable mistakes = $MistakesTable(this);
+  late final $WeeklyCountsTable weeklyCounts = $WeeklyCountsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5177,6 +5437,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     dailyActivity,
     grammarProgress,
     mistakes,
+    weeklyCounts,
   ];
 }
 
@@ -8753,6 +9014,177 @@ typedef $$MistakesTableProcessedTableManager =
       Mistake,
       PrefetchHooks Function()
     >;
+typedef $$WeeklyCountsTableCreateCompanionBuilder =
+    WeeklyCountsCompanion Function({
+      required DateTime week,
+      required String key,
+      Value<int> value,
+      Value<int> rowid,
+    });
+typedef $$WeeklyCountsTableUpdateCompanionBuilder =
+    WeeklyCountsCompanion Function({
+      Value<DateTime> week,
+      Value<String> key,
+      Value<int> value,
+      Value<int> rowid,
+    });
+
+class $$WeeklyCountsTableFilterComposer
+    extends Composer<_$AppDatabase, $WeeklyCountsTable> {
+  $$WeeklyCountsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get week => $composableBuilder(
+    column: $table.week,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WeeklyCountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WeeklyCountsTable> {
+  $$WeeklyCountsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get week => $composableBuilder(
+    column: $table.week,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WeeklyCountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WeeklyCountsTable> {
+  $$WeeklyCountsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get week =>
+      $composableBuilder(column: $table.week, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<int> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$WeeklyCountsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WeeklyCountsTable,
+          WeeklyCount,
+          $$WeeklyCountsTableFilterComposer,
+          $$WeeklyCountsTableOrderingComposer,
+          $$WeeklyCountsTableAnnotationComposer,
+          $$WeeklyCountsTableCreateCompanionBuilder,
+          $$WeeklyCountsTableUpdateCompanionBuilder,
+          (
+            WeeklyCount,
+            BaseReferences<_$AppDatabase, $WeeklyCountsTable, WeeklyCount>,
+          ),
+          WeeklyCount,
+          PrefetchHooks Function()
+        > {
+  $$WeeklyCountsTableTableManager(_$AppDatabase db, $WeeklyCountsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WeeklyCountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WeeklyCountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WeeklyCountsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<DateTime> week = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<int> value = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WeeklyCountsCompanion(
+                week: week,
+                key: key,
+                value: value,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required DateTime week,
+                required String key,
+                Value<int> value = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WeeklyCountsCompanion.insert(
+                week: week,
+                key: key,
+                value: value,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$WeeklyCountsTable, WeeklyCount>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $WeeklyCountsTable,
+                    WeeklyCount
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WeeklyCountsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WeeklyCountsTable,
+      WeeklyCount,
+      $$WeeklyCountsTableFilterComposer,
+      $$WeeklyCountsTableOrderingComposer,
+      $$WeeklyCountsTableAnnotationComposer,
+      $$WeeklyCountsTableCreateCompanionBuilder,
+      $$WeeklyCountsTableUpdateCompanionBuilder,
+      (
+        WeeklyCount,
+        BaseReferences<_$AppDatabase, $WeeklyCountsTable, WeeklyCount>,
+      ),
+      WeeklyCount,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8779,4 +9211,6 @@ class $AppDatabaseManager {
       $$GrammarProgressTableTableManager(_db, _db.grammarProgress);
   $$MistakesTableTableManager get mistakes =>
       $$MistakesTableTableManager(_db, _db.mistakes);
+  $$WeeklyCountsTableTableManager get weeklyCounts =>
+      $$WeeklyCountsTableTableManager(_db, _db.weeklyCounts);
 }

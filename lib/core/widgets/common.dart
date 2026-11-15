@@ -5,6 +5,7 @@ import '../../app/theme.dart';
 /// Icon names stored in the dictionary → Material icons.
 const _categoryIcons = <String, IconData>{
   'waving_hand': Icons.waving_hand_rounded,
+  'shield': Icons.shield_rounded,
   'family_restroom': Icons.family_restroom_rounded,
   'pin': Icons.pin_rounded,
   'palette': Icons.palette_rounded,

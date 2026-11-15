@@ -10,6 +10,7 @@ import '../../app/theme.dart';
 import '../dictionary/word_of_day.dart';
 import '../profile/activity_calendar.dart' show activityWeeks;
 import 'week_card.dart';
+import '../gamification/quests_card.dart';
 import '../dictionary/word_sheet.dart';
 import '../../core/motion.dart';
 import '../../core/dates.dart';
@@ -170,6 +171,11 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   if (!s.quietMode) ...[
+                    const SizedBox(height: 14),
+                    const RiseIn(
+                      delay: Duration(milliseconds: 90),
+                      child: WeeklyQuestsCard(),
+                    ),
                     const SizedBox(height: 14),
                     RiseIn(
                       delay: const Duration(milliseconds: 120),

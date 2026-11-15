@@ -7,6 +7,8 @@ import '../../app/theme.dart';
 import '../../core/dates.dart';
 import '../../core/motion.dart';
 import '../../core/updates.dart';
+import '../gamification/collection.dart';
+import '../gamification/zhailau.dart';
 import '../../core/speech.dart';
 import '../../core/voice.dart';
 import '../../core/reminders.dart';
@@ -50,6 +52,9 @@ class ProfileScreen extends ConsumerWidget {
       totalXp: s.xp,
       fixedMistakes: ref.watch(fixedMistakesProvider).value ?? 0,
       examsPassed: examsPassed,
+      albumCards: cardsOpen(ref.watch(finishedTopicsProvider)),
+      questsDone: ref.watch(questsDoneProvider).value ?? 0,
+      threeStarTopics: ref.watch(threeStarTopicsProvider),
     );
     final c = context.colors;
     final lessonsDone = ref.watch(courseProvider).value?.lessonsDone ?? 0;
@@ -112,6 +117,10 @@ class ProfileScreen extends ConsumerWidget {
                         ],
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    ZhailauCard(learnedWords: learned),
+                    const SizedBox(height: 12),
+                    _AlbumLink(open: facts.albumCards),
                     const SizedBox(height: 16),
                     _ActivityCard(
                       days: activity,
@@ -1248,3 +1257,47 @@ class _PalettePicker extends ConsumerWidget {
 final _versionProvider = FutureProvider<String>(
   (ref) => Updates.currentVersion(),
 );
+
+/// The way into the album, with its first open cards as a preview.
+class _AlbumLink extends StatelessWidget {
+  const _AlbumLink({required this.open});
+
+  final int open;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final last = albumCards.take(open).toList().reversed.take(3).toList();
+    return SurfaceCard(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      onTap: () => context.push('/album'),
+      child: Row(
+        children: [
+          TintIcon(Icons.photo_album_rounded, color: c.goldText, size: 40),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Альбом карточек',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                ),
+                Text(
+                  '$open из ${albumCards.length} · о культуре и природе',
+                  style: TextStyle(color: c.muted, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          for (final card in last)
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: Text(card.emoji, style: const TextStyle(fontSize: 22)),
+            ),
+          Icon(Icons.chevron_right_rounded, color: c.muted),
+        ],
+      ),
+    );
+  }
+}

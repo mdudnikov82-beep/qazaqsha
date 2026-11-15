@@ -112,6 +112,9 @@ void main() {
       13,
       10,
       8,
+      6,
+      6,
+      6,
     ]);
     expect(course.next, isA<NextLesson>());
 

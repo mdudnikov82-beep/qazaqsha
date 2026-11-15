@@ -6,14 +6,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/motion.dart';
+import '../../core/widgets/bead_progress.dart';
 import '../../core/widgets/common.dart';
 import '../../core/widgets/gold_button.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../dialogues/dialogues.dart';
+import '../gamification/quests.dart';
 import '../quiz/quiz_session.dart';
 import '../quiz/quiz_views.dart' show FixTiles;
 import 'grammar.dart';
+import 'rules_screen.dart' show partColor;
 
 /// Exercises of one rule ([ruleId]) or a check-up of a topic ([groupId]).
 /// Wrong answers come back once at the end, like in lessons.
@@ -81,6 +84,9 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
   /// The tile tapped in a «find the mistake» task.
   int? _pickedTile;
 
+  /// «Find the mistake» tasks answered right, for the weekly quests.
+  int _fixesFound = 0;
+
   /// The current task's «find the mistake» form, if it has one.
   GrammarFix? get _fix => _index < _total ? _fixes[_queue![_index]] : null;
 
@@ -123,6 +129,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     _total = tasks.length;
     _fixes.clear();
     _pickedTile = null;
+    _fixesFound = 0;
     final fixes = widget.ruleId != null
         ? grammarFixesPerRule
         : widget.groupId != null
@@ -148,6 +155,7 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     if (_pickedTile != null) return;
     final fix = _fix!;
     _pickedTile = i;
+    if (i == fix.at) _fixesFound++;
     _answer(right: i == fix.at, given: fix.tokens[i]);
   }
 
@@ -228,6 +236,19 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
           now: now,
           studySeconds: _clock.elapsed.inSeconds.clamp(0, 3600),
         );
+    final quests = ref.read(questRepositoryProvider);
+    if (_dialogue != null) {
+      await quests.add(QuestKey.dialogues, now);
+    } else if (!widget.mistakes) {
+      await quests.add(QuestKey.rules, now);
+    }
+    await quests.add(QuestKey.fixes, now, _fixesFound);
+    await quests.add(QuestKey.fixed, now, _fixed);
+    await quests.add(
+      QuestKey.seconds,
+      now,
+      _clock.elapsed.inSeconds.clamp(0, 3600),
+    );
     if (mounted) setState(() => _result = (score: score, xp: xp));
   }
 
@@ -259,146 +280,314 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
     final fix = _fix;
     final answered = _picked != null || _pickedTile != null;
     final right = fix != null ? _pickedTile == fix.at : _picked == task.answer;
+    final tint = _tint(grammar, c);
+    final retry = _retrying && _index >= _total;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Закрыть',
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(_title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ProgressBar(
-                value: _index / _queue!.length,
-                semanticsLabel: 'Задание ${_index + 1} из ${_queue!.length}',
-              ),
-              if (_retrying && _index >= _total) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Повторим ошибки',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: c.goldText,
-                    fontWeight: FontWeight.w800,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 12, 20, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Закрыть',
+                    icon: Icon(Icons.close_rounded, color: c.muted),
+                    onPressed: () => context.pop(),
                   ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              if (fix != null) ...[
-                const Text(
-                  'Найдите ошибку',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  task.hint.isEmpty
-                      ? 'Одно слово здесь неправильное. Нажмите на него.'
-                      : '${task.hint}\nОдно слово здесь неправильное. '
-                            'Нажмите на него.',
-                  style: TextStyle(color: c.muted, fontSize: 15),
-                ),
-                const SizedBox(height: 16),
-                FixTiles(
-                  tokens: fix.tokens,
-                  wrongIndex: fix.at,
-                  right: fix.right,
-                  picked: _pickedTile,
-                  onPick: _pickTile,
-                ),
-              ] else ...[
-                Text(
-                  task.hint.isEmpty ? 'Выберите ответ' : task.hint,
-                  style: TextStyle(color: c.muted, fontSize: 15),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  answered ? task.solved : task.question,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                for (final o in _options) ...[
-                  ReactionBox(
-                    reaction: !answered
-                        ? Reaction.none
-                        : o == task.answer
-                        ? Reaction.pop
-                        : o == _picked
-                        ? Reaction.shake
-                        : Reaction.none,
-                    child: _Option(
-                      text: o,
-                      state: !answered
-                          ? _OptionState.idle
-                          : o == task.answer
-                          ? _OptionState.right
-                          : o == _picked
-                          ? _OptionState.wrong
-                          : _OptionState.dim,
-                      onTap: () => _pick(o),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: BeadProgress(
+                      done: _index,
+                      total: _queue!.length,
+                      color: tint,
+                      semanticsLabel:
+                          'Задание ${_index + 1} из ${_queue!.length}',
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(width: 14),
+                  Text(
+                    '${_index + 1}/${_queue!.length}',
+                    style: TextStyle(
+                      color: c.muted,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ],
-              ],
-              const Spacer(),
-              if (answered)
-                SlideUp(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: right ? c.okSoft : c.badSoft,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
+              child: Text(
+                retry ? 'ПОВТОРИМ ОШИБКИ' : _title.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: retry ? c.goldText : tint,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .7,
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                key: ValueKey(_index),
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          switch ((right, fix)) {
-                            (true, null) => 'Дұрыс! Правильно',
-                            (true, final f?) =>
-                              'Дұрыс! «${f.tokens[f.at]}» → «${f.right}»',
-                            (false, null) => 'Қате. Правильно: ${task.answer}',
-                            (false, final f?) =>
-                              'Қате. Ошибка была тут: «${f.tokens[f.at]}» → '
-                                  '«${f.right}»',
-                          },
-                          style: TextStyle(
-                            color: right ? c.okText : c.badText,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        TintIcon(
+                          fix != null
+                              ? Icons.search_rounded
+                              : Icons.edit_note_rounded,
+                          color: tint,
+                          size: 36,
                         ),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: right
-                                ? AppColors.okButton
-                                : AppColors.badButton,
-                            minimumSize: const Size.fromHeight(52),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            fix != null
+                                ? 'Найдите ошибку'
+                                : task.question.contains('___')
+                                ? 'Вставьте пропущенное'
+                                : 'Выберите ответ',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                          onPressed: _next,
-                          child: const Text('Дальше'),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: tint.withValues(alpha: .35),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: tint.withValues(alpha: .12),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (task.hint.isNotEmpty) ...[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: Icon(
+                                    Icons.lightbulb_outline_rounded,
+                                    size: 18,
+                                    color: tint,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    task.hint,
+                                    style: TextStyle(
+                                      color: c.muted,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (fix != null) ...[
+                            Text(
+                              'Одно слово здесь неправильное. Нажмите на него.',
+                              style: TextStyle(color: c.muted),
+                            ),
+                            const SizedBox(height: 12),
+                            FixTiles(
+                              tokens: fix.tokens,
+                              wrongIndex: fix.at,
+                              right: fix.right,
+                              picked: _pickedTile,
+                              onPick: _pickTile,
+                            ),
+                          ] else
+                            _GapSentence(
+                              question: task.question,
+                              filled: answered ? task.answer : null,
+                              tint: tint,
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (fix == null) ...[
+                      const SizedBox(height: 18),
+                      for (final (k, o) in _options.indexed) ...[
+                        ReactionBox(
+                          reaction: !answered
+                              ? Reaction.none
+                              : o == task.answer
+                              ? Reaction.pop
+                              : o == _picked
+                              ? Reaction.shake
+                              : Reaction.none,
+                          child: _Option(
+                            letter: 'АБВГДЕ'[k],
+                            text: o,
+                            tint: tint,
+                            state: !answered
+                                ? _OptionState.idle
+                                : o == task.answer
+                                ? _OptionState.right
+                                : o == _picked
+                                ? _OptionState.wrong
+                                : _OptionState.dim,
+                            onTap: () => _pick(o),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (answered)
+              SlideUp(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: right ? c.okSoft : c.goldSoft,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: right
+                                  ? AppColors.okButton
+                                  : AppColors.tryButton,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              right
+                                  ? Icons.check_rounded
+                                  : Icons.lightbulb_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              right ? 'Дұрыс! Правильно' : 'Пока неверно',
+                              style: TextStyle(
+                                color: right ? c.okText : c.goldText,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        switch (fix) {
+                          null =>
+                            right ? task.solved : 'Правильно: ${task.answer}',
+                          final f => '«${f.tokens[f.at]}» → «${f.right}»',
+                        },
+                        style: TextStyle(
+                          color: right ? c.okText : c.goldText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (!right && !retry) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Вопрос повторится в конце.',
+                          style: TextStyle(
+                            color: c.goldText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      FilledButton(
+                        autofocus: true,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: right
+                              ? AppColors.okButton
+                              : AppColors.tryButton,
+                          minimumSize: const Size.fromHeight(52),
+                        ),
+                        onPressed: _next,
+                        child: const Text('Дальше'),
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Container(
+                  height: 56,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: c.track,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    fix != null
+                        ? 'Нажмите на неправильное слово'
+                        : 'Нажмите на вариант ответа',
+                    style: TextStyle(
+                      color: c.muted,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
+  }
+
+  /// The colour of what is practised: its part of speech, a dialogue's
+  /// accent, gold for the mistakes notebook.
+  Color _tint(List<GrammarGroup> grammar, AppColors c) {
+    if (_dialogue != null) return c.accent;
+    if (widget.mistakes) return c.goldText;
+    final id = widget.groupId;
+    final group = grammar.firstWhere(
+      (g) => id != null ? g.id == id : g.rules.contains(_rule),
+      orElse: () => grammar.first,
+    );
+    return partColor(group.part);
   }
 
   Widget _resultView(
@@ -497,10 +686,19 @@ class _GrammarPracticeScreenState extends ConsumerState<GrammarPracticeScreen> {
 
 enum _OptionState { idle, right, wrong, dim }
 
+/// An answer option with its letter, in the colour of the rule.
 class _Option extends StatelessWidget {
-  const _Option({required this.text, required this.state, required this.onTap});
+  const _Option({
+    required this.letter,
+    required this.text,
+    required this.tint,
+    required this.state,
+    required this.onTap,
+  });
 
+  final String letter;
   final String text;
+  final Color tint;
   final _OptionState state;
   final VoidCallback onTap;
 
@@ -510,33 +708,132 @@ class _Option extends StatelessWidget {
     final (bg, fg, border) = switch (state) {
       _OptionState.idle => (c.surface, c.ink, c.line),
       _OptionState.right => (c.okSoft, c.okText, c.ok),
-      _OptionState.wrong => (c.badSoft, c.badText, c.bad),
+      _OptionState.wrong => (c.goldSoft, c.goldText, AppColors.tryButton),
       _OptionState.dim => (c.surface, c.muted, c.line),
     };
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: state == _OptionState.idle ? onTap : null,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: border, width: 2),
-          ),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            text,
-            style: TextStyle(
-              color: fg,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+    final badge = switch (state) {
+      _OptionState.right => c.ok,
+      _OptionState.wrong => AppColors.tryButton,
+      _OptionState.idle => tint,
+      _OptionState.dim => c.lockIcon,
+    };
+    return Semantics(
+      button: true,
+      label: text,
+      excludeSemantics: true,
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: state == _OptionState.idle ? onTap : null,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 58),
+            padding: const EdgeInsets.fromLTRB(10, 10, 16, 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border(
+                top: BorderSide(color: border, width: 2),
+                left: BorderSide(color: border, width: 2),
+                right: BorderSide(color: border, width: 2),
+                bottom: BorderSide(color: border, width: 4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Color.alphaBlend(
+                      badge.withValues(alpha: .14),
+                      c.surface,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: state == _OptionState.right
+                      ? Icon(Icons.check_rounded, color: badge, size: 20)
+                      : Text(
+                          letter,
+                          style: TextStyle(
+                            color: badge,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The task sentence with its gap drawn as a box: empty while answering,
+/// then holding the right answer.
+class _GapSentence extends StatelessWidget {
+  const _GapSentence({
+    required this.question,
+    required this.filled,
+    required this.tint,
+  });
+
+  final String question;
+  final String? filled;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    const style = TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w900,
+      height: 1.4,
+    );
+    final i = question.indexOf('___');
+    if (i < 0) return Text(question, style: style);
+    final gap = Container(
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+      constraints: const BoxConstraints(minWidth: 64),
+      decoration: BoxDecoration(
+        color: filled == null
+            ? Color.alphaBlend(tint.withValues(alpha: .10), c.surface)
+            : c.okSoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          bottom: BorderSide(color: filled == null ? tint : c.ok, width: 3),
+        ),
+      ),
+      child: Text(
+        filled ?? ' ',
+        textAlign: TextAlign.center,
+        style: style.copyWith(color: filled == null ? tint : c.okText),
+      ),
+    );
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: question.substring(0, i)),
+          WidgetSpan(alignment: PlaceholderAlignment.middle, child: gap),
+          TextSpan(text: question.substring(i + 3)),
+        ],
+      ),
+      semanticsLabel: question.replaceFirst('___', filled ?? 'пропуск'),
+      style: style,
     );
   }
 }

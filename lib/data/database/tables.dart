@@ -63,7 +63,18 @@ class WordProgress extends Table {
 }
 
 /// Colour themes, unlocked by level (see theme.dart).
-enum AppPalette { teal, steppe, tianshan, nauryz, night }
+/// Stored by index: new palettes only ever go at the end.
+enum AppPalette {
+  teal,
+  steppe,
+  tianshan,
+  nauryz,
+  night,
+  tulip,
+  autumn,
+  wormwood,
+  cosmos,
+}
 
 /// Matches Flutter's ThemeMode order: system, light, dark.
 enum AppThemeMode { system, light, dark }
@@ -215,4 +226,15 @@ class UnlockedAchievements extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Weekly counters for the weekly quests: lessons, rules, dictations…
+class WeeklyCounts extends Table {
+  /// Monday of the week, as a UTC date (see weekOf).
+  DateTimeColumn get week => dateTime()();
+  TextColumn get key => text()();
+  IntColumn get value => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {week, key};
 }

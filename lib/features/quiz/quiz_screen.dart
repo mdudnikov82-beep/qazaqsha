@@ -78,7 +78,10 @@ class QuizScreen extends ConsumerStatefulWidget {
 
 enum _Feedback { none, right, wrong, almost }
 
-enum _Kind { lesson, review, exam, custom }
+enum _Kind { lesson, review, exam, custom, bedtime }
+
+/// Night colour of the bedtime review.
+const _nightColor = Color(0xFF3F51B5);
 
 /// Words per practice of the user's own words.
 const _customPracticeSize = 6;
@@ -151,7 +154,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       ? _Kind.lesson
       : widget.isCustom
       ? _Kind.custom
+      : widget.reviewMode == ReviewMode.bedtime
+      ? _Kind.bedtime
       : _Kind.review;
+
+  /// No points, no combo, no retries: just a quiet look at the words.
+  bool get _calm => _kind == _Kind.bedtime;
 
   _Feedback _feedback = _Feedback.none;
   int? _picked;
@@ -247,6 +255,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           ),
           pool: pool,
         );
+      } else if (_calm) {
+        questions = _engine.buildBedtime(
+          words: await ref
+              .read(progressRepositoryProvider)
+              .reviewWords(ReviewMode.bedtime, DateTime.now()),
+          pool: pool,
+        );
       } else {
         final due = await ref
             .read(progressRepositoryProvider)
@@ -254,7 +269,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         questions = _engine.buildReview(words: due, pool: pool);
       }
       setState(
-        () => _session = QuizSession(questions, retryMistakes: !widget.isExam),
+        () => _session = QuizSession(
+          questions,
+          retryMistakes: !widget.isExam && !_calm,
+        ),
       );
     } catch (e) {
       setState(() => _error = e);
@@ -270,7 +288,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
   void _react(bool correct) {
     correct ? Haptics.success() : Haptics.error();
-    _combo = correct ? _combo + 1 : 0;
+    _combo = correct && !_calm ? _combo + 1 : 0;
   }
 
   /// Wrong answers go to the mistakes notebook; right ones take a word
@@ -418,7 +436,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     final progress = ref.read(progressRepositoryProvider);
     final stats = ref.read(statsRepositoryProvider);
 
-    var xp = s.xp;
+    var xp = _calm ? 0 : s.xp;
     var examPassed = false;
     final cardsBefore = cardsOpen(ref.read(finishedTopicsProvider));
     if (widget.isLesson) {
@@ -439,7 +457,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       if (examPassed) xp += examPassBonusXp;
     }
 
-    await progress.applySession(s.wordResults, now);
+    await progress.applySession(s.wordResults, now, keepEarly: _calm);
     final after = await stats.recordSession(
       xp: xp,
       correct: s.correctAnswers,
@@ -450,7 +468,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     final quests = ref.read(questRepositoryProvider);
     await quests.add(switch (_kind) {
       _Kind.lesson => QuestKey.lessons,
-      _Kind.review || _Kind.custom => QuestKey.reviews,
+      _Kind.review || _Kind.custom || _Kind.bedtime => QuestKey.reviews,
       _Kind.exam => QuestKey.lessons,
     }, now);
     await quests.add(QuestKey.dictations, now, _dictations);
@@ -496,14 +514,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           total: s.totalAnswers,
           toReview: s.wordResults.values.where((ok) => !ok).length,
           newCard: cards > cardsBefore ? albumCards[cards - 1] : null,
-          goalReached: () {
-            final today = todayXp(
-              storedDailyXp: after.dailyXp,
-              storedDay: after.dailyXpDate,
-              now: now,
-            );
-            return today >= after.dailyGoalXp && today - xp < after.dailyGoalXp;
-          }(),
+          goalReached:
+              !_calm &&
+              () {
+                final today = todayXp(
+                  storedDailyXp: after.dailyXp,
+                  storedDay: after.dailyXpDate,
+                  now: now,
+                );
+                return today >= after.dailyGoalXp &&
+                    today - xp < after.dailyGoalXp;
+              }(),
         ),
       );
     }
@@ -536,6 +557,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         ].join(' · '),
       );
     }
+    if (_calm) return (_nightColor, 'Перед сном');
     return (c.brand, widget.isCustom ? 'Свои слова' : 'Повторение');
   }
 
@@ -543,7 +565,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   Widget build(BuildContext context) {
     final s = _session;
     if (s == null) return LoadingScaffold(error: _error);
-    if (s.length == 0) return _EmptyReview(onClose: _close);
+    if (s.length == 0) return _EmptyReview(onClose: _close, calm: _calm);
     if (_result != null) {
       return _ResultView(
         result: _result!,
@@ -648,7 +670,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                       IntroCard(:final word) => IntroView(word: word),
                       ChoiceQuestion() => ChoiceView(
                         question: q,
-                        xp: s.lastXp,
+                        xp: _calm ? 0 : s.lastXp,
                         picked: _picked,
                         onPick: _pick,
                       ),
@@ -698,6 +720,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
               onNext: _next,
               retriesMistakes: s.retryMistakes,
               combo: _combo,
+              calm: _calm,
             ),
           ],
         ),
@@ -718,7 +741,11 @@ class _BottomPanel extends ConsumerWidget {
     required this.onNext,
     required this.retriesMistakes,
     required this.combo,
+    this.calm = false,
   });
+
+  /// Bedtime: no XP, no combo praise.
+  final bool calm;
 
   final Question question;
   final _Feedback feedback;
@@ -756,7 +783,7 @@ class _BottomPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final quiet = ref.watch(quietModeProvider);
+    final quiet = ref.watch(quietModeProvider) || calm;
     final c = context.colors;
     final q = question;
 
@@ -966,13 +993,18 @@ class _ResultView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final quiet = ref.watch(quietModeProvider);
+    final calm = result.kind == _Kind.bedtime;
+    final quiet = ref.watch(quietModeProvider) || calm;
     final c = context.colors;
     final failedExam = result.kind == _Kind.exam && !result.examPassed;
     final (title, subtitle) = switch (result.kind) {
       _Kind.lesson => ('Сабақ аяқталды!', 'Урок пройден'),
       _Kind.review => ('Қайталау аяқталды!', 'Повторение завершено'),
       _Kind.custom => ('Жаттығу аяқталды!', 'Тренировка своих слов завершена'),
+      _Kind.bedtime => (
+        'Қайырлы түн!',
+        'Спокойной ночи. Во сне память укрепит эти слова.',
+      ),
       _Kind.exam when result.examPassed => (
         'Емтихан тапсырылды!',
         'Экзамен сдан — следующий раздел открыт',
@@ -1007,7 +1039,9 @@ class _ResultView extends ConsumerWidget {
                         ),
                         _PopIn(
                           child: Barys(
-                            mood: failedExam
+                            mood: calm
+                                ? BarysMood.resting
+                                : failedExam
                                 ? BarysMood.support
                                 : BarysMood.celebrate,
                             size: 140,
@@ -1180,7 +1214,7 @@ class _ResultView extends ConsumerWidget {
               ],
             ),
           ),
-          if (!failedExam)
+          if (!failedExam && !calm)
             Positioned.fill(
               child: Confetti(
                 colors: [
@@ -1374,9 +1408,10 @@ class _ResultStat extends StatelessWidget {
 }
 
 class _EmptyReview extends StatelessWidget {
-  const _EmptyReview({required this.onClose});
+  const _EmptyReview({required this.onClose, this.calm = false});
 
   final VoidCallback onClose;
+  final bool calm;
 
   @override
   Widget build(BuildContext context) {
@@ -1393,6 +1428,15 @@ class _EmptyReview extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
+            if (calm) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Пройдите урок днём — вечером его слова можно будет '
+                'спокойно повторить перед сном.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.colors.muted),
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(onPressed: onClose, child: const Text('Назад')),
           ],

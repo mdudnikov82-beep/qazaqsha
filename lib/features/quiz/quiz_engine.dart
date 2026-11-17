@@ -185,6 +185,13 @@ class QuizEngine {
     ]);
   }
 
+  /// Bedtime: one calm recognition task per word, Kazakh shown.
+  List<Question> buildBedtime({
+    required List<Word> words,
+    required List<Word> pool,
+  }) =>
+      _shuffled([for (final w in words) _choice(w, pool, fromRussian: false)]);
+
   ChoiceQuestion _choice(
     Word word,
     List<Word> pool, {

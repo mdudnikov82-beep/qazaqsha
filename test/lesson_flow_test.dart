@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qazaqsha/data/database/app_database.dart';
 import 'package:qazaqsha/data/repositories/dictionary_repository.dart';
 import 'package:qazaqsha/data/repositories/lesson_repository.dart';
+import 'package:qazaqsha/data/repositories/progress_repository.dart';
 import 'package:qazaqsha/features/lessons/sections.dart';
 import 'package:qazaqsha/features/quiz/answer_check.dart';
 import 'package:qazaqsha/features/quiz/quiz_engine.dart';
@@ -374,6 +375,69 @@ void main() {
     expect(find.text('Лес'), findsWidgets); // the set's screen
     final sets = await tester.runAsync(() => db.select(db.categories).get());
     expect(sets!.where((c) => c.titleRu == 'Лес'), hasLength(1));
+
+    await closeApp(tester, db);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('bedtime review: calm, no XP, early words keep their date', (
+    tester,
+  ) async {
+    final db = await startApp(tester);
+    final answers = await _answers(tester, db);
+    final ids = (await tester.runAsync(
+      () => DictionaryRepository(db).wordsInCategory('greetings'),
+    ))!.take(5).map((w) => w.id);
+    final progress = ProgressRepository(db);
+    await tester.runAsync(
+      () => progress.applySession({
+        for (final id in ids) id: true,
+      }, DateTime.now()),
+    );
+
+    // The shortcut under the weekly cards, not the daily task.
+    await tester.tap(find.text('Повторение').last);
+    await advanceUntil(
+      tester,
+      () => find.text('Повторение перед сном').evaluate().isNotEmpty,
+    );
+    await tester.tap(find.text('Повторение перед сном'));
+    await advanceUntil(
+      tester,
+      () => find.text('Выберите перевод').evaluate().isNotEmpty,
+    );
+    expect(find.text('ПЕРЕД СНОМ'), findsOneWidget);
+
+    var steps = 0;
+    while (find.text('Қайырлы түн!').evaluate().isEmpty) {
+      expect(++steps, lessThan(6), reason: 'bedtime never ended');
+      // Kazakh is shown, the Russian translation is picked.
+      final prompt = _prompt(tester);
+      await tester.tap(find.text(answers.kkToRu[prompt]!).last);
+      await settle(tester);
+      expect(find.textContaining('XP'), findsNothing);
+      await tester.tap(find.text('Далее'));
+      await settle(tester);
+      await advanceUntil(
+        tester,
+        () =>
+            find.text('Выберите перевод').evaluate().isNotEmpty ||
+            find.text('Қайырлы түн!').evaluate().isNotEmpty,
+      );
+    }
+    expect(steps, 5);
+    expect(find.text('XP'), findsNothing);
+
+    final stats = await _stats(tester, db);
+    expect((stats.xp, stats.quizzesCompleted), (0, 1));
+    // Answered before their time: still on step 2, due tomorrow.
+    final rows = (await tester.runAsync(
+      () => db.select(db.wordProgress).get(),
+    ))!;
+    final map = {for (final p in rows) p.wordId: p};
+    for (final id in ids) {
+      expect(map[id]!.box, 1);
+      expect(map[id]!.correctCount, 2);
+    }
 
     await closeApp(tester, db);
   }, timeout: const Timeout(Duration(minutes: 3)));

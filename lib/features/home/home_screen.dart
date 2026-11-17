@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
+import '../review/bedtime_card.dart';
+import '../review/review_mode.dart';
 import '../dictionary/word_of_day.dart';
 import '../profile/activity_calendar.dart' show activityWeeks;
 import 'week_card.dart';
@@ -170,6 +172,16 @@ class HomeScreen extends ConsumerWidget {
                       rule: nextRule,
                     ),
                   ),
+                  if (isBedtime(now) &&
+                      progress.values.any(
+                        (p) => p.status != LearningStatus.fresh,
+                      )) ...[
+                    const SizedBox(height: 14),
+                    const RiseIn(
+                      delay: Duration(milliseconds: 75),
+                      child: BedtimeCard(),
+                    ),
+                  ],
                   if (!s.quietMode) ...[
                     const SizedBox(height: 14),
                     const RiseIn(

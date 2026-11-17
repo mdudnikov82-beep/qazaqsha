@@ -16,6 +16,7 @@ import '../../data/repositories/progress_repository.dart';
 import '../dictionary/word_tile.dart';
 import '../gamification/progress_rules.dart';
 import '../quiz/srs.dart';
+import 'bedtime_card.dart';
 import 'review_mode.dart';
 
 class ReviewScreen extends ConsumerWidget {
@@ -70,6 +71,10 @@ class ReviewScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                     ],
                     const _MistakesCard(),
+                    if (studied.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const BedtimeCard(),
+                    ],
                     const SizedBox(height: 24),
                     const _Title('Другие тренировки'),
                     _Modes(

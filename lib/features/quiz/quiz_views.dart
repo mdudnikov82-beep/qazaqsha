@@ -367,7 +367,8 @@ class ChoiceView extends StatelessWidget {
             Positioned(
               top: -6,
               child: Consumer(
-                builder: (context, ref, _) => ref.watch(quietModeProvider)
+                builder: (context, ref, _) =>
+                    ref.watch(quietModeProvider) || xp == 0
                     ? const SizedBox.shrink()
                     : FlyingXp(xp: xp, color: c.okText),
               ),

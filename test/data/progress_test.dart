@@ -6,6 +6,7 @@ import 'package:qazaqsha/data/repositories/mistakes_repository.dart';
 import 'package:qazaqsha/data/repositories/progress_repository.dart';
 import 'package:qazaqsha/data/repositories/stats_repository.dart';
 import 'package:qazaqsha/features/gamification/achievements.dart';
+import 'package:qazaqsha/features/review/review_mode.dart';
 
 import '../helpers.dart';
 
@@ -205,5 +206,39 @@ void main() {
     // A right answer to a task never missed fixes nothing.
     await notebook.resolve(MistakeKind.word, '9');
     expect(await notebook.fixedCount(), 2);
+  });
+
+  test(
+    'bedtime takes the soonest words and keeps early ones in place',
+    () async {
+      // Word 1 comes back in 3 days, word 2 tomorrow, word 3 is due now.
+      await progress.applySession({1: true}, now);
+      await progress.applySession({1: true}, now.add(const Duration(days: 1)));
+      await progress.applySession({2: true, 3: false}, now);
+      expect(
+        (await progress.reviewWords(ReviewMode.bedtime, now)).map((w) => w.id),
+        [3, 2, 1],
+      );
+
+      final before = (await progress.watchAll().first)[2]!;
+      final evening = now.add(const Duration(hours: 9));
+      await progress.applySession({2: true, 3: true}, evening, keepEarly: true);
+      final after = await progress.watchAll().first;
+      // Right before its time: the schedule stays, the answer still counts.
+      expect(after[2]!.box, before.box);
+      expect(after[2]!.nextReviewAt, before.nextReviewAt);
+      expect(after[2]!.correctCount, before.correctCount + 1);
+      // A due word moves on as usual.
+      expect(after[3]!.box, 1);
+      // A mistake still sends a word back to the start.
+      await progress.applySession({1: false}, evening, keepEarly: true);
+      expect((await progress.watchAll().first)[1]!.box, 0);
+    },
+  );
+
+  test('bedtime hours', () {
+    expect(isBedtime(DateTime(2026, 11, 16, 21)), isTrue);
+    expect(isBedtime(DateTime(2026, 11, 16, 1)), isTrue);
+    expect(isBedtime(DateTime(2026, 11, 16, 12)), isFalse);
   });
 }

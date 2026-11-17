@@ -14,7 +14,14 @@ class ProgressRepository {
 
   /// Applies a finished session: [results] maps wordId → answered correctly
   /// every time. Updates counters and schedules the next review.
-  Future<void> applySession(Map<int, bool> results, DateTime now) {
+  /// With [keepEarly], a right answer on a word that is not due yet
+  /// changes nothing in its schedule: an extra look before sleep must not
+  /// skip a real repetition.
+  Future<void> applySession(
+    Map<int, bool> results,
+    DateTime now, {
+    bool keepEarly = false,
+  }) {
     return _db.transaction(() async {
       final existing = {
         for (final p in await (_db.select(
@@ -24,11 +31,15 @@ class ProgressRepository {
       };
       for (final MapEntry(key: wordId, value: correct) in results.entries) {
         final old = existing[wordId];
-        final step = scheduleReview(
-          box: old?.box ?? 0,
-          correct: correct,
-          now: now,
-        );
+        final early =
+            keepEarly &&
+            correct &&
+            old != null &&
+            old.status != LearningStatus.fresh &&
+            (old.nextReviewAt?.isAfter(now) ?? false);
+        final step = early
+            ? SrsStep(old.box, old.nextReviewAt!, old.status)
+            : scheduleReview(box: old?.box ?? 0, correct: correct, now: now);
         await _db
             .into(_db.wordProgress)
             .insertOnConflictUpdate(
@@ -93,6 +104,23 @@ class ProgressRepository {
     return query.map((r) => r.readTable(_db.words)).get();
   }
 
+  /// Studied words in the order they come back: overdue first, then the
+  /// ones that are about to be forgotten.
+  Future<List<Word>> soonestWords({int limit = bedtimeSessionSize}) {
+    final p = _db.wordProgress;
+    final query =
+        _db.select(_db.words).join([
+            innerJoin(p, p.wordId.equalsExp(_db.words.id)),
+          ])
+          ..where(
+            p.status.isNotValue(LearningStatus.fresh.index) &
+                p.nextReviewAt.isNotNull(),
+          )
+          ..orderBy([OrderingTerm.asc(p.nextReviewAt)])
+          ..limit(limit);
+    return query.map((r) => r.readTable(_db.words)).get();
+  }
+
   /// Words for a review in [mode]. Due words come oldest first, hard ones
   /// most-mistaken first, the rest in random order.
   Future<List<Word>> reviewWords(
@@ -102,6 +130,7 @@ class ProgressRepository {
     Random? random,
   }) async {
     if (mode == ReviewMode.due) return dueWords(now, limit: limit);
+    if (mode == ReviewMode.bedtime) return soonestWords();
     if (mode == ReviewMode.mistakes) {
       final ids = [
         for (final r in await MistakesRepository(

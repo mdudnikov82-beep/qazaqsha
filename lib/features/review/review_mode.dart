@@ -11,7 +11,11 @@ enum ReviewMode {
   random,
 
   /// Words from the mistakes notebook.
-  mistakes;
+  mistakes,
+
+  /// A short calm session before sleep: the words that will be forgotten
+  /// soonest, recognition only, no points and no timer.
+  bedtime;
 
   static ReviewMode parse(String? name) => ReviewMode.values.firstWhere(
     (m) => m.name == name,
@@ -21,3 +25,13 @@ enum ReviewMode {
 
 /// Words per review session.
 const reviewSessionSize = 10;
+
+/// Words in a bedtime session: two or three quiet minutes.
+const bedtimeSessionSize = 6;
+
+/// From this hour (and until [bedtimeUntil]) Home offers the bedtime review.
+const bedtimeFrom = 20;
+const bedtimeUntil = 4;
+
+bool isBedtime(DateTime now) =>
+    now.hour >= bedtimeFrom || now.hour < bedtimeUntil;
